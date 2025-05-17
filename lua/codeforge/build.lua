@@ -6,37 +6,88 @@ local M = {
         local fn = vim.fn
 
         local src_file = api.nvim_buf_get_name(0)
-        local exe_file = config.output_directory .. fn.expand("%:t:r")
+        local src_basename = fn.expand("%:t:r")
+        local output_directory = config.output_directory
+        local exe_file = output_directory .. src_basename
         local asm_file = exe_file .. ".s"
+        local obj_file = exe_file .. ".o"
 
         local data_path = utils.get_data_path(config.data_dir_name)
         local data_file = nil
         local cmd_args = nil
-        local hash = { compile = nil, assemble = nil }
+        local hash = { compile = nil, assemble = nil, link = nil }
 
-        local compile_args = utils.merged_list(config.compile_opts, { "-o", exe_file, src_file })
-        local assemble_args = utils.merged_list(config.compile_opts, { "-c", "-S", "-o", asm_file, src_file })
+        local run_cmd = config.run_command
 
-        local compile_command = { compiler = config.compiler, arg = compile_args, timeout = 15000, kill_delay = 3000 }
-        local assemble_command = { compiler = config.compiler, arg = assemble_args }
+        local Actions = {}
 
-        local function compile()
-            return handler.translate(hash, "compile", compile_command)
+        local function build_compile_command()
+            local compile_args
+
+            if config.is_compiled then
+                if api.nvim_get_option_value("filetype", { buf = 0 }) == "asm" then
+                    compile_args = utils.merged_list(config.compile_opts, { "-o", obj_file, src_file })
+                else
+                    compile_args = utils.merged_list(config.compile_opts, { "-o", exe_file, src_file })
+                end
+            else
+                compile_args = utils.merged_list(config.compile_opts, { src_file })
+            end
+
+            return { compiler = config.compiler, arg = compile_args, timeout = 15000, kill_delay = 3000 }
         end
 
-        local function run()
-            if compile() then
-                handler.run(exe_file, cmd_args, data_file)
+        local function build_link_command()
+            return {
+                compiler = config.linker,
+                arg = utils.merged_list(config.linker_flags, { "-o", exe_file, obj_file }),
+                timeout = 15000,
+                kill_delay = 3000
+            }
+        end
+
+        if config.is_compiled then
+            Actions.compile = function()
+                local success = handler.translate(hash, "compile", build_compile_command())
+
+                if success and api.nvim_get_option_value("filetype", { buf = 0 }) == "asm" and config.linker then
+                    return handler.translate(hash, "link", build_link_command())
+                end
+
+                return success
+            end
+
+            if api.nvim_get_option_value("filetype", { buf = 0 }) ~= "asm" then
+                Actions.show_assembly = function()
+                    local assemble_args = utils.merged_list(config.compile_opts, { "-c", "-S", "-o", asm_file, src_file })
+                    local assemble_command = { compiler = config.compiler, arg = assemble_args }
+
+                    if handler.translate(hash, "assemble", assemble_command) then
+                        utils.open(asm_file, utils.read_file(asm_file), "asm")
+                    end
+                end
+            end
+        else
+            Actions.compile = function()
+                local check_command = build_compile_command()
+                if api.nvim_get_option_value("filetype", { buf = 0 }) == "python" then
+                    check_command.arg = utils.merged_list({ "--syntax-only" }, check_command.arg)
+                end
+                return handler.translate(hash, "compile", check_command)
             end
         end
 
-        local function show_assembly()
-            if handler.translate(hash, "assemble", assemble_command) then
-                utils.open(asm_file, utils.read_file(asm_file), "asm")
+        Actions.run = function()
+            if Actions.compile() then
+                if config.is_compiled then
+                    handler.run(exe_file, cmd_args, data_file)
+                else
+                    handler.run(run_cmd .. " " .. src_file, cmd_args, data_file)
+                end
             end
         end
 
-        local function add_data_file()
+        Actions.add_data_file = function()
             if data_path then
                 local files = utils.scan_dir(data_path)
 
@@ -61,7 +112,7 @@ local M = {
             end
         end
 
-        local function remove_data_file()
+        Actions.remove_data_file = function()
             if data_file then
                 vim.ui.select({ "Yes", "No" }, {
                     prompt = "Remove data file (" .. fn.fnamemodify(data_file, ':t') .. ")?",
@@ -76,10 +127,11 @@ local M = {
             vim.notify("No data file is currently set.", vim.log.levels.WARN)
         end
 
-        local function get_build_info()
+        Actions.get_build_info = function()
+            local filetype = api.nvim_get_option_value("filetype", { buf = 0 })
             local lines = {
                 "Filename          : " .. fn.fnamemodify(src_file, ':t'),
-                "Filetype          : " .. api.nvim_get_option_value("filetype", { buf = 0 }),
+                "Filetype          : " .. filetype,
                 "Compiler          : " .. config.compiler,
                 "Compile Flags     : " .. table.concat(config.compile_opts, " "),
                 "Output Directory  : " .. config.output_directory,
@@ -88,6 +140,14 @@ local M = {
                 "Command Arguments : " .. (cmd_args or "None"),
                 "Date Modified     : " .. utils.get_date_modified(src_file),
             }
+
+            -- Add language-specific info
+            if filetype == "asm" and config.linker then
+                table.insert(lines, 3, "Linker            : " .. config.linker)
+                table.insert(lines, 4, "Linker Flags      : " .. table.concat(config.linker_flags, " "))
+            elseif not config.is_compiled then
+                table.insert(lines, 3, "Run Command       : " .. config.run_command)
+            end
 
             local ns_id = api.nvim_create_namespace("build_info_highlight")
             local buf_id = utils.open("Build Info", lines, "text")
@@ -104,7 +164,7 @@ local M = {
             end
         end
 
-        local function set_cmd_args()
+        Actions.set_cmd_args = function()
             vim.ui.input({ prompt = "Enter command-line arguments: ", default = cmd_args or "" },
                 function(args)
                     if args ~= "" then
@@ -115,15 +175,7 @@ local M = {
                 end)
         end
 
-        return {
-            compile = compile,
-            run = run,
-            show_assembly = show_assembly,
-            add_data_file = add_data_file,
-            remove_data_file = remove_data_file,
-            get_build_info = get_build_info,
-            set_cmd_args = set_cmd_args
-        }
+        return Actions
     end
 }
 

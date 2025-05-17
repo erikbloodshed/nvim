@@ -24,6 +24,8 @@ return {
                 compile_opts     = nil,
                 data_dir_name    = "dat",
                 output_directory = "/tmp/",
+                is_compiled      = true,
+                run_command      = nil,
             },
 
             cpp = {
@@ -32,12 +34,37 @@ return {
                 compile_opts     = nil,
                 data_dir_name    = "dat",
                 output_directory = "/tmp/",
-            }
+                is_compiled      = true,
+                run_command      = nil,
+            },
+
+            asm = {
+                compiler         = "nasm",
+                fallback_flags   = { "-f", "elf64" },
+                compile_opts     = nil,
+                data_dir_name    = "dat",
+                output_directory = "/tmp/",
+                is_compiled      = true,
+                linker           = "ld",
+                linker_flags     = { "-m", "elf_x86_64" },
+                run_command      = nil,
+            },
+
+            python = {
+                compiler         = "python3",
+                fallback_flags   = { "-u" },
+                compile_opts     = nil,
+                data_dir_name    = "dat",
+                output_directory = "/tmp/",
+                is_compiled      = false,
+                run_command      = "python3",
+            },
         }
 
         config = vim.tbl_deep_extend('force', config, options or {})
 
         local ft = vim.api.nvim_get_option_value("filetype", { buf = 0 })
+
         local compile_opts = config[ft].compile_opts
         local fallback = config[ft].fallback_flags
 

@@ -2,23 +2,19 @@ local uv = vim.uv
 
 return {
     scan_dir = function(dir)
-        -- Return empty on nil input
         if not dir or dir == "" then
             vim.notify("Invalid directory path", vim.log.levels.WARN)
             return {}
         end
 
-        -- Fast path for directory existence check
         local stat = uv.fs_stat(dir)
         if not stat or stat.type ~= "directory" then
             vim.notify("Directory not found or is not a directory: " .. dir, vim.log.levels.WARN)
             return {}
         end
 
-        -- Pre-allocate the result table with estimated capacity
         local result = {}
 
-        -- Create the directory iterator
         local iter, err = vim.fs.dir(dir, {})
         if not iter then
             local msg = "Failed to scan directory: " .. dir
@@ -29,24 +25,17 @@ return {
             return {}
         end
 
-        -- Process the directory entries - optimize for the fast path
         local result_count = 0
         for path, entry_type in iter do
-            -- We only care about files, not directories or symlinks
             if entry_type == "file" then
-                -- Join paths more efficiently
                 local full_path = vim.fs.joinpath(dir, path)
                 result_count = result_count + 1
                 result[result_count] = full_path
             end
         end
 
-        -- Only sort if we have results
         if result_count > 0 then
-            -- Optimize sorting for large directories
             if result_count > 1000 then
-                -- For very large directories, use a more efficient sort algorithm
-                -- Create a lookup table for lowercase strings to avoid repeated conversions
                 local lower_cache = {}
                 local function get_lower(str)
                     local lower = lower_cache[str]
@@ -61,7 +50,6 @@ return {
                     return get_lower(a) < get_lower(b)
                 end)
             else
-                -- For smaller directories, use the standard case-insensitive sort
                 table.sort(result, function(a, b)
                     return string.lower(a) < string.lower(b)
                 end)
@@ -82,10 +70,8 @@ return {
         local height = math.min(#lines, math.floor(vim.o.lines * 0.8))
         local buf = vim.api.nvim_create_buf(false, true)
 
-        -- Fill buffer content
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-        -- Open floating window
         vim.api.nvim_open_win(buf, true, {
             relative = "editor",
             width = width,

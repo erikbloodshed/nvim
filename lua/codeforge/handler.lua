@@ -10,9 +10,9 @@ end
 
 local M = {
     translate = function(value, key, command)
-        local diagnostics = vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } })
+        local diagnostic_count = #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } })
 
-        if #diagnostics == 0 then
+        if diagnostic_count == 0 then
             if api.nvim_get_option_value("modified", { buf = 0 }) then cmd("silent! write") end
             local buffer_hash = get_buffer_hash()
 
@@ -21,7 +21,8 @@ local M = {
 
                 if result.code == 0 then
                     value[key] = buffer_hash
-                    vim.notify("Code compilation successful with exit code " .. result.code .. ".",
+                    local action_name = key:sub(1, 1):upper() .. key:sub(2)
+                    vim.notify(action_name .. " successful with exit code " .. result.code .. ".",
                         vim.log.levels.INFO)
                     return true
                 else
@@ -32,7 +33,7 @@ local M = {
                 end
             end
 
-            vim.notify("Source code is already compiled.", vim.log.levels.HINT)
+            vim.notify("Source code is already processed for " .. key .. ".", vim.log.levels.HINT)
             return true
         end
 
@@ -41,16 +42,11 @@ local M = {
         return false
     end,
 
-    run = function(exe, args, datfile)
-        local command = exe
+    run = function(cmd_str, args, datfile)
+        local command = cmd_str
 
-        if args then
-            command = command .. " " .. args
-        end
-
-        if datfile then
-            command = command .. " < " .. datfile
-        end
+        if args then command = command .. " " .. args end
+        if datfile then command = command .. " < " .. datfile end
 
         vim.cmd.terminal()
 
