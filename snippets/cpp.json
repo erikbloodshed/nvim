@@ -1,0 +1,13 @@
+{
+    "main() template": {
+        "prefix": "main",
+        "body": [
+            "int main()",
+            "{",
+            "    $0",
+            "    return 0;",
+            "}"
+        ],
+        "description": "Standard main() snippet"
+    }
+}
