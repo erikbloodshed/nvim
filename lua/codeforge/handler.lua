@@ -1,4 +1,3 @@
-local cmd = vim.cmd
 local fn = vim.fn
 local api = vim.api
 
@@ -10,36 +9,29 @@ end
 
 local M = {
     translate = function(value, key, command)
-        local diagnostic_count = #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } })
+        vim.cmd("silent! update")
 
-        if diagnostic_count == 0 then
-            if api.nvim_get_option_value("modified", { buf = 0 }) then cmd("silent! write") end
-            local buffer_hash = get_buffer_hash()
+        local buffer_hash = get_buffer_hash()
 
-            if value[key] ~= buffer_hash then
-                local result = require("codeforge.process").execute(command)
+        if value[key] ~= buffer_hash then
+            local result = require("codeforge.process").execute(command)
 
-                if result.code == 0 then
-                    value[key] = buffer_hash
-                    local action_name = key:sub(1, 1):upper() .. key:sub(2)
-                    vim.notify(action_name .. " successful with exit code " .. result.code .. ".",
-                        vim.log.levels.INFO)
-                    return true
-                else
-                    if result.stderr ~= nil then
-                        vim.notify(result.stderr, vim.log.levels.ERROR)
-                    end
-                    return false
+            if result.code == 0 then
+                value[key] = buffer_hash
+                local action_name = key:sub(1, 1):upper() .. key:sub(2)
+                vim.notify(action_name .. " successful with exit code " .. result.code .. ".",
+                    vim.log.levels.INFO)
+                return true
+            else
+                if result.stderr ~= nil then
+                    vim.notify(result.stderr, vim.log.levels.ERROR)
                 end
+                return false
             end
-
-            vim.notify("Source code is already processed for " .. key .. ".", vim.log.levels.HINT)
-            return true
         end
 
-        require("diagnostics").open_quickfixlist()
-
-        return false
+        vim.notify("Source code is already processed for " .. key .. ".", vim.log.levels.HINT)
+        return true
     end,
 
     run = function(cmd_str, args, datfile)

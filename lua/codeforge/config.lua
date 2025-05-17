@@ -52,10 +52,10 @@ return {
 
             python = {
                 compiler         = "python3",
-                fallback_flags   = { "-u" },
+                fallback_flags   = {},
                 compile_opts     = nil,
                 data_dir_name    = "dat",
-                output_directory = "/tmp/",
+                output_directory = "",
                 is_compiled      = false,
                 run_command      = "python3",
             },
