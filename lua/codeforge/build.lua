@@ -5,6 +5,15 @@ local M = {
         local api = vim.api
         local fn = vim.fn
 
+        local has_luajit = type(jit) == 'table'
+
+        local function prealloc(array_size, hash_size)
+            if has_luajit and table.new then
+                return table.new(array_size or 0, hash_size or 0)
+            end
+            return {}
+        end
+
         local filetype = api.nvim_get_option_value("filetype", { buf = 0 })
         local src_file = api.nvim_buf_get_name(0)
         local src_basename = fn.expand("%:t:r")
@@ -22,35 +31,85 @@ local M = {
         local data_file = nil
         local cmd_args = nil
 
-        local hash_tbl = {
-            compile = nil,
-            assemble = nil,
-            link = nil
-        }
+        local hash_tbl = prealloc(0, 3)
+        hash_tbl.compile = nil
+        hash_tbl.assemble = nil
+        hash_tbl.link = nil
 
-        local cmd_compile = function()
-            local compile_args = utils.merged_list(compile_opts,
-                { "-o", filetype == "asm" and obj_file or exe_file, src_file })
-            return {
-                compiler = compiler,
-                arg = compile_args,
-                timeout = 15000,
-                kill_delay = 3000
-            }
+        local command_cache = prealloc(0, 6)
+        command_cache.compile_cmd = nil
+        command_cache.compile_signature = nil
+        command_cache.link_cmd = nil
+        command_cache.link_signature = nil
+        command_cache.assemble_cmd = nil
+        command_cache.assemble_signature = nil
+
+        local cmd = prealloc(0, 4)
+        cmd.compiler = nil
+        cmd.arg = nil
+        cmd.timeout = 15000
+        cmd.kill_delay = 3000
+
+        local function create_compile_signature()
+            return table.concat({
+                src_file,
+                filetype,
+                obj_file,
+                exe_file,
+                compiler,
+                table.concat(compile_opts or {}, " ")
+            }, "|")
         end
 
-        local cmd_link = function()
-            local link_args = utils.merged_list(linker_flags, { "-o", exe_file, obj_file })
-            return {
-                compiler = linker,
-                arg = link_args,
-                timeout = 15000,
-                kill_delay = 3000
-            }
+        local function create_link_signature()
+            return table.concat({
+                obj_file,
+                exe_file,
+                linker,
+                table.concat(linker_flags or {}, " ")
+            }, "|")
         end
 
-        local Actions = {}
+        local function cmd_compile()
+            local current_signature = create_compile_signature()
 
+            if command_cache.compile_signature == current_signature and command_cache.compile_cmd then
+                return command_cache.compile_cmd
+            end
+
+            cmd.compiler = compiler
+            cmd.arg = utils.merged_list(compile_opts, { "-o", filetype == "asm" and obj_file or exe_file, src_file })
+            command_cache.compile_cmd = cmd
+            command_cache.compile_signature = current_signature
+
+            return cmd
+        end
+
+        local function cmd_link()
+            local current_signature = create_link_signature()
+
+            if command_cache.link_signature == current_signature and command_cache.link_cmd then
+                return command_cache.link_cmd
+            end
+
+            cmd.compiler = linker
+            cmd.arg = utils.merged_list(linker_flags, { "-o", exe_file, obj_file })
+            command_cache.link_cmd = cmd
+            command_cache.link_signature = current_signature
+
+            return cmd
+        end
+
+        local function clear_command_caches()
+            command_cache.compile_cmd = nil
+            command_cache.compile_signature = nil
+            command_cache.link_cmd = nil
+            command_cache.link_signature = nil
+            command_cache.assemble_cmd = nil
+            command_cache.assemble_signature = nil
+        end
+
+        local Actions = prealloc(0, 7)
         Actions.compile = function()
             local diagnostic_count = #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } })
 
@@ -72,6 +131,33 @@ local M = {
             end
         end
 
+        local function create_assemble_signature()
+            return table.concat({
+                src_file,
+                asm_file,
+                compiler,
+                table.concat(compile_opts or {}, " ")
+            }, "|")
+        end
+
+        local function cmd_assemble()
+            local current_signature = create_assemble_signature()
+
+            if command_cache.assemble_signature == current_signature and command_cache.assemble_cmd then
+                return command_cache.assemble_cmd
+            end
+
+            local assemble_args = utils.merged_list(compile_opts, { "-c", "-S", "-o", asm_file, src_file })
+
+            cmd.compiler = compiler
+            cmd.arg = assemble_args
+
+            command_cache.assemble_cmd = cmd
+            command_cache.assemble_signature = current_signature
+
+            return cmd
+        end
+
         Actions.run = function()
             if Actions.compile() then
                 if is_compiled then
@@ -84,13 +170,21 @@ local M = {
 
         Actions.show_assembly = function()
             if filetype ~= "asm" and is_compiled then
-                local assemble_args = utils.merged_list(compile_opts, { "-c", "-S", "-o", asm_file, src_file })
-                local assemble_command = { compiler = compiler, arg = assemble_args }
-
-                if handler.translate(hash_tbl, "assemble", assemble_command) then
+                if handler.translate(hash_tbl, "assemble", cmd_assemble()) then
                     utils.open(asm_file, utils.read_file(asm_file), "asm")
                 end
             end
+        end
+
+        Actions.set_cmd_args = function()
+            vim.ui.input({ prompt = "Enter command-line arguments: ", default = cmd_args or "" },
+                function(args)
+                    if args ~= "" then
+                        cmd_args = args
+                    else
+                        cmd_args = nil
+                    end
+                end)
         end
 
         Actions.add_data_file = function()
@@ -169,16 +263,22 @@ local M = {
             end
         end
 
-        Actions.set_cmd_args = function()
-            vim.ui.input({ prompt = "Enter command-line arguments: ", default = cmd_args or "" },
-                function(args)
-                    if args ~= "" then
-                        cmd_args = args
-                    else
-                        cmd_args = nil
+        local setup_cache_listeners = function()
+            local group = api.nvim_create_augroup("CodeforgeCommandCacheInvalidation", { clear = true })
+
+            api.nvim_create_autocmd("BufWritePost", {
+                group = group,
+                pattern = "*",
+                callback = function()
+                    local current_buf_name = api.nvim_buf_get_name(0)
+                    if current_buf_name == src_file then
+                        clear_command_caches()
                     end
-                end)
+                end,
+            })
         end
+
+        setup_cache_listeners()
 
         return Actions
     end

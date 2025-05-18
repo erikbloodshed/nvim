@@ -1,6 +1,6 @@
-vim.api.nvim_create_augroup("codeforge", { clear = true })
+local group_id = vim.api.nvim_create_augroup("CodeForge", { clear = true })
 vim.api.nvim_create_autocmd("Filetype", {
-    group = "codeforge",
+    group = group_id,
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
         local keyset = vim.keymap.set
