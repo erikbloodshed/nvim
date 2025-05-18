@@ -54,27 +54,21 @@ autocmd({ "TermOpen" }, {
 
 autocmd("LspAttach", {
     callback = function(args)
-        local diag = vim.diagnostic
+        local x = vim.diagnostic.severity
 
-        -- Configure Neovim's built-in diagnostics
-        diag.config({
-            virtual_text = false,           -- Disable virtual text diagnostics
-            severity_sort = true,           -- Sort diagnostics by severity
-            float = { border = "rounded" }, -- Set rounded border for diagnostic float window
-            signs = {                       -- Define custom text signs for different severity levels
-                text = {
-                    [diag.severity.ERROR] = "",
-                    [diag.severity.WARN]  = "󱈸",
-                    [diag.severity.HINT]  = "",
-                    [diag.severity.INFO]  = "",
-                },
+        vim.diagnostic.config({
+            virtual_text = false,
+            severity_sort = true,
+            float = { border = "rounded" },
+            signs = {
+                text = { [x.ERROR] = "", [x.WARN]  = "󱈸", [x.HINT]  = "", [x.INFO]  = "", },
             },
         })
 
         local diagnostics = require("diagnostics")
 
         local opts = { buffer = args.buf }
-        keyset("n", "<leader>ed", diag.open_float, opts)
+        keyset("n", "<leader>ed", vim.diagnostic.open_float, opts)
         keyset("n", "<leader>gi", vim.lsp.buf.implementation, opts)
         keyset("n", "<leader>gd", vim.lsp.buf.definition, opts)
         keyset("n", "<leader>rn", vim.lsp.buf.rename, opts)

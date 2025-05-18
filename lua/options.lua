@@ -25,11 +25,12 @@ else
     set.clipboard = "unnamedplus"
 end
 
-set.updatetime = 200
+set.updatetime = 250
 set.timeoutlen = 300
 set.ttimeoutlen = 10
 set.hidden = true
 set.history = 100
+
 set.number = true
 set.showtabline = 0
 set.splitright = true
@@ -38,7 +39,6 @@ set.synmaxcol = 128
 set.showmode = false
 setw.signcolumn = "yes"
 setw.cursorline = true
-setw.cursorlineopt = "both"
 
 set.autowrite = false
 set.expandtab = true
@@ -48,7 +48,9 @@ set.smarttab = false
 set.softtabstop = 4
 set.tabstop = 4
 set.wrap = false
+set.laststatus = 3
+set.showmode = false
 
 opt.viewoptions:append({ options = true })
-opt.shortmess:append({ c = true, C = true })
+opt.shortmess:append("cC")
 opt.formatoptions:remove({ "c", "r", "o" })

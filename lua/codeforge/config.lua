@@ -59,6 +59,16 @@ return {
                 is_compiled      = false,
                 run_command      = "python3",
             },
+
+            lua = {
+                compiler         = "lua",
+                fallback_flags   = {},
+                compile_opts     = nil,
+                data_dir_name    = "dat",
+                output_directory = "",
+                is_compiled      = false,
+                run_command      = "lua",
+            },
         }
 
         config = vim.tbl_deep_extend('force', config, options or {})

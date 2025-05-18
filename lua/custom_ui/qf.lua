@@ -11,11 +11,15 @@
 
 local M = {}
 
+local txt = vim.diagnostic.config().signs.text
+local x = vim.diagnostic.severity
+
+---@diagnostic disable:need-check-nil
 local signs = {
-    error   = { text = "", hl = 'DiagnosticSignError' },
-    warning = { text = "󱈸", hl = 'DiagnosticSignWarn' },
-    info    = { text = "", hl = 'DiagnosticSignInfo' },
-    hint    = { text = "", hl = 'DiagnosticSignHint' },
+    error   = { text = txt[x.ERROR], hl = 'DiagnosticSignError' },
+    warning = { text = txt[x.WARN], hl = 'DiagnosticSignWarn' },
+    info    = { text = txt[x.INFO], hl = 'DiagnosticSignInfo' },
+    hint    = { text = txt[x.HINT], hl = 'DiagnosticSignHint' },
 }
 
 -- Create a unique namespace for our buffer highlights
