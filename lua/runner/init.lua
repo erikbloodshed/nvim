@@ -24,16 +24,10 @@ end
 
 M.setup = function(opts)
     local config = require("runner.config").init(opts)
-
     local state = require("runner.state").init(validate_config(config))
     local commands = require("runner.commands").create(state)
-
     local handler = require("runner.handler")
     local actions = require("runner.actions").create(state, commands, handler)
-
-    local cache = require("runner.cache")
-
-    cache.setup_listeners(state, commands)
 
     return actions
 end

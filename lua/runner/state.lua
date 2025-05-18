@@ -12,7 +12,7 @@ M.init = function(config)
         src_basename = fn.expand("%:t:r"),
         is_compiled = config.is_compiled,
         compiler = config.compiler,
-        compile_opts = utils.get_options_file(config.compile_opts) or config.fallback_flags,
+        response_file = utils.get_response_file(config.response_file) or config.fallback_flags,
         linker = config.linker,
         linker_flags = config.linker_flags or {},
         output_directory = config.output_directory or "",
@@ -25,7 +25,6 @@ M.init = function(config)
         utils = utils
     }
 
-    -- Initialize derived properties
     x.exe_file = x.output_directory .. x.src_basename
     x.asm_file = x.exe_file .. ".s"
     x.obj_file = x.exe_file .. ".o"
@@ -36,17 +35,12 @@ M.init = function(config)
         link = nil,
     }
 
-    -- Command cache
     x.command_cache = {
         compile_cmd = nil,
-        compile_signature = nil,
         link_cmd = nil,
-        link_signature = nil,
         assemble_cmd = nil,
-        assemble_signature = nil
     }
 
-    -- Base command template
     x.cmd_template = {
         compiler = nil,
         arg = nil,

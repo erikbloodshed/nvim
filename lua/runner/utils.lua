@@ -1,7 +1,7 @@
 local uv = vim.uv
 local M = {}
 
-M.get_options_file = function(filename)
+M.get_response_file = function(filename)
     if filename then
         local path = vim.fs.find(filename, {
             upward = true,

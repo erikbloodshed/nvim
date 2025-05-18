@@ -9,7 +9,7 @@ autocmd("Filetype", {
         local build = require("runner").setup({
             cpp = {
                 compiler = "g++-15",
-                compile_opts = ".compile_flags",
+                response_file = ".compile_flags",
             }
         })
 

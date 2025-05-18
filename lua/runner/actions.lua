@@ -118,7 +118,7 @@ M.create = function(state, commands, handler)
 
     -- Get build info action
     x.get_build_info = function()
-        local flags = table.concat(state.compile_opts, " ")
+        local flags = table.concat(state.response_file, " ")
         local lines = {
             "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
             "Filetype          : " .. state.filetype,

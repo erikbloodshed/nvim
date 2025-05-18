@@ -4,65 +4,28 @@ local M = {}
 M.create = function(state)
     local x = {}
 
-    -- Create compile command signature
-    x.create_compile_signature = function()
-        return table.concat({
-            state.src_file,
-            state.filetype,
-            state.obj_file,
-            state.exe_file,
-            state.compiler,
-            table.concat(state.compile_opts or {}, " ")
-        }, "|")
-    end
-
-    -- Create link command signature
-    x.create_link_signature = function()
-        return table.concat({
-            state.obj_file,
-            state.exe_file,
-            state.linker,
-            table.concat(state.linker_flags or {}, " ")
-        }, "|")
-    end
-
-    -- Create assemble command signature
-    x.create_assemble_signature = function()
-        return table.concat({
-            state.src_file,
-            state.asm_file,
-            state.compiler,
-            table.concat(state.compile_opts or {}, " ")
-        }, "|")
-    end
-
     -- Generate compile command
     x.cmd_compile = function()
-        local current_signature = x.create_compile_signature()
-
-        if state.command_cache.compile_signature == current_signature and state.command_cache.compile_cmd then
+        if state.command_cache.compile_cmd then
             return state.command_cache.compile_cmd
         end
 
         local cmd = vim.deepcopy(state.cmd_template)
         cmd.compiler = state.compiler
 
-        cmd.arg = vim.deepcopy(state.compile_opts)
+        cmd.arg = vim.deepcopy(state.response_file)
         cmd.arg[#cmd.arg + 1] = "-o"
         cmd.arg[#cmd.arg + 1] = state.filetype == "asm" and state.obj_file or state.exe_file
         cmd.arg[#cmd.arg + 1] = state.src_file
 
         state.command_cache.compile_cmd = cmd
-        state.command_cache.compile_signature = current_signature
 
         return cmd
     end
 
     -- Generate link command
     x.cmd_link = function()
-        local current_signature = x.create_link_signature()
-
-        if state.command_cache.link_signature == current_signature and state.command_cache.link_cmd then
+        if state.command_cache.link_cmd then
             return state.command_cache.link_cmd
         end
 
@@ -74,24 +37,19 @@ M.create = function(state)
         cmd.arg[#cmd.arg + 1] = state.exe_file
         cmd.arg[#cmd.arg + 1] = state.obj_file
 
-        state.command_cache.link_cmd = cmd
-        state.command_cache.link_signature = current_signature
-
         return cmd
     end
 
     -- Generate assemble command
     x.cmd_assemble = function()
-        local current_signature = x.create_assemble_signature()
-
-        if state.command_cache.assemble_signature == current_signature and state.command_cache.assemble_cmd then
+        if state.command_cache.assemble_cmd then
             return state.command_cache.assemble_cmd
         end
 
         local cmd = vim.deepcopy(state.cmd_template)
         cmd.compiler = state.compiler
 
-        cmd.arg = vim.deepcopy(state.compile_opts)
+        cmd.arg = vim.deepcopy(state.response_file)
         cmd.arg[#cmd.arg + 1] = "-c"
         cmd.arg[#cmd.arg + 1] = "-S"
         cmd.arg[#cmd.arg + 1] = "-o"
@@ -99,19 +57,8 @@ M.create = function(state)
         cmd.arg[#cmd.arg + 1] = state.src_file
 
         state.command_cache.assemble_cmd = cmd
-        state.command_cache.assemble_signature = current_signature
 
         return cmd
-    end
-
-    -- Clear command caches
-    x.clear_caches = function()
-        state.command_cache.compile_cmd = nil
-        state.command_cache.compile_signature = nil
-        state.command_cache.link_cmd = nil
-        state.command_cache.link_signature = nil
-        state.command_cache.assemble_cmd = nil
-        state.command_cache.assemble_signature = nil
     end
 
     return x
