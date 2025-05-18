@@ -1,6 +1,31 @@
 local keyset = vim.keymap.set
 local autocmd = vim.api.nvim_create_autocmd
 
+local group_id = vim.api.nvim_create_augroup("CodeForge", { clear = true })
+autocmd("Filetype", {
+    group = group_id,
+    pattern = { "c", "cpp", "asm", "python", "lua" },
+    callback = function(args)
+        local build = require("codeforge").setup({
+            cpp = {
+                compiler = "g++-15",
+                compile_opts = ".compile_flags",
+            }
+        })
+
+        local arg = { buffer = args.buf, noremap = true }
+
+        keyset("n", "<leader>rc", function() build.compile() end, arg)
+        keyset("n", "<leader>ra", function() build.show_assembly() end, arg)
+        keyset("n", "<leader>rr", function() build.run() end, arg)
+        keyset("n", "<leader>da", function() build.add_data_file() end, arg)
+        keyset("n", "<leader>dr", function() build.remove_data_file() end, arg)
+        keyset("n", "<leader>sa", function() build.set_cmd_args() end, arg)
+        keyset("n", "<leader>bi", function() build.get_build_info() end, arg)
+        keyset("n", "<leader>xx", function() require("diagnostics").open_quickfixlist() end, arg)
+    end,
+})
+
 autocmd("Filetype", {
     pattern = { "help", "qf" },
     callback = function(args)
@@ -65,7 +90,6 @@ autocmd("LspAttach", {
             },
         })
 
-        local diagnostics = require("diagnostics")
 
         local opts = { buffer = args.buf }
         keyset("n", "<leader>ed", vim.diagnostic.open_float, opts)
@@ -75,6 +99,5 @@ autocmd("LspAttach", {
         keyset("n", "<leader>fc", function()
             vim.lsp.buf.format({ async = true })
         end, opts)
-        keyset("n", "<leader>xx", function() diagnostics.open_quickfixlist() end, opts)
     end,
 })

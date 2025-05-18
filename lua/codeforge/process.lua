@@ -133,7 +133,7 @@ local GlobalResourceManager = { handles = {} }
 setmetatable(GlobalResourceManager, { __index = ResourceManager }) -- Inherit methods
 
 -- Initialize the stderr handling with pre-allocation for better memory efficiency
-local function init_stderr_handler()
+local init_stderr_handler = function()
     local stderr_length = 0
     local stderr_builder = {}
 
@@ -169,7 +169,7 @@ end
 -- Execute a command using libuv
 local M = {}
 
-function M.execute(cmd_table)
+M.execute = function(cmd_table)
     -- Extract and normalize configuration
     local timeout_duration = (cmd_table.timeout and tonumber(cmd_table.timeout)) or DEFAULT_CONFIG.TIMEOUT_MS
     local kill_delay = (cmd_table.kill_delay and tonumber(cmd_table.kill_delay)) or DEFAULT_CONFIG.KILL_DELAY_MS

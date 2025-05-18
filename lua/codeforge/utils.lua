@@ -1,14 +1,5 @@
 local uv = vim.uv
-local has_luajit = type(jit) == 'table'
-
 local Utils = {}
-
-Utils.prealloc = function(array_size, hash_size)
-    if has_luajit and table.new then
-        return table.new(array_size or 0, hash_size or 0)
-    end
-    return {}
-end
 
 Utils.get_options_file = function(filename)
     if filename then
