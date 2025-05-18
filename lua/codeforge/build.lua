@@ -58,7 +58,7 @@ local M = {
                 if is_compiled then
                     local success = handler.translate(hash_tbl, "compile", cmd_compile())
 
-                    if success and api.nvim_get_option_value("filetype", { buf = 0 }) == "asm" and linker then
+                    if success and filetype == "asm" and linker then
                         return handler.translate(hash_tbl, "link", cmd_link())
                     end
 
@@ -83,7 +83,7 @@ local M = {
         end
 
         Actions.show_assembly = function()
-            if api.nvim_get_option_value("filetype", { buf = 0 }) ~= "asm" and is_compiled then
+            if filetype ~= "asm" and is_compiled then
                 local assemble_args = utils.merged_list(compile_opts, { "-c", "-S", "-o", asm_file, src_file })
                 local assemble_command = { compiler = compiler, arg = assemble_args }
 
