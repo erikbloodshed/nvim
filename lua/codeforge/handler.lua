@@ -9,8 +9,6 @@ end
 
 local M = {
     translate = function(value, key, command)
-        vim.cmd("silent! update")
-
         local buffer_hash = get_buffer_hash()
 
         if value[key] ~= buffer_hash then

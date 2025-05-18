@@ -5,15 +5,6 @@ local M = {
         local api = vim.api
         local fn = vim.fn
 
-        local has_luajit = type(jit) == 'table'
-
-        local function prealloc(array_size, hash_size)
-            if has_luajit and table.new then
-                return table.new(array_size or 0, hash_size or 0)
-            end
-            return {}
-        end
-
         local filetype = api.nvim_get_option_value("filetype", { buf = 0 })
         local src_file = api.nvim_buf_get_name(0)
         local src_basename = fn.expand("%:t:r")
@@ -31,12 +22,12 @@ local M = {
         local data_file = nil
         local cmd_args = nil
 
-        local hash_tbl = prealloc(0, 3)
+        local hash_tbl = utils.prealloc(0, 3)
         hash_tbl.compile = nil
         hash_tbl.assemble = nil
         hash_tbl.link = nil
 
-        local command_cache = prealloc(0, 6)
+        local command_cache = utils.prealloc(0, 6)
         command_cache.compile_cmd = nil
         command_cache.compile_signature = nil
         command_cache.link_cmd = nil
@@ -44,7 +35,7 @@ local M = {
         command_cache.assemble_cmd = nil
         command_cache.assemble_signature = nil
 
-        local cmd = prealloc(0, 4)
+        local cmd = utils.prealloc(0, 4)
         cmd.compiler = nil
         cmd.arg = nil
         cmd.timeout = 15000
@@ -109,8 +100,11 @@ local M = {
             command_cache.assemble_signature = nil
         end
 
-        local Actions = prealloc(0, 7)
+        local Actions = utils.prealloc(0, 7)
+
         Actions.compile = function()
+            vim.cmd("silent! update")
+
             local diagnostic_count = #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } })
 
             if diagnostic_count == 0 then
