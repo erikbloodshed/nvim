@@ -7,7 +7,7 @@ M.setup_listeners = function(state, commands)
     cache_listeners_initialized = true
 
     local api = state.api
-    local group = api.nvim_create_augroup("CodeforgeCommandCacheInvalidation", { clear = true })
+    local group = api.nvim_create_augroup("CacheRunner", { clear = true })
 
     api.nvim_create_autocmd("BufWritePost", {
         group = group,

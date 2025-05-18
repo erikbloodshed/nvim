@@ -2,10 +2,10 @@
 local M = {}
 
 M.create = function(state)
-    local commands = {}
+    local x = {}
 
     -- Create compile command signature
-    commands.create_compile_signature = function()
+    x.create_compile_signature = function()
         return table.concat({
             state.src_file,
             state.filetype,
@@ -17,7 +17,7 @@ M.create = function(state)
     end
 
     -- Create link command signature
-    commands.create_link_signature = function()
+    x.create_link_signature = function()
         return table.concat({
             state.obj_file,
             state.exe_file,
@@ -27,7 +27,7 @@ M.create = function(state)
     end
 
     -- Create assemble command signature
-    commands.create_assemble_signature = function()
+    x.create_assemble_signature = function()
         return table.concat({
             state.src_file,
             state.asm_file,
@@ -37,8 +37,8 @@ M.create = function(state)
     end
 
     -- Generate compile command
-    commands.cmd_compile = function()
-        local current_signature = commands.create_compile_signature()
+    x.cmd_compile = function()
+        local current_signature = x.create_compile_signature()
 
         if state.command_cache.compile_signature == current_signature and state.command_cache.compile_cmd then
             return state.command_cache.compile_cmd
@@ -59,8 +59,8 @@ M.create = function(state)
     end
 
     -- Generate link command
-    commands.cmd_link = function()
-        local current_signature = commands.create_link_signature()
+    x.cmd_link = function()
+        local current_signature = x.create_link_signature()
 
         if state.command_cache.link_signature == current_signature and state.command_cache.link_cmd then
             return state.command_cache.link_cmd
@@ -81,8 +81,8 @@ M.create = function(state)
     end
 
     -- Generate assemble command
-    commands.cmd_assemble = function()
-        local current_signature = commands.create_assemble_signature()
+    x.cmd_assemble = function()
+        local current_signature = x.create_assemble_signature()
 
         if state.command_cache.assemble_signature == current_signature and state.command_cache.assemble_cmd then
             return state.command_cache.assemble_cmd
@@ -105,7 +105,7 @@ M.create = function(state)
     end
 
     -- Clear command caches
-    commands.clear_caches = function()
+    x.clear_caches = function()
         state.command_cache.compile_cmd = nil
         state.command_cache.compile_signature = nil
         state.command_cache.link_cmd = nil
@@ -114,7 +114,7 @@ M.create = function(state)
         state.command_cache.assemble_signature = nil
     end
 
-    return commands
+    return x
 end
 
 return M

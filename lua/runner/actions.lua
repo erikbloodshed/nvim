@@ -7,10 +7,10 @@ M.create = function(state, commands, handler)
     local api = state.api
     local fn = state.fn
     local utils = state.utils
-    local actions = {}
+    local x = {}
 
     -- Compile action
-    actions.compile = function()
+    x.compile = function()
         local diagnostic_count = #vim.diagnostic.count(0, {
             severity = { vim.diagnostic.severity.ERROR }
         })
@@ -43,8 +43,8 @@ M.create = function(state, commands, handler)
         return true
     end
 
-    actions.run = function()
-        if actions.compile() then
+    x.run = function()
+        if x.compile() then
             if state.is_compiled then
                 handler.run(state.exe_file, state.cmd_args, state.data_file)
             else
@@ -53,7 +53,7 @@ M.create = function(state, commands, handler)
         end
     end
 
-    actions.show_assembly = function()
+    x.show_assembly = function()
         if state.filetype ~= "asm" and state.is_compiled then
             if handler.translate(state.hash_tbl, "assemble", commands.cmd_assemble()) then
                 utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
@@ -61,7 +61,7 @@ M.create = function(state, commands, handler)
         end
     end
 
-    actions.set_cmd_args = function()
+    x.set_cmd_args = function()
         vim.ui.input({
             prompt = "Enter command-line arguments: ",
             default = state.cmd_args or ""
@@ -76,7 +76,7 @@ M.create = function(state, commands, handler)
         end)
     end
 
-    actions.add_data_file = function()
+    x.add_data_file = function()
         if state.data_path then
             local files = utils.scan_dir(state.data_path)
 
@@ -101,7 +101,7 @@ M.create = function(state, commands, handler)
         end
     end
 
-    actions.remove_data_file = function()
+    x.remove_data_file = function()
         if state.data_file then
             vim.ui.select({ "Yes", "No" }, {
                 prompt = "Remove data file (" .. fn.fnamemodify(state.data_file, ':t') .. ")?",
@@ -117,7 +117,7 @@ M.create = function(state, commands, handler)
     end
 
     -- Get build info action
-    actions.get_build_info = function()
+    x.get_build_info = function()
         local flags = table.concat(state.compile_opts, " ")
         local lines = {
             "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
@@ -159,7 +159,7 @@ M.create = function(state, commands, handler)
         end
     end
 
-    return actions
+    return x
 end
 
 return M

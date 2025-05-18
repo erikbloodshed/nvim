@@ -6,7 +6,7 @@ M.init = function(config)
     local fn = vim.fn
     local utils = require("runner.utils")
 
-    local state = {
+    local x = {
         filetype = api.nvim_get_option_value("filetype", { buf = 0 }),
         src_file = api.nvim_buf_get_name(0),
         src_basename = fn.expand("%:t:r"),
@@ -26,18 +26,18 @@ M.init = function(config)
     }
 
     -- Initialize derived properties
-    state.exe_file = state.output_directory .. state.src_basename
-    state.asm_file = state.exe_file .. ".s"
-    state.obj_file = state.exe_file .. ".o"
+    x.exe_file = x.output_directory .. x.src_basename
+    x.asm_file = x.exe_file .. ".s"
+    x.obj_file = x.exe_file .. ".o"
 
-    state.hash_tbl = {
+    x.hash_tbl = {
         compile = nil,
         assemble = nil,
         link = nil,
     }
 
     -- Command cache
-    state.command_cache = {
+    x.command_cache = {
         compile_cmd = nil,
         compile_signature = nil,
         link_cmd = nil,
@@ -47,14 +47,14 @@ M.init = function(config)
     }
 
     -- Base command template
-    state.cmd_template = {
+    x.cmd_template = {
         compiler = nil,
         arg = nil,
         timeout = 15000,
         kill_delay = 3000
     }
 
-    return state
+    return x
 end
 
 return M
