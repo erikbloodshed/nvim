@@ -63,7 +63,7 @@ autocmd({ "BufEnter" }, {
 })
 
 autocmd("Filetype", {
-    pattern = { "c", "cpp", "asm" },
+    pattern = { "c", "cpp" },
     callback = function()
         vim.opt_local.cinkeys:remove(":")
         vim.opt_local.cindent = true
