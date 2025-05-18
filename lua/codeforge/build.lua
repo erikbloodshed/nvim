@@ -12,7 +12,7 @@ local function create_build_state(config)
         src_basename = fn.expand("%:t:r"),
         is_compiled = config.is_compiled,
         compiler = config.compiler,
-        compile_opts = config.compile_opts or {},
+        compile_opts = utils.get_options_file(config.compile_opts) or config.fallback_flags,
         linker = config.linker,
         linker_flags = config.linker_flags or {},
         output_directory = config.output_directory or "",
@@ -20,7 +20,6 @@ local function create_build_state(config)
         data_path = utils.get_data_path(config.data_dir_name),
         data_file = nil,
         cmd_args = nil,
-        hash_tbl = utils.prealloc(0, 3),
         api = api,
         fn = fn,
         utils = utils
@@ -31,10 +30,11 @@ local function create_build_state(config)
     state.asm_file = state.exe_file .. ".s"
     state.obj_file = state.exe_file .. ".o"
 
-    -- Initialize hash table for the handler
-    state.hash_tbl.compile = nil
-    state.hash_tbl.assemble = nil
-    state.hash_tbl.link = nil
+    state.hash_tbl = {
+        compile = nil,
+        assemble = nil,
+        link = nil,
+    }
 
     -- Command cache
     state.command_cache = {
@@ -47,18 +47,18 @@ local function create_build_state(config)
     }
 
     -- Base command template
-    state.cmd_template = utils.prealloc(0, 4)
-    state.cmd_template.compiler = nil
-    state.cmd_template.arg = nil
-    state.cmd_template.timeout = 15000
-    state.cmd_template.kill_delay = 3000
+    state.cmd_template = {
+        compiler = nil,
+        arg = nil,
+        timeout = 15000,
+        kill_delay = 3000
+    }
 
     return state
 end
 
 -- Create functions for command generation
 local function create_command_generators(state)
-    local utils = state.utils
     local commands = {}
 
     -- Create compile command signature
@@ -103,11 +103,11 @@ local function create_command_generators(state)
 
         local cmd = vim.deepcopy(state.cmd_template)
         cmd.compiler = state.compiler
-        cmd.arg = utils.merged_list(state.compile_opts, {
-            "-o",
-            state.filetype == "asm" and state.obj_file or state.exe_file,
-            state.src_file
-        })
+
+        cmd.arg = vim.deepcopy(state.compile_opts)
+        cmd.arg[#cmd.arg + 1] = "-o"
+        cmd.arg[#cmd.arg + 1] = state.filetype == "asm" and state.obj_file or state.exe_file
+        cmd.arg[#cmd.arg + 1] = state.src_file
 
         state.command_cache.compile_cmd = cmd
         state.command_cache.compile_signature = current_signature
@@ -125,7 +125,11 @@ local function create_command_generators(state)
 
         local cmd = vim.deepcopy(state.cmd_template)
         cmd.compiler = state.linker
-        cmd.arg = utils.merged_list(state.linker_flags, { "-o", state.exe_file, state.obj_file })
+
+        cmd.arg = vim.deepcopy(state.linker_flags)
+        cmd.arg[#cmd.arg + 1] = "-o"
+        cmd.arg[#cmd.arg + 1] = state.exe_file
+        cmd.arg[#cmd.arg + 1] = state.obj_file
 
         state.command_cache.link_cmd = cmd
         state.command_cache.link_signature = current_signature
@@ -143,13 +147,13 @@ local function create_command_generators(state)
 
         local cmd = vim.deepcopy(state.cmd_template)
         cmd.compiler = state.compiler
-        cmd.arg = utils.merged_list(state.compile_opts, {
-            "-c",
-            "-S",
-            "-o",
-            state.asm_file,
-            state.src_file
-        })
+
+        cmd.arg = vim.deepcopy(state.compile_opts)
+        cmd.arg[#cmd.arg + 1] = "-c"
+        cmd.arg[#cmd.arg + 1] = "-S"
+        cmd.arg[#cmd.arg + 1] = "-o"
+        cmd.arg[#cmd.arg + 1] = state.asm_file
+        cmd.arg[#cmd.arg + 1] = state.src_file
 
         state.command_cache.assemble_cmd = cmd
         state.command_cache.assemble_signature = current_signature
@@ -293,7 +297,7 @@ local function create_actions(state, commands, handler)
     actions.get_build_info = function()
         local flags = table.concat(state.compile_opts, " ")
         local lines = {
-            "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
+            "Filename          : ", fn.fnamemodify(state.src_file, ':t'),
             "Filetype          : " .. state.filetype,
             "Compiler          : " .. state.compiler,
             "Compile Flags     : " .. (flags == "" and "None" or flags),
@@ -329,8 +333,12 @@ local function create_actions(state, commands, handler)
     return actions
 end
 
--- Setup event listeners for cache invalidation
+local cache_listeners_initialized = false
+
 local function setup_cache_listeners(state, commands)
+    if cache_listeners_initialized then return end
+    cache_listeners_initialized = true
+
     local api = state.api
     local group = api.nvim_create_augroup("CodeforgeCommandCacheInvalidation", { clear = true })
 
@@ -344,9 +352,6 @@ local function setup_cache_listeners(state, commands)
             end
         end,
     })
-
-    -- Add additional event listeners for other state changes
-    -- For example, detecting changes to compiler settings, etc.
 end
 
 -- Validate the configuration
@@ -371,7 +376,6 @@ local function validate_config(config)
     return config
 end
 
--- Main initialization function
 M.init = function(config)
     config = validate_config(config)
 

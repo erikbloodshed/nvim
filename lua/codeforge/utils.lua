@@ -10,6 +10,22 @@ Utils.prealloc = function(array_size, hash_size)
     return {}
 end
 
+Utils.get_options_file = function(filename)
+    if filename then
+        local path = vim.fs.find(filename, {
+            upward = true,
+            type = "file",
+            path = vim.fn.expand("%:p:h"),
+            stop = vim.fn.expand("~"),
+        })[1]
+
+        if path then
+            return { "@" .. path }
+        end
+    end
+
+    return nil
+end
 
 Utils.scan_dir = function(dir)
     if not dir or dir == "" then
