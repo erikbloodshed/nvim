@@ -374,21 +374,14 @@ end
 -- Main initialization function
 M.init = function(config)
     config = validate_config(config)
+
     local handler = require("codeforge.handler")
-
-    -- Create the state
     local state = create_build_state(config)
-
-    -- Create command generators
     local commands = create_command_generators(state)
-
-    -- Create action functions
     local actions = create_actions(state, commands, handler)
 
-    -- Setup event listeners
     setup_cache_listeners(state, commands)
 
-    -- Return the actions object
     return actions
 end
 
