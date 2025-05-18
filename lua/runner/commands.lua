@@ -1,7 +1,7 @@
 -- Create functions for command generation
-Command = {}
+local M = {}
 
-Command.create = function(state)
+M.create = function(state)
     local commands = {}
 
     -- Create compile command signature
@@ -117,4 +117,4 @@ Command.create = function(state)
     return commands
 end
 
-return Command
+return M

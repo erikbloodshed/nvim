@@ -6,7 +6,7 @@ autocmd("Filetype", {
     group = group_id,
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
-        local build = require("codeforge").setup({
+        local build = require("runner").setup({
             cpp = {
                 compiler = "g++-15",
                 compile_opts = ".compile_flags",

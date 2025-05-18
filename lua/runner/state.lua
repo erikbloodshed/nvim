@@ -1,10 +1,10 @@
 -- Create a state object to hold all build-related data
-State = {}
+local M = {}
 
-State.create = function(config)
+M.init = function(config)
     local api = vim.api
     local fn = vim.fn
-    local utils = require("codeforge.utils")
+    local utils = require("runner.utils")
 
     local state = {
         filetype = api.nvim_get_option_value("filetype", { buf = 0 }),
@@ -57,4 +57,4 @@ State.create = function(config)
     return state
 end
 
-return State
+return M

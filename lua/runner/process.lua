@@ -167,9 +167,9 @@ local init_stderr_handler = function()
 end
 
 -- Execute a command using libuv
-local M = {}
+local P = {}
 
-M.execute = function(cmd_table)
+P.execute = function(cmd_table)
     -- Extract and normalize configuration
     local timeout_duration = (cmd_table.timeout and tonumber(cmd_table.timeout)) or DEFAULT_CONFIG.TIMEOUT_MS
     local kill_delay = (cmd_table.kill_delay and tonumber(cmd_table.kill_delay)) or DEFAULT_CONFIG.KILL_DELAY_MS
@@ -432,4 +432,4 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
     desc = "Ensure libuv handles from process module are cleaned up"
 })
 
-return M
+return P

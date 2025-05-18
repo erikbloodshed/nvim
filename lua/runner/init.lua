@@ -23,12 +23,15 @@ local function validate_config(config)
 end
 
 M.setup = function(opts)
-    local config = require("codeforge.config").init(opts)
-    local handler = require("codeforge.handler")
-    local state = require("codeforge.state").create(validate_config(config))
-    local commands = require("codeforge.commands").create(state)
-    local cache = require("codeforge.cache")
-    local actions = require("codeforge.actions").create(state, commands, handler)
+    local config = require("runner.config").init(opts)
+
+    local state = require("runner.state").init(validate_config(config))
+    local commands = require("runner.commands").create(state)
+
+    local handler = require("runner.handler")
+    local actions = require("runner.actions").create(state, commands, handler)
+
+    local cache = require("runner.cache")
 
     cache.setup_listeners(state, commands)
 

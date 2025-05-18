@@ -1,7 +1,7 @@
 local uv = vim.uv
-local Utils = {}
+local M = {}
 
-Utils.get_options_file = function(filename)
+M.get_options_file = function(filename)
     if filename then
         local path = vim.fs.find(filename, {
             upward = true,
@@ -18,7 +18,7 @@ Utils.get_options_file = function(filename)
     return nil
 end
 
-Utils.scan_dir = function(dir)
+M.scan_dir = function(dir)
     if not dir or dir == "" then
         vim.notify("Invalid directory path", vim.log.levels.WARN)
         return {}
@@ -76,7 +76,7 @@ Utils.scan_dir = function(dir)
     return result
 end
 
-Utils.open = function(title, lines, ft)
+M.open = function(title, lines, ft)
     local max_line_length = 0
 
     for _, line in ipairs(lines) do
@@ -112,7 +112,7 @@ Utils.open = function(title, lines, ft)
     return buf
 end
 
-Utils.get_data_path = function(filename)
+M.get_data_path = function(filename)
     if filename then
         local path = vim.fs.find(filename, {
             upward = true,
@@ -126,7 +126,7 @@ Utils.get_data_path = function(filename)
     return nil
 end
 
-Utils.get_date_modified = function(filepath)
+M.get_date_modified = function(filepath)
     local file_stats = uv.fs_stat(filepath)
     if file_stats then
         return os.date("%Y-%B-%d %H:%M:%S", file_stats.mtime.sec)
@@ -135,7 +135,7 @@ Utils.get_date_modified = function(filepath)
     end
 end
 
-Utils.merged_list = function(list1, list2)
+M.merged_list = function(list1, list2)
     local list = {}
 
     local len1 = #list1
@@ -147,7 +147,7 @@ Utils.merged_list = function(list1, list2)
     return list
 end
 
-Utils.read_file = function(filepath)
+M.read_file = function(filepath)
     local f = io.open(filepath, "r")
 
     if not f then return nil, "Could not open file: " .. filepath end
@@ -158,4 +158,4 @@ Utils.read_file = function(filepath)
     return content
 end
 
-return Utils
+return M

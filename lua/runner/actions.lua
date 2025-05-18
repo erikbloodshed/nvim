@@ -1,7 +1,9 @@
 -- Create actiof functions that will be exposed to the user
-Actions = {}
+local M = {}
 
-Actions.create = function(state, commands, handler)
+local log_levels = vim.log.levels
+
+M.create = function(state, commands, handler)
     local api = state.api
     local fn = state.fn
     local utils = state.utils
@@ -15,7 +17,7 @@ Actions.create = function(state, commands, handler)
 
         if diagnostic_count > 0 then
             require("diagnostics").open_quickfixlist()
-            vim.notify("Compilation aborted due to errors", vim.log.levels.ERROR)
+            vim.notify("Compilation aborted due to errors", log_levels.ERROR)
             return false
         end
 
@@ -41,7 +43,6 @@ Actions.create = function(state, commands, handler)
         return true
     end
 
-    -- Run action
     actions.run = function()
         if actions.compile() then
             if state.is_compiled then
@@ -52,7 +53,6 @@ Actions.create = function(state, commands, handler)
         end
     end
 
-    -- Show assembly action
     actions.show_assembly = function()
         if state.filetype ~= "asm" and state.is_compiled then
             if handler.translate(state.hash_tbl, "assemble", commands.cmd_assemble()) then
@@ -61,7 +61,6 @@ Actions.create = function(state, commands, handler)
         end
     end
 
-    -- Set command line arguments action
     actions.set_cmd_args = function()
         vim.ui.input({
             prompt = "Enter command-line arguments: ",
@@ -69,21 +68,20 @@ Actions.create = function(state, commands, handler)
         }, function(args)
             if args ~= "" then
                 state.cmd_args = args
-                vim.notify("Command arguments set", vim.log.levels.INFO)
+                vim.notify("Command arguments set", log_levels.INFO)
             else
                 state.cmd_args = nil
-                vim.notify("Command arguments cleared", vim.log.levels.INFO)
+                vim.notify("Command arguments cleared", log_levels.INFO)
             end
         end)
     end
 
-    -- Add data file action
     actions.add_data_file = function()
         if state.data_path then
             local files = utils.scan_dir(state.data_path)
 
             if vim.tbl_isempty(files) then
-                vim.notify("No files found in data directory: " .. state.data_path, vim.log.levels.WARN)
+                vim.notify("No files found in data directory: " .. state.data_path, log_levels.WARN)
                 return
             end
 
@@ -95,15 +93,14 @@ Actions.create = function(state, commands, handler)
             }, function(choice)
                 if choice then
                     state.data_file = choice
-                    vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), vim.log.levels.INFO)
+                    vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
                 end
             end)
         else
-            vim.notify("Data directory not found", vim.log.levels.ERROR)
+            vim.notify("Data directory not found", log_levels.ERROR)
         end
     end
 
-    -- Remove data file action
     actions.remove_data_file = function()
         if state.data_file then
             vim.ui.select({ "Yes", "No" }, {
@@ -111,11 +108,11 @@ Actions.create = function(state, commands, handler)
             }, function(choice)
                 if choice == "Yes" then
                     state.data_file = nil
-                    vim.notify("Data file removed", vim.log.levels.INFO)
+                    vim.notify("Data file removed", log_levels.INFO)
                 end
             end)
         else
-            vim.notify("No data file is currently set", vim.log.levels.WARN)
+            vim.notify("No data file is currently set", log_levels.WARN)
         end
     end
 
@@ -165,4 +162,4 @@ Actions.create = function(state, commands, handler)
     return actions
 end
 
-return Actions
+return M

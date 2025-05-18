@@ -1,8 +1,8 @@
-local Cache = {}
+local M = {}
 
 local cache_listeners_initialized = false
 
-Cache.setup_listeners = function(state, commands)
+M.setup_listeners = function(state, commands)
     if cache_listeners_initialized then return end
     cache_listeners_initialized = true
 
@@ -21,4 +21,4 @@ Cache.setup_listeners = function(state, commands)
     })
 end
 
-return Cache
+return M
