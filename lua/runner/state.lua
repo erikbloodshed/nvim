@@ -1,4 +1,4 @@
--- Create a state object to hold all build-related data
+-- In state.lua
 local M = {}
 
 M.init = function(config)
@@ -10,7 +10,7 @@ M.init = function(config)
         filetype = api.nvim_get_option_value("filetype", { buf = 0 }),
         src_file = api.nvim_buf_get_name(0),
         src_basename = fn.expand("%:t:r"),
-        is_compiled = config.is_compiled,
+        language_types = config.type or {}, -- Store language types
         compiler = config.compiler,
         response_file = utils.get_response_file(config.response_file) or config.fallback_flags,
         linker = config.linker,

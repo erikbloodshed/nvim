@@ -1,3 +1,4 @@
+-- In handler.lua
 local fn = vim.fn
 local api = vim.api
 local execute = require("runner.process").execute
@@ -11,6 +12,11 @@ end
 local M = {}
 
 M.translate = function(value, key, command)
+    -- No command provided (may happen with interpreted languages)
+    if not command then
+        return true
+    end
+
     local buffer_hash = get_buffer_hash()
 
     if value[key] == buffer_hash then
@@ -35,17 +41,22 @@ M.translate = function(value, key, command)
 end
 
 M.run = function(cmd_str, args, datfile)
-    local command = cmd_str
+    if not cmd_str then
+        vim.notify("No run command available for this language type", vim.log.levels.ERROR)
+        return
+    end
 
-    if args then command = command .. " " .. args end
-    if datfile then command = command .. " < " .. datfile end
+    local cmd = cmd_str
+
+    if args then cmd = cmd .. " " .. args end
+    if datfile then cmd = cmd .. " < " .. datfile end
 
     vim.cmd.terminal()
 
     vim.defer_fn(function()
         local term_id = api.nvim_get_option_value("channel", { buf = 0 })
         if term_id then
-            api.nvim_chan_send(term_id, command .. "\n")
+            api.nvim_chan_send(term_id, cmd .. "\n")
         else
             vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
         end

@@ -1,87 +1,45 @@
--- Create actiof functions that will be exposed to the user
+-- In actions.lua
 local M = {}
-
-local log_levels = vim.log.levels
 
 M.create = function(state, commands, handler)
     local api = state.api
     local fn = state.fn
     local utils = state.utils
-    local x = {}
+    local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
+    local actions = {}
 
-    -- Compile action
-    x.compile = function()
-        local diagnostic_count = #vim.diagnostic.count(0, {
-            severity = { vim.diagnostic.severity.ERROR }
-        })
-
-        if diagnostic_count > 0 then
-            require("diagnostics").open_quickfixlist()
-            vim.notify("Compilation aborted due to errors", log_levels.ERROR)
-            return false
-        end
-
-        vim.cmd("silent! update")
-
-        if not state.is_compiled then
-            return true
-        end
-
-        local success = handler.translate(state.hash_tbl, "compile", commands.cmd_compile())
-
-        if not success then
-            return false
-        end
-
-        if state.filetype == "asm" and state.linker then
-            success = handler.translate(state.hash_tbl, "link", commands.cmd_link())
-            if not success then
-                return false
+    -- Helper to check if language belongs to a type
+    local has_type = function(type)
+        for _, lang_type in ipairs(state.language_types) do
+            if lang_type == type then
+                return true
             end
         end
-
-        return true
+        return false
     end
 
-    x.run = function()
-        if x.compile() then
-            if state.is_compiled then
-                handler.run(state.exe_file, state.cmd_args, state.data_file)
-            else
-                handler.run(state.run_cmd .. " " .. state.src_file, state.cmd_args, state.data_file)
-            end
-        end
-    end
-
-    x.show_assembly = function()
-        if state.filetype ~= "asm" and state.is_compiled then
-            if handler.translate(state.hash_tbl, "assemble", commands.cmd_assemble()) then
-                utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
-            end
-        end
-    end
-
-    x.set_cmd_args = function()
+    -- Common actions for all language types
+    actions.set_cmd_args = function()
         vim.ui.input({
             prompt = "Enter command-line arguments: ",
             default = state.cmd_args or ""
         }, function(args)
             if args ~= "" then
                 state.cmd_args = args
-                vim.notify("Command arguments set", log_levels.INFO)
+                vim.notify("Command arguments set", vim.log.levels.INFO)
             else
                 state.cmd_args = nil
-                vim.notify("Command arguments cleared", log_levels.INFO)
+                vim.notify("Command arguments cleared", vim.log.levels.INFO)
             end
         end)
     end
 
-    x.add_data_file = function()
+    actions.add_data_file = function()
         if state.data_path then
             local files = utils.scan_dir(state.data_path)
 
             if vim.tbl_isempty(files) then
-                vim.notify("No files found in data directory: " .. state.data_path, log_levels.WARN)
+                vim.notify("No files found in data directory: " .. state.data_path, vim.log.levels.WARN)
                 return
             end
 
@@ -93,48 +51,51 @@ M.create = function(state, commands, handler)
             }, function(choice)
                 if choice then
                     state.data_file = choice
-                    vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
+                    vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), vim.log.levels.INFO)
                 end
             end)
         else
-            vim.notify("Data directory not found", log_levels.ERROR)
+            vim.notify("Data directory not found", vim.log.levels.ERROR)
         end
     end
 
-    x.remove_data_file = function()
+    actions.remove_data_file = function()
         if state.data_file then
             vim.ui.select({ "Yes", "No" }, {
                 prompt = "Remove data file (" .. fn.fnamemodify(state.data_file, ':t') .. ")?",
             }, function(choice)
                 if choice == "Yes" then
                     state.data_file = nil
-                    vim.notify("Data file removed", log_levels.INFO)
+                    vim.notify("Data file removed", vim.log.levels.INFO)
                 end
             end)
         else
-            vim.notify("No data file is currently set", log_levels.WARN)
+            vim.notify("No data file is currently set", vim.log.levels.WARN)
         end
     end
 
-    -- Get build info action
-    x.get_build_info = function()
-        local flags = table.concat(state.response_file, " ")
+    actions.get_build_info = function()
+        local flags = table.concat(state.response_file or {}, " ")
         local lines = {
             "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
             "Filetype          : " .. state.filetype,
-            "Compiler          : " .. state.compiler,
-            "Compile Flags     : " .. (flags == "" and "None" or flags),
+            "Language Type     : " .. table.concat(state.language_types or {}, ", "),
         }
 
-        if state.is_compiled then
+        if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+            lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
+            lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
             lines[#lines + 1] = "Output Directory  : " ..
                 (state.output_directory == "" and "None" or state.output_directory)
-            if state.filetype == "asm" and state.linker then
-                lines[#lines + 1] = "Linker            : " .. state.linker
-                lines[#lines + 1] = "Linker Flags      : " .. table.concat(state.linker_flags, " ")
-            end
-        else
-            lines[#lines + 1] = "Run Command       : " .. state.run_cmd
+        end
+
+        if has_type(LANG_TYPES.LINKED) then
+            lines[#lines + 1] = "Linker            : " .. (state.linker or "None")
+            lines[#lines + 1] = "Linker Flags      : " .. table.concat(state.linker_flags or {}, " ")
+        end
+
+        if has_type(LANG_TYPES.INTERPRETED) then
+            lines[#lines + 1] = "Run Command       : " .. (state.run_cmd or "None")
         end
 
         vim.list_extend(lines, {
@@ -159,7 +120,66 @@ M.create = function(state, commands, handler)
         end
     end
 
-    return x
+    -- Language type specific actions
+    if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+        actions.compile = function()
+            local diagnostic_count = #vim.diagnostic.count(0, {
+                severity = { vim.diagnostic.severity.ERROR }
+            })
+
+            if diagnostic_count > 0 then
+                require("diagnostics").open_quickfixlist()
+                return false
+            end
+
+            vim.cmd("silent! update")
+
+            local success = handler.translate(state.hash_tbl, "compile", commands.compile())
+
+            if not success then
+                return false
+            end
+
+            if has_type(LANG_TYPES.LINKED) then
+                success = handler.translate(state.hash_tbl, "link", commands.link())
+                if not success then
+                    return false
+                end
+            end
+
+            return true
+        end
+    end
+
+    -- For interpreted languages, compile is a no-op
+    if has_type(LANG_TYPES.INTERPRETED) then
+        actions.compile = function()
+            vim.cmd("silent! update")
+            return true
+        end
+    end
+
+    -- Run action based on language type
+    actions.run = function()
+        if actions.compile() then
+            if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.LINKED) then
+                handler.run(state.exe_file, state.cmd_args, state.data_file)
+            elseif has_type(LANG_TYPES.INTERPRETED) then
+                handler.run(state.run_cmd .. " " .. state.src_file, state.cmd_args, state.data_file)
+            end
+        end
+    end
+
+    -- Show assembly action only for compiled languages
+    if has_type(LANG_TYPES.COMPILED) then
+        actions.show_assembly = function()
+            if commands.show_assembly and handler.translate(state.hash_tbl, "assemble", commands.show_assembly()) then
+                utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
+            end
+        end
+    end
+
+    return actions
 end
 
 return M

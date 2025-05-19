@@ -1,57 +1,66 @@
+-- In config.lua
 local M = {}
+
+-- Define language categories
+M.LANGUAGE_TYPES = {
+    COMPILED = "compiled",      -- Languages requiring compilation to binary
+    ASSEMBLED = "assembled",    -- Languages requiring assembly step
+    LINKED = "linked",          -- Languages requiring linking
+    INTERPRETED = "interpreted" -- Languages run through interpreter
+}
 
 M.init = function(options)
     local defaults = {
         c = {
-            compiler         = "gcc",
-            fallback_flags   = { "-std=c23", "-O2" },
-            reponse_file     = nil,
-            data_dir_name    = "dat",
+            type = { M.LANGUAGE_TYPES.COMPILED },
+            compiler = "gcc",
+            fallback_flags = { "-std=c23", "-O2" },
+            response_file = nil,
+            data_dir_name = "dat",
             output_directory = "/tmp/",
-            is_compiled      = true,
-            run_command      = nil,
+            run_command = nil,
         },
 
         cpp = {
-            compiler         = "g++",
-            fallback_flags   = { "-std=c++23", "-O2" },
-            reponse_file     = nil,
-            data_dir_name    = "dat",
+            type = { M.LANGUAGE_TYPES.COMPILED },
+            compiler = "g++",
+            fallback_flags = { "-std=c++23", "-O2" },
+            response_file = nil,
+            data_dir_name = "dat",
             output_directory = "/tmp/",
-            is_compiled      = true,
-            run_command      = nil,
+            run_command = nil,
         },
 
         asm = {
-            compiler         = "nasm",
-            fallback_flags   = { "-f", "elf64" },
-            response_file     = nil,
-            data_dir_name    = "dat",
+            type = { M.LANGUAGE_TYPES.ASSEMBLED, M.LANGUAGE_TYPES.LINKED },
+            compiler = "nasm",
+            fallback_flags = { "-f", "elf64" },
+            response_file = nil,
+            data_dir_name = "dat",
             output_directory = "/tmp/",
-            is_compiled      = true,
-            linker           = "ld",
-            linker_flags     = { "-m", "elf_x86_64" },
-            run_command      = nil,
+            linker = "ld",
+            linker_flags = { "-m", "elf_x86_64" },
+            run_command = nil,
         },
 
         python = {
-            compiler         = "python3",
-            fallback_flags   = {},
-            response_file     = nil,
-            data_dir_name    = "dat",
+            type = { M.LANGUAGE_TYPES.INTERPRETED },
+            compiler = nil,
+            fallback_flags = {},
+            response_file = nil,
+            data_dir_name = "dat",
             output_directory = "",
-            is_compiled      = false,
-            run_command      = "python3",
+            run_command = "python3",
         },
 
         lua = {
-            compiler         = "lua",
-            fallback_flags   = {},
-            response_file     = nil,
-            data_dir_name    = "dat",
+            type = { M.LANGUAGE_TYPES.INTERPRETED },
+            compiler = nil,
+            fallback_flags = {},
+            response_file = nil,
+            data_dir_name = "dat",
             output_directory = "",
-            is_compiled      = false,
-            run_command      = "lua",
+            run_command = "lua",
         },
     }
 
