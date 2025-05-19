@@ -5,24 +5,19 @@ local group_id = vim.api.nvim_create_augroup("Runner", { clear = true })
 autocmd("Filetype", {
     group = group_id,
     pattern = { "c", "cpp", "asm", "python", "lua" },
-    callback = function(args)
-        local build = require("runner").setup({
-            cpp = {
-                compiler = "g++-15",
-                response_file = ".compile_flags",
+    callback = function()
+        require("runner").setup({
+            lang = {
+                c = {
+                    compiler = "g++-15",
+                    response_file = ".compile_flags",
+                },
+                cpp = {
+                    compiler = "g++-15",
+                    response_file = ".compile_flags",
+                }
             }
         })
-
-        local arg = { buffer = args.buf, noremap = true }
-
-        keyset("n", "<leader>rc", function() build.compile() end, arg)
-        keyset("n", "<leader>ra", function() build.show_assembly() end, arg)
-        keyset("n", "<leader>rr", function() build.run() end, arg)
-        keyset("n", "<leader>da", function() build.add_data_file() end, arg)
-        keyset("n", "<leader>dr", function() build.remove_data_file() end, arg)
-        keyset("n", "<leader>sa", function() build.set_cmd_args() end, arg)
-        keyset("n", "<leader>bi", function() build.get_build_info() end, arg)
-        keyset("n", "<leader>xx", function() require("diagnostics").open_quickfixlist() end, arg)
     end,
 })
 
@@ -86,7 +81,7 @@ autocmd("LspAttach", {
             severity_sort = true,
             float = { border = "rounded" },
             signs = {
-                text = { [x.ERROR] = "", [x.WARN]  = "󱈸", [x.HINT]  = "", [x.INFO]  = "", },
+                text = { [x.ERROR] = "", [x.WARN] = "󱈸", [x.HINT] = "", [x.INFO] = "", },
             },
         })
 
