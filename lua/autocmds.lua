@@ -1,11 +1,15 @@
 local keyset = vim.keymap.set
 local autocmd = vim.api.nvim_create_autocmd
 
-local group_id = vim.api.nvim_create_augroup("Runner", { clear = true })
 autocmd("Filetype", {
-    group = group_id,
     pattern = { "c", "cpp", "asm", "python", "lua" },
-    callback = function()
+    callback = function(args)
+        local ft = vim.api.nvim_get_option_value("filetype", { buf = args.buf })
+        if ft == "cpp" or ft == "c" then
+            vim.opt_local.cinkeys:remove(":")
+            vim.opt_local.cindent = true
+        end
+
         require("runner").setup({
             lang = {
                 c = {
@@ -18,14 +22,6 @@ autocmd("Filetype", {
                 }
             }
         })
-    end,
-})
-
-autocmd("Filetype", {
-    pattern = { "c", "cpp" },
-    callback = function()
-        vim.opt_local.cinkeys:remove(":")
-        vim.opt_local.cindent = true
     end,
 })
 
