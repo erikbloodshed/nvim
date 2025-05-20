@@ -19,6 +19,7 @@ M.init = function(opts)
             { key = "<leader>rd", action = "add_data_file",    mode = "n", desc = "Runner: Add Data File" },
             { key = "<leader>rx", action = "remove_data_file", mode = "n", desc = "Runner: Remove Data File" },
             { key = "<leader>rs", action = "show_assembly",    mode = "n", desc = "Runner: Show Assembly" },
+            { key = "<leader>rq", action = "open_quickfix",    mode = "n", desc = "Runner: Open Quickfix" },
         },
 
         lang = {

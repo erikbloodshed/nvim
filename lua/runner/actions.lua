@@ -179,6 +179,10 @@ M.create = function(state, commands, handler)
         end
     end
 
+    actions.open_quickfix = function()
+        require("diagnostics").open_quickfixlist()
+    end
+
     return actions
 end
 

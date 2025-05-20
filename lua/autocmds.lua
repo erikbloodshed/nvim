@@ -22,6 +22,14 @@ autocmd("Filetype", {
 })
 
 autocmd("Filetype", {
+    pattern = { "c", "cpp" },
+    callback = function()
+        vim.opt_local.cinkeys:remove(":")
+        vim.opt_local.cindent = true
+    end,
+})
+
+autocmd("Filetype", {
     pattern = { "help", "qf" },
     callback = function(args)
         keyset("n", "q", function() vim.cmd.bdelete() end, { buffer = args.buf, silent = true, noremap = true })
@@ -54,14 +62,6 @@ autocmd({ "BufEnter" }, {
                 })
             end,
             { noremap = true, silent = true, nowait = true })
-    end,
-})
-
-autocmd("Filetype", {
-    pattern = { "c", "cpp" },
-    callback = function()
-        vim.opt_local.cinkeys:remove(":")
-        vim.opt_local.cindent = true
     end,
 })
 
