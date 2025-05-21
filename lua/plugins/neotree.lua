@@ -16,6 +16,19 @@ end
 return {
     "nvim-neo-tree/neo-tree.nvim",
 
+    keys = {
+        {
+            "<leader>ef",
+            function()
+                require("neo-tree.command").execute({
+                    toggle = true,
+                    reveal = true,
+                    reveal_force_cwd = true,
+                })
+            end,
+        },
+    },
+
     dependencies = {
         "nvim-lua/plenary.nvim",
         "nvim-tree/nvim-web-devicons",
@@ -66,19 +79,6 @@ return {
                     vim.keymap.set("i", "<esc>", vim.cmd.stopinsert, { buffer = args.bufnr })
                 end,
             },
-        },
-    },
-
-    keys = {
-        {
-            "<leader>ef",
-            function()
-                require("neo-tree.command").execute({
-                    toggle = true,
-                    reveal = true,
-                    reveal_force_cwd = true,
-                })
-            end,
         },
     },
 }

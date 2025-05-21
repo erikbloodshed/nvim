@@ -36,7 +36,7 @@ M.init = function(opts)
             cpp = {
                 type = { M.LANGUAGE_TYPES.COMPILED },
                 compiler = "g++",
-                fallback_flags = { "-std=c++23", "-O2" },
+                fallback_flags = { "-std=c++20", "-O2" },
                 response_file = nil,
                 data_dir_name = "dat",
                 output_directory = "/tmp/",

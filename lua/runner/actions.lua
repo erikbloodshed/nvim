@@ -2,6 +2,7 @@
 local M = {}
 
 M.create = function(state, commands, handler)
+    local open_quickfix = require("runner.diagnostics").open_quickfixlist
     local api = state.api
     local fn = state.fn
     local utils = state.utils
@@ -128,7 +129,7 @@ M.create = function(state, commands, handler)
             })
 
             if diagnostic_count > 0 then
-                require("diagnostics").open_quickfixlist()
+                open_quickfix()
                 return false
             end
 
@@ -180,7 +181,7 @@ M.create = function(state, commands, handler)
     end
 
     actions.open_quickfix = function()
-        require("diagnostics").open_quickfixlist()
+        open_quickfix()
     end
 
     return actions

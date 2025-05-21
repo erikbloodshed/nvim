@@ -22,6 +22,7 @@ M.register = function(actions, state)
         { name = "RunnerAddDataFile",    action = actions.add_data_file,    desc = "Add a data file" },
         { name = "RunnerRemoveDataFile", action = actions.remove_data_file, desc = "Remove the current data file" },
         { name = "RunnerInfo",           action = actions.get_build_info,   desc = "Show build information" },
+        { name = "RunnerProblems",       action = actions.open_quickfix,    desc = "Open quickfix window" },
     }
 
     -- Commands for compiled/assembled languages
