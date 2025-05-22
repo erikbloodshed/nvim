@@ -13,7 +13,7 @@ autocmd("Filetype", {
         require("runner").setup({
             lang = {
                 c = {
-                    compiler = "g++-15",
+                    compiler = "gcc-15",
                     response_file = ".compile_flags",
                 },
                 cpp = {
