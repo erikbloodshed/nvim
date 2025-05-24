@@ -7,6 +7,7 @@ local function validate_config(config)
     assert(config.type, "Language type must be specified")
 
     local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
+
     local has_type = function(type)
         for _, lang_type in ipairs(config.type) do
             if lang_type == type then
@@ -49,7 +50,6 @@ M.setup = function(opts)
             vim.log.levels.WARN)
         return {}
     end
-
 
     -- Initialize modules
     local state = require("runner.state").init(validate_config(config))
