@@ -1,4 +1,6 @@
-return {
+local M
+
+M = {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
@@ -43,3 +45,5 @@ return {
         end,
     }
 }
+
+return M
