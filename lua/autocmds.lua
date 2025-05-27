@@ -4,7 +4,7 @@ local autocmd = vim.api.nvim_create_autocmd
 autocmd("Filetype", {
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
-        vim.treesitter.start()
+        -- vim.treesitter.start()
         local ft = vim.api.nvim_get_option_value("filetype", { buf = args.buf })
         if ft == "cpp" or ft == "c" then
             vim.opt_local.cinkeys:remove(":")

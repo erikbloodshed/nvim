@@ -1,5 +1,3 @@
-local M = {}
-
 local api = vim.api
 local opt = vim.opt
 
@@ -15,7 +13,7 @@ local function show_cursor()
     opt.guicursor:remove("a:Cursor/lCursor")
 end
 
-M = {
+return {
     "nvim-neo-tree/neo-tree.nvim",
 
     keys = {
@@ -84,5 +82,3 @@ M = {
         },
     },
 }
-
-return M

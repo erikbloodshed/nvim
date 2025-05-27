@@ -1,10 +1,14 @@
-local M = {}
-
-M = {
+return {
     "nvim-treesitter/nvim-treesitter",
-    branch = "main",
     lazy = true,
-    build = ":TSUpdate"
+    branch = "main",
+    config = function()
+        vim.api.nvim_create_autocmd("FileType", {
+            callback = function(details)
+                if not pcall(vim.treesitter.start, details.buf) then
+                    return
+                end
+            end
+        })
+    end
 }
-
-return M

@@ -1,6 +1,4 @@
-local M = {}
-
-M = {
+return {
     "windwp/nvim-autopairs",
     event = "InsertEnter",
     config = function()
@@ -21,5 +19,3 @@ M = {
         end))
     end,
 }
-
-return M
