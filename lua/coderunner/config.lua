@@ -2,13 +2,13 @@
 local M = {}
 
 M.default_config = {
-    keymap = "<F5>",
+    keymap = "<leader>rr",
     output_dir = vim.fn.stdpath("cache") .. "/runner_output", -- Changed default to be within Neovim's cache
     terminal_delay = 75,
     auto_save = true,
     runners = {
         cpp = {
-            compile = { "g++", "-std=c++17", "-o", "{output}", "{file}" },
+            compile = { "g++", "-std=c++23", "-o", "{output}", "{file}" },
             run = "{output}",
             needs_compilation = true,
         },
@@ -56,16 +56,6 @@ function M.get()
             vim.log.levels.WARN)
     end
     return M.options
-end
-
---- Adds or updates a runner configuration for a specific filetype.
--- @param filetype string The filetype identifier (e.g., "python").
--- @param runner_config table The configuration for the runner.
-function M.add_runner(filetype, runner_config)
-    if not M.options.runners then
-        M.options.runners = {}
-    end
-    M.options.runners[filetype] = runner_config
 end
 
 return M

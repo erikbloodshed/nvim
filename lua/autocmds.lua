@@ -10,18 +10,18 @@ autocmd("Filetype", {
             vim.opt_local.cindent = true
         end
 
-        -- require("runner").setup({
-        --     lang = {
-        --         c = {
-        --             compiler = "gcc-15",
-        --             response_file = ".compile_flags",
-        --         },
-        --         cpp = {
-        --             compiler = "g++-15",
-        --             response_file = ".compile_flags",
-        --         }
-        --     }
-        -- })
+        require("runner").setup({
+            lang = {
+                c = {
+                    compiler = "gcc-15",
+                    response_file = ".compile_flags",
+                },
+                cpp = {
+                    compiler = "g++-15",
+                    response_file = ".compile_flags",
+                }
+            }
+        })
     end,
 })
 

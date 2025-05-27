@@ -10,7 +10,6 @@ local M = {}
 --- Main function to process and run the file in the specified buffer.
 -- @param bufnr integer|nil The buffer number to run. Defaults to current buffer.
 function M.run_current_file(bufnr)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
     local current_config = config_module.get()
 
     if not current_config or not next(current_config) then
@@ -19,11 +18,7 @@ function M.run_current_file(bufnr)
     end
 
     if current_config.auto_save then
-        local current_buf_name = vim.api.nvim_buf_get_name(bufnr)
-        if current_buf_name and current_buf_name ~= "" and vim.api.nvim_buf_get_option(bufnr, "modifiable") then
-            vim.cmd.update() -- Save if buffer has a name and is modifiable
-            log("File auto-saved.", vim.log.levels.INFO)
-        end
+        vim.cmd.update()
     end
 
     local file_info = utils.get_file_info(bufnr, current_config.output_dir)
@@ -59,7 +54,7 @@ function M.run_current_file(bufnr)
             end
         end
         if runner_settings.needs_linking then
-            if vim.fn.executable("ld") == 0 then  -- Assuming 'ld' is the linker for asm if linking is needed
+            if vim.fn.executable("ld") == 0 then -- Assuming 'ld' is the linker for asm if linking is needed
                 log("Linker 'ld' not found. Please install binutils or check PATH.", vim.log.levels.ERROR)
                 return
             end
@@ -78,8 +73,8 @@ function M.run_current_file(bufnr)
                 run_cmd_template = { runner_settings.run } -- Ensure it's a table for replace_placeholders
             else
                 log(
-                "Invalid 'run' command format in runner config for filetype: " ..
-                filetype .. ". Must be a string or table.", vim.log.levels.ERROR)
+                    "Invalid 'run' command format in runner config for filetype: " ..
+                    filetype .. ". Must be a string or table.", vim.log.levels.ERROR)
                 return
             end
 

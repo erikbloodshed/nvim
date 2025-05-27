@@ -44,13 +44,11 @@ end
 -- @param callback function Called with `true` for success, `false` for failure.
 function M.compile_and_link(runner_settings, file_info, callback)
     if not runner_settings.needs_compilation or not runner_settings.compile then
-        -- log("Compilation not required or compile command not defined for " .. file_info.filename, vim.log.levels.DEBUG)
         callback(true) -- No compilation needed, proceed as success
         return
     end
 
     local compile_cmd = utils.replace_placeholders(runner_settings.compile, file_info)
-    -- log("Compiling " .. file_info.filename .. " with command: " .. table.concat(compile_cmd, " "), vim.log.levels.INFO)
 
     vim.system(compile_cmd, { text = true }, function(obj)
         vim.schedule(function() -- Schedule to run on the main Neovim thread
