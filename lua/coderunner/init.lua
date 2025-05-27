@@ -1,249 +1,86 @@
--- lua/runner.lua
--- A flexible runner plugin for Neovim that supports multiple programming languages
+-- lua/runner.lua (Main plugin file)
+local config_module = require('coderunner.config')
+local executor = require('coderunner.executor')
+local log = vim.notify
 
 local M = {}
 
--- Default configuration
-local default_config = {
-    -- Key mapping for running files
-    keymap = "<F5>",
-    -- Output directory for compiled files
-    output_dir = "/tmp",
-    -- Terminal delay (ms) before sending command
-    terminal_delay = 75,
-    -- Auto-save before running
-    auto_save = true,
-    -- Custom runners for different filetypes
-    runners = {
-        cpp = {
-            compile = { "g++", "-std=c++17", "-o", "{output}", "{file}" },
-            run = "{output}",
-            needs_compilation = true,
-        },
-        c = {
-            compile = { "gcc", "-std=c23", "-o", "{output}", "{file}" },
-            run = "{output}",
-            needs_compilation = true,
-        },
-        python = {
-            run = { "python3", "{file}" },
-            needs_compilation = false,
-        },
-        lua = {
-            run = { "lua", "{file}" },
-            needs_compilation = false,
-        },
-        -- Assembly language support
-        asm = {
-            compile = { "nasm", "-f", "elf64", "-o", "{output}.o", "{file}" },
-            link = { "ld", "-o", "{output}", "{output}.o" },
-            run = "{output}",
-            needs_compilation = true,
-            needs_linking = true,
-        }
-    }
-}
+-- Default group for autocommands to ensure they can be cleared.
+local AUGROUP_NAME = "RunnerFileTypeSetup"
 
--- Plugin configuration
-local config = {}
-
--- Utility function to replace placeholders in command
-local function replace_placeholders(cmd, placeholders)
-    local result = {}
-    for _, arg in ipairs(cmd) do
-        local replaced_arg = arg
-        for key, value in pairs(placeholders) do
-            replaced_arg = string.gsub(replaced_arg, "{" .. key .. "}", value)
-        end
-        table.insert(result, replaced_arg)
-    end
-    return result
-end
-
--- Get file information
-local function get_file_info(bufnr)
-    local file_path = vim.api.nvim_buf_get_name(bufnr)
-    local file_name = vim.fn.fnamemodify(file_path, ":t")
-    local basename = vim.fn.fnamemodify(file_path, ":t:r")
-    local extension = vim.fn.fnamemodify(file_path, ":e")
-    local output_path = config.output_dir .. "/" .. basename
-
-    return {
-        file = file_path,
-        filename = file_name,
-        basename = basename,
-        extension = extension,
-        output = output_path,
-        output_dir = config.output_dir,
-    }
-end
-
--- Send command to terminal
-local function send_to_terminal(cmd_table)
-    vim.cmd.terminal()
-    vim.defer_fn(function()
-        local bufnr = vim.api.nvim_get_current_buf()
-        local term_id = vim.b[bufnr].terminal_job_id
-        if term_id then
-            local cmd_str = table.concat(cmd_table, " ")
-            vim.api.nvim_chan_send(term_id, cmd_str .. "\n")
-        else
-            vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
-        end
-    end, config.terminal_delay)
-end
-
--- Link object files (for assembly and other languages that need separate linking)
-local function link_file(runner, file_info, callback)
-    if not runner.needs_linking then
-        callback(true)
-        return
-    end
-
-    local link_cmd = replace_placeholders(runner.link, file_info)
-
-    vim.system(link_cmd, { text = true }, function(obj)
-        vim.schedule(function()
-            if obj.code == 0 then
-                vim.notify("Linking successful!", vim.log.levels.INFO)
-                callback(true)
-            else
-                local error_msg = "Linking failed!"
-                if obj.stderr and obj.stderr ~= "" then
-                    error_msg = error_msg .. "\n" .. obj.stderr
-                end
-                vim.notify(error_msg, vim.log.levels.ERROR)
-                callback(false)
-            end
-        end)
-    end)
-end
-
--- Compile file if needed
-local function compile_file(runner, file_info, callback)
-    if not runner.needs_compilation then
-        callback(true)
-        return
-    end
-
-    local compile_cmd = replace_placeholders(runner.compile, file_info)
-
-    vim.system(compile_cmd, { text = true }, function(obj)
-        vim.schedule(function()
-            if obj.code == 0 then
-                vim.notify("Compilation successful!", vim.log.levels.INFO)
-                -- If linking is needed, do it next
-                if runner.needs_linking then
-                    link_file(runner, file_info, callback)
-                else
-                    callback(true)
-                end
-            else
-                local error_msg = "Compilation failed!"
-                if obj.stderr and obj.stderr ~= "" then
-                    error_msg = error_msg .. "\n" .. obj.stderr
-                end
-                vim.notify(error_msg, vim.log.levels.ERROR)
-                callback(false)
-            end
-        end)
-    end)
-end
-
--- Main run function
-local function run_file(bufnr)
-    bufnr = bufnr or vim.api.nvim_get_current_buf()
-
-    -- Auto-save if enabled
-    if config.auto_save then
-        vim.cmd.update()
-    end
-
-    local file_info = get_file_info(bufnr)
-    local filetype = vim.api.nvim_get_option_value("filetype", { buf = 0 })
-
-    -- Check if we have a runner for this filetype
-    local runner = config.runners[filetype]
-    if not runner then
-        vim.notify("No runner configured for filetype: " .. filetype, vim.log.levels.WARN)
-        return
-    end
-
-    -- Check if file exists and is not empty
-    if file_info.file == "" then
-        vim.notify("Buffer has no associated file", vim.log.levels.ERROR)
-        return
-    end
-
-    -- For assembly files, check if required tools are available
-    if filetype == "asm" then
-        local assembler = runner.compile[1]
-        if vim.fn.executable(assembler) == 0 then
-            vim.notify("Assembler '" .. assembler .. "' not found. Please install it first.", vim.log.levels.ERROR)
-            return
-        end
-        if vim.fn.executable("ld") == 0 then
-            vim.notify("Linker 'ld' not found. Please install binutils.", vim.log.levels.ERROR)
-            return
-        end
-    end
-
-    -- Compile if needed, then run
-    compile_file(runner, file_info, function(success)
-        if success then
-            local run_cmd
-            if type(runner.run) == "table" then
-                run_cmd = replace_placeholders(runner.run, file_info)
-            else
-                run_cmd = { replace_placeholders({ runner.run }, file_info)[1] }
-            end
-            send_to_terminal(run_cmd)
-        end
-    end)
-end
-
--- Setup function
+--- Sets up the runner plugin with user-provided configuration.
+-- @param user_config table|nil User configuration to override defaults.
 function M.setup(user_config)
-    -- Merge user config with defaults
-    config = vim.tbl_deep_extend("force", default_config, user_config or {})
+    config_module.setup(user_config)
+    local current_config = config_module.get()
 
     -- Create output directory if it doesn't exist
-    vim.fn.mkdir(config.output_dir, "p")
+    if current_config.output_dir then
+        if vim.fn.isdirectory(current_config.output_dir) == 0 then
+            vim.fn.mkdir(current_config.output_dir, "p")
+            log("Created output directory: " .. current_config.output_dir, vim.log.levels.INFO)
+        end
+    else
+        log("Output directory not configured.", vim.log.levels.WARN)
+    end
 
     -- Set up autocommands for supported filetypes
     local supported_filetypes = {}
-    for ft, _ in pairs(config.runners) do
-        table.insert(supported_filetypes, ft)
+    if current_config.runners then
+        for ft, _ in pairs(current_config.runners) do
+            table.insert(supported_filetypes, ft)
+        end
     end
 
-    vim.api.nvim_create_autocmd("FileType", {
-        pattern = supported_filetypes,
-        callback = function(args)
-            vim.keymap.set("n", config.keymap, function()
-                run_file(args.buf)
-            end, {
-                buffer = args.buf,
-                noremap = true,
-                silent = true,
-                desc = "Run current file"
-            })
-        end
-    })
+    if #supported_filetypes > 0 then
+        local group = vim.api.nvim_create_augroup(AUGROUP_NAME, { clear = true })
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = supported_filetypes,
+            group = group,
+            callback = function(args)
+                local current_config_for_keymap = config_module.get() -- Get fresh config
+                local keymap = current_config_for_keymap.keymap or "<F5>"
+                vim.keymap.set("n", keymap, function()
+                    executor.run_current_file(args.buf)
+                end, {
+                    buffer = args.buf,
+                    noremap = true,
+                    silent = true,
+                    desc = "Run current file (Runner)"
+                })
+            end,
+            desc = "Setup runner keymap for supported filetypes"
+        })
+    else
+        log("No runners configured, skipping autocommand setup.", vim.log.levels.INFO)
+    end
 end
 
--- Add a custom runner
-function M.add_runner(filetype, runner_config)
-    config.runners[filetype] = runner_config
+--- Adds or updates a custom runner configuration for a given filetype.
+-- @param filetype string The filetype (e.g., "go", "rust").
+-- @param runner_cfg table The configuration for this runner.
+function M.add_runner(filetype, runner_cfg)
+    config_module.add_runner(filetype, runner_cfg)
+    log(
+    "Added/Updated runner for " ..
+    filetype ..
+    ". You might need to re-run M.setup() or restart Neovim for keymap changes to apply to new filetypes if the FileType event was already triggered.",
+        vim.log.levels.INFO)
+    -- To make new filetypes immediately active for autocommands, setup would need to be recalled
+    -- or a more dynamic autocommand registration would be needed.
+    -- For simplicity, if a new filetype is added, user might need to trigger FileType event again or call setup.
 end
 
--- Run file manually (can be called from anywhere)
+--- Runs the file in the current buffer based on its filetype.
+-- Can be called manually.
 function M.run()
-    run_file()
+    executor.run_current_file(vim.api.nvim_get_current_buf())
 end
 
--- Get current configuration
+--- Retrieves the current merged configuration of the plugin.
+-- @return table The current configuration.
 function M.get_config()
-    return config
+    return config_module.get()
 end
 
 return M
