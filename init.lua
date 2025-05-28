@@ -58,6 +58,5 @@ vim.cmd.colorscheme("tokyonight")
 
 require("options")
 require("autocmds")
--- require("coderunner").setup()
 
 vim.lsp.enable({ "basedpyright", "clangd", "luals" })
