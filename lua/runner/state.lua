@@ -7,49 +7,46 @@ M.init = function(config)
     local fn = vim.fn
     local utils = require("runner.utils")
 
-    local x = prealloc(0, 24)
-    x.filetype = api.nvim_get_option_value("filetype", { buf = 0 })
-    x.src_file = api.nvim_buf_get_name(0)
-    x.src_basename = fn.expand("%:t:r")
-    x.language_types = config.type or {}     -- Store language type
-    x.compiler = config.compiler
-    x.response_file = utils.get_response_file(config.response_file) or config.fallback_flags
-    x.linker = config.linker
-    x.linker_flags = config.linker_flags or {}
-    x.output_directory = config.output_directory or ""
-    x.run_cmd = config.run_command
-    x.data_path = utils.get_data_path(config.data_dir_name)
-    x.data_file = nil
-    x.cmd_args = nil
-    x.keymaps = config.keymaps
-    x.api = api
-    x.fn = fn
-    x.utils = utils
+    local state = prealloc(0, 24)
+    state.filetype = api.nvim_get_option_value("filetype", { buf = 0 })
+    state.src_file = api.nvim_buf_get_name(0)
+    state.language_types = config.type or {}
+    state.compiler = config.compiler
+    state.compiler_flags = utils.get_response_file(config.response_file) or config.fallback_flags
+    state.linker = config.linker
+    state.linker_flags = config.linker_flags or {}
+    state.output_directory = config.output_directory or ""
+    state.run_cmd = config.run_command
+    state.data_path = utils.get_data_path(config.data_dir_name)
+    state.data_file = nil
+    state.cmd_args = nil
+    state.keymaps = config.keymaps
+    state.api = api
+    state.fn = fn
+    state.utils = utils
 
-    x.exe_file = x.output_directory .. x.src_basename
-    x.asm_file = x.exe_file .. ".s"
-    x.obj_file = x.exe_file .. ".o"
+    state.src_basename = vim.fn.fnamemodify(state.src_file, ":t:r")
+    state.exe_file = state.output_directory .. state.src_basename
+    state.asm_file = state.exe_file .. ".s"
+    state.obj_file = state.exe_file .. ".o"
 
-    x.hash_tbl = {
-        compile = nil,
-        assemble = nil,
-        link = nil,
-    }
+    state.hash_tbl = prealloc(0, 3)
+    state.hash_tbl.compile = nil
+    state.hash_tbl.assemble = nil
+    state.hash_tbl.link = nil
 
-    x.command_cache = {
-        compile_cmd = nil,
-        link_cmd = nil,
-        assemble_cmd = nil,
-    }
+    state.command_cache = prealloc(0, 3)
+    state.command_cache.compile_cmd = nil
+    state.command_cache.link_cmd = nil
+    state.command_cache.assemble_cmd = nil
 
-    x.cmd_template = {
-        compiler = nil,
-        arg = nil,
-        timeout = 15000,
-        kill_delay = 3000
-    }
+    state.cmd_template = prealloc(0, 4)
+    state.cmd_template.compiler = nil
+    state.cmd_template.arg = nil
+    state.cmd_template.timeout = 15000
+    state.cmd_template.kill_delay = 3000
 
-    return x
+    return state
 end
 
 return M

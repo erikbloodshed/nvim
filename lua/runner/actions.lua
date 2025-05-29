@@ -76,7 +76,7 @@ M.create = function(state, commands, handler)
     end
 
     actions.get_build_info = function()
-        local flags = table.concat(state.response_file or {}, " ")
+        local flags = table.concat(state.compiler_flags or {}, " ")
         local lines = {
             "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
             "Filetype          : " .. state.filetype,
@@ -124,15 +124,6 @@ M.create = function(state, commands, handler)
     -- Language type specific actions
     if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
         actions.compile = function()
-            local diagnostic_count = #vim.diagnostic.count(0, {
-                severity = { vim.diagnostic.severity.ERROR }
-            })
-
-            if diagnostic_count > 0 then
-                open_quickfix()
-                return false
-            end
-
             vim.cmd("silent! update")
 
             local success = handler.translate(state.hash_tbl, "compile", commands.compile())
@@ -162,6 +153,15 @@ M.create = function(state, commands, handler)
 
     -- Run action based on language type
     actions.run = function()
+        local diagnostic_count = #vim.diagnostic.count(0, {
+            severity = { vim.diagnostic.severity.ERROR }
+        })
+
+        if diagnostic_count > 0 then
+            open_quickfix()
+            return
+        end
+
         if actions.compile() then
             if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.LINKED) then
                 handler.run(state.exe_file, state.cmd_args, state.data_file)

@@ -1,14 +1,26 @@
 return {
     "nvim-treesitter/nvim-treesitter",
-    lazy = true,
-    branch = "main",
-    config = function()
-        vim.api.nvim_create_autocmd("FileType", {
-            callback = function(details)
-                if not pcall(vim.treesitter.start, details.buf) then
-                    return
-                end
-            end
-        })
+    build = ":TSUpdate",
+    event = "VeryLazy",
+    init = function(plugin)
+        require("lazy.core.loader").add_to_rtp(plugin)
+        require("nvim-treesitter.query_predicates")
+    end,
+    opts = {
+        ensure_installed = {
+            "bash",
+            "cpp",
+            "fish",
+            "rust",
+            "toml",
+        },
+        sync_install = false,
+        indent = { enable = false },
+        highlight = {
+            enable = true,
+        }
+    },
+    config = function(_, opts)
+        require("nvim-treesitter.configs").setup(opts)
     end
 }

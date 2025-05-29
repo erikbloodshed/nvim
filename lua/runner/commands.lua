@@ -27,7 +27,7 @@ M.create = function(state)
             local cmd = vim.deepcopy(state.cmd_template)
             cmd.compiler = state.compiler
 
-            cmd.arg = vim.deepcopy(state.response_file)
+            cmd.arg = vim.deepcopy(state.compiler_flags)
             cmd.arg[#cmd.arg + 1] = "-o"
             cmd.arg[#cmd.arg + 1] = state.exe_file
             cmd.arg[#cmd.arg + 1] = state.src_file
@@ -44,7 +44,7 @@ M.create = function(state)
             local cmd = vim.deepcopy(state.cmd_template)
             cmd.compiler = state.compiler
 
-            cmd.arg = vim.deepcopy(state.response_file)
+            cmd.arg = vim.deepcopy(state.compiler_flags)
             cmd.arg[#cmd.arg + 1] = "-c"
             cmd.arg[#cmd.arg + 1] = "-S"
             cmd.arg[#cmd.arg + 1] = "-o"
@@ -65,7 +65,7 @@ M.create = function(state)
             local cmd = vim.deepcopy(state.cmd_template)
             cmd.compiler = state.compiler
 
-            cmd.arg = vim.deepcopy(state.response_file)
+            cmd.arg = vim.deepcopy(state.compiler_flags)
             cmd.arg[#cmd.arg + 1] = "-o"
             cmd.arg[#cmd.arg + 1] = state.obj_file
             cmd.arg[#cmd.arg + 1] = state.src_file
