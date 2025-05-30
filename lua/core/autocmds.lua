@@ -1,10 +1,11 @@
+local api = vim.api
 local keyset = vim.keymap.set
-local autocmd = vim.api.nvim_create_autocmd
+local autocmd = api.nvim_create_autocmd
 
 autocmd("Filetype", {
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
-        local ft = vim.api.nvim_get_option_value("filetype", { buf = args.buf })
+        local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
         if ft == "cpp" or ft == "c" then
             vim.opt_local.cinkeys:remove(":")
             vim.opt_local.cindent = true
@@ -45,13 +46,13 @@ autocmd({ "BufEnter" }, {
             { noremap = true, silent = true })
         keyset("n", "<leader>ot", function()
                 local original_directory = vim.fn.getcwd()
-                local current_file = vim.api.nvim_buf_get_name(0)
+                local current_file = api.nvim_buf_get_name(0)
                 local directory = current_file ~= "" and vim.fn.fnamemodify(current_file, ":h")
                     or original_directory
 
                 vim.cmd("cd " .. directory .. " | term")
 
-                vim.api.nvim_create_autocmd("TermClose", {
+                api.nvim_create_autocmd("TermClose", {
                     callback = function()
                         vim.cmd("cd " .. original_directory)
                     end,
@@ -70,6 +71,7 @@ autocmd({ "TermOpen" }, {
 
 autocmd("LspAttach", {
     callback = function(args)
+        local lsp = vim.lsp
         local x = vim.diagnostic.severity
 
         vim.diagnostic.config({
@@ -84,9 +86,9 @@ autocmd("LspAttach", {
 
         local opts = { buffer = args.buf }
         keyset("n", "<leader>ed", vim.diagnostic.open_float, opts)
-        keyset("n", "<leader>gi", vim.lsp.buf.implementation, opts)
-        keyset("n", "<leader>gd", vim.lsp.buf.definition, opts)
-        keyset("n", "<leader>rn", vim.lsp.buf.rename, opts)
+        keyset("n", "<leader>gi", lsp.buf.implementation, opts)
+        keyset("n", "<leader>gd", lsp.buf.definition, opts)
+        keyset("n", "<leader>rn", lsp.buf.rename, opts)
         keyset("n", "<leader>fc", function()
             vim.lsp.buf.format({ async = true })
         end, opts)

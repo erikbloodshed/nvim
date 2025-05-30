@@ -119,7 +119,7 @@ function M.manage_tabline(config, buffer_order)
     M.update_tabline_display(buffer_order)
 
     -- Create a new timer
-    local timer = vim.loop.new_timer()
+    local timer = vim.uv.new_timer()
     if timer then
         utils.set_hide_timer(timer)
         timer:start(config.hide_timeout, 0, vim.schedule_wrap(function()

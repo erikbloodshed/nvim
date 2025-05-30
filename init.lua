@@ -54,9 +54,7 @@ require("lazy").setup({
     },
 })
 
-vim.cmd.colorscheme("tokyonight")
-
-require("options")
-require("autocmds")
+require("core.options")
+require("core.autocmds")
 
 vim.lsp.enable({ "basedpyright", "clangd", "luals" })
