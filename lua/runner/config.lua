@@ -9,7 +9,7 @@ M.LANGUAGE_TYPES = {
     INTERPRETED = "interpreted" -- Languages run through interpreter
 }
 
-M.init = function(opts)
+M.init = function(user_config)
     local defaults = {
         keymaps = {
             { key = "<leader>rr", action = "run",              mode = "n", desc = "Runner: Run File" },
@@ -85,15 +85,15 @@ M.init = function(opts)
     end
 
     local lang_config = {}
-    if opts and opts.lang and opts.lang[ft] then
-        lang_config = opts.lang[ft]
+    if user_config and user_config.lang and user_config.lang[ft] then
+        lang_config = user_config.lang[ft]
     end
 
     local config = vim.tbl_deep_extend('force', defaults.lang[ft], lang_config)
 
     local keymaps = defaults.keymaps
-    if opts and opts.keymaps then
-        keymaps = vim.tbl_deep_extend("force", keymaps, opts.keymaps)
+    if user_config and user_config.keymaps then
+        keymaps = vim.tbl_deep_extend("force", keymaps, user_config.keymaps)
     end
 
     config.keymaps = keymaps

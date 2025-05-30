@@ -59,8 +59,6 @@ M.setup = function(opts)
 
     -- Register commands
     require("runner.command_registry").register(actions, state)
-
-    return actions
 end
 
 return M

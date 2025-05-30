@@ -63,8 +63,6 @@ M.register = function(actions, state)
             end
         end
     end
-
-    return commands
 end
 
 return M
