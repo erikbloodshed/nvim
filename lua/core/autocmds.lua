@@ -6,6 +6,7 @@ autocmd("Filetype", {
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
         local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
+
         if ft == "cpp" or ft == "c" then
             vim.opt_local.cinkeys:remove(":")
             vim.opt_local.cindent = true
@@ -14,11 +15,9 @@ autocmd("Filetype", {
         require("runner").setup({
             lang = {
                 c = {
-                    compiler = "gcc-15",
                     response_file = ".compile_flags",
                 },
                 cpp = {
-                    compiler = "g++-15",
                     response_file = ".compile_flags",
                 }
             }
