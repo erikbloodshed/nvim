@@ -22,7 +22,7 @@ M.init = function(user_config)
             { key = "<leader>rq", action = "open_quickfix",    mode = "n", desc = "Runner: Open Quickfix" },
         },
 
-        lang = {
+        filetype = {
             c = {
                 type = { M.LANGUAGE_TYPES.COMPILED },
                 compiler = "gcc",
@@ -79,17 +79,17 @@ M.init = function(user_config)
 
     local ft = vim.api.nvim_get_option_value("filetype", { buf = 0 })
 
-    if not defaults.lang[ft] then
+    if not defaults.filetype[ft] then
         vim.notify("No default configuration found for filetype: " .. ft, vim.log.levels.ERROR)
         return nil
     end
 
     local lang_config = {}
-    if user_config and user_config.lang and user_config.lang[ft] then
-        lang_config = user_config.lang[ft]
+    if user_config and user_config.filetype and user_config.filetype[ft] then
+        lang_config = user_config.filetype[ft]
     end
 
-    local config = vim.tbl_deep_extend('force', defaults.lang[ft], lang_config)
+    local config = vim.tbl_deep_extend('force', defaults.filetype[ft], lang_config)
 
     local keymaps = defaults.keymaps
     if user_config and user_config.keymaps then

@@ -1,7 +1,5 @@
--- Final init.lua
 local M = {}
 
--- Validate config
 local function validate_config(config)
     assert(config, "Configuration is required")
     assert(config.type, "Language type must be specified")

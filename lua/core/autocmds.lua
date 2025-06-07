@@ -13,7 +13,7 @@ autocmd("Filetype", {
         end
 
         require("runner").setup({
-            lang = {
+            filetype = {
                 c = {
                     response_file = ".compile_flags",
                 },
