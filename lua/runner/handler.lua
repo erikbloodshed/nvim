@@ -60,7 +60,7 @@ M.run = function(cmd_str, args, datfile)
         else
             vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
         end
-    end, 100)
+    end, 75)
 end
 
 return M
