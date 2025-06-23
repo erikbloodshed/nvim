@@ -24,10 +24,6 @@ return {
             },
         },
 
-        fuzzy = {
-            sorts = { "exact", "score", "sort_text" }
-        },
-
         keymap = {
             preset = "none",
             ["<Tab>"] = { "select_and_accept", "fallback" },
