@@ -1,5 +1,3 @@
-vim.api.nvim_set_hl(0, "CustomPickerSelection", { link = "Visual" })
-
 local function close_picker(picker)
     if vim.api.nvim_win_is_valid(picker.win) then
         vim.api.nvim_win_close(picker.win, true)
@@ -9,21 +7,11 @@ local function close_picker(picker)
     end
 end
 
-local function update_highlight(picker)
-    vim.api.nvim_buf_clear_namespace(picker.buf, picker.ns, 0, -1)
-    vim.api.nvim_buf_set_extmark(picker.buf, picker.ns, picker.selected - 1, 0, {
-        line_hl_group = "CustomPickerSelection",
-        end_col = 0,
-        priority = 100
-    })
-end
-
 local function move_picker(picker, delta)
     local count = #picker.items
     local new_idx = (picker.selected - 1 + delta) % count + 1
     picker.selected = new_idx
     vim.api.nvim_win_set_cursor(picker.win, { new_idx, 0 })
-    update_highlight(picker)
 end
 
 local function pick(opts)
@@ -55,17 +43,18 @@ local function pick(opts)
         title_pos = "center"
     })
 
+    -- Enable cursorline for the window
+    vim.api.nvim_set_option_value("cursorline", true, { win = win })
+
     local picker = {
         buf = buf,
         win = win,
-        ns = vim.api.nvim_create_namespace("custom_picker"),
         items = opts.items,
         selected = 1,
         actions = opts.actions or {},
         on_close = opts.on_close or function() end,
     }
 
-    update_highlight(picker)
     vim.api.nvim_win_set_cursor(win, { 1, 0 })
 
     vim.keymap.set("n", "j", function() move_picker(picker, 1) end, { buffer = buf, nowait = true })
