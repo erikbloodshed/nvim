@@ -1,9 +1,30 @@
+local api = vim.api
+local opt = vim.opt
+
+local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
+
+local function hide_cursor()
+    api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
+    opt.guicursor:append("a:Cursor/lCursor")
+end
+
+local function show_cursor()
+    api.nvim_set_hl(0, "Cursor", { blend = 0, fg = hl.fg, bg = hl.bg })
+    opt.guicursor:remove("a:Cursor/lCursor")
+end
+
 local function close_picker(picker)
-    if vim.api.nvim_win_is_valid(picker.win) then
-        vim.api.nvim_win_close(picker.win, true)
+    show_cursor()
+
+    if picker.augroup then
+        api.nvim_del_augroup_by_id(picker.augroup)
     end
-    if vim.api.nvim_buf_is_valid(picker.buf) then
-        vim.api.nvim_buf_delete(picker.buf, { force = true })
+
+    if api.nvim_win_is_valid(picker.win) then
+        api.nvim_win_close(picker.win, true)
+    end
+    if api.nvim_buf_is_valid(picker.buf) then
+        api.nvim_buf_delete(picker.buf, { force = true })
     end
 end
 
@@ -11,7 +32,7 @@ local function move_picker(picker, delta)
     local count = #picker.items
     local new_idx = (picker.selected - 1 + delta) % count + 1
     picker.selected = new_idx
-    vim.api.nvim_win_set_cursor(picker.win, { new_idx, 0 })
+    api.nvim_win_set_cursor(picker.win, { new_idx, 0 })
 end
 
 local function pick(opts)
@@ -29,10 +50,10 @@ local function pick(opts)
     local row = math.floor((vim.o.lines - height) / 2)
     local col = math.floor((vim.o.columns - width) / 2)
 
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-    local win = vim.api.nvim_open_win(buf, true, {
+    local win = api.nvim_open_win(buf, true, {
         relative = "editor",
         width = width,
         height = height,
@@ -44,8 +65,8 @@ local function pick(opts)
         title_pos = "center"
     })
 
-    -- Enable cursorline for the window
-    vim.api.nvim_set_option_value("cursorline", true, { win = win })
+    -- Enable cursorline for the window to highlight the selected line.
+    api.nvim_set_option_value("cursorline", true, { win = win })
 
     local picker = {
         buf = buf,
@@ -56,7 +77,24 @@ local function pick(opts)
         on_close = opts.on_close or function() end,
     }
 
-    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+    local augroup = api.nvim_create_augroup("PickerCursorEvents", { clear = false })
+    picker.augroup = augroup
+
+    api.nvim_create_autocmd("WinEnter", {
+        buffer = buf,
+        group = augroup,
+        callback = hide_cursor,
+    })
+
+    api.nvim_create_autocmd("WinLeave", {
+        buffer = buf,
+        group = augroup,
+        callback = show_cursor,
+    })
+
+    hide_cursor()
+
+    api.nvim_win_set_cursor(win, { 1, 0 })
 
     vim.keymap.set("n", "j", function() move_picker(picker, 1) end, { buffer = buf, nowait = true })
     vim.keymap.set("n", "k", function() move_picker(picker, -1) end, { buffer = buf, nowait = true })
