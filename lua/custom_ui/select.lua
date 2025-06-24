@@ -16,10 +16,11 @@ end
 
 local function pick(opts)
     local lines = {}
-    local max_width = #opts.title
+    local max_width = #(opts.title or "Select")
     for _, item in ipairs(opts.items) do
         local line = item.text or tostring(item)
         table.insert(lines, line)
+        max_width = math.max(max_width, vim.fn.strdisplaywidth(line))
     end
 
     local padding = 4
