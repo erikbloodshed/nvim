@@ -1,9 +1,9 @@
 return {
     "nvim-treesitter/nvim-treesitter",
-    lazy = false,
+    event = "VeryLazy",
     branch = "main",
     build = function()
-        local parsers = { "asm", "bash", "cpp", "fish", "rust", "toml" }
+        local parsers = { "asm", "bash", "cpp", "fish", "python", "rust", "toml" }
         require("nvim-treesitter").install(parsers)
         require("nvim-treesitter").update()
     end,
