@@ -5,6 +5,9 @@ local autocmd = api.nvim_create_autocmd
 autocmd({ "Filetype" }, {
     pattern = { "c", "cpp", "asm", "python", "lua" },
     callback = function(args)
+        -- A nasty hack to #34932 commit
+        vim.wo.foldmethod = "manual"
+
         local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
 
         if ft == "cpp" or ft == "c" then
@@ -39,40 +42,31 @@ autocmd({ "BufEnter" }, {
 
         local bufswitch = require("bufferswitch")
 
-        keyset('n', "<Right>", function() bufswitch.goto_next_buffer() end,
-            { noremap = true, silent = true })
-        keyset('n', "<Left>", function() bufswitch.goto_prev_buffer() end,
-            { noremap = true, silent = true })
+        keyset('n', "<Right>", function() bufswitch.goto_next_buffer() end, { noremap = true, silent = true })
+        keyset('n', "<Left>", function() bufswitch.goto_prev_buffer() end, { noremap = true, silent = true })
+
         keyset("n", "<leader>ot", function()
-                local original_directory = vim.fn.getcwd()
-                local current_file = api.nvim_buf_get_name(0)
-                local directory = current_file ~= "" and vim.fn.fnamemodify(current_file, ":h")
-                    or original_directory
+            local original_directory = vim.fn.getcwd()
+            local current_file = api.nvim_buf_get_name(0)
+            local directory = current_file ~= "" and vim.fn.fnamemodify(current_file, ":h")
+                or original_directory
 
-                vim.cmd("cd " .. directory .. " | term")
+            vim.cmd("cd " .. directory .. " | term")
 
-                api.nvim_create_autocmd("TermClose", {
-                    callback = function()
-                        vim.cmd("cd " .. original_directory)
-                    end,
-                })
-            end,
-            { noremap = true, silent = true, nowait = true })
+            api.nvim_create_autocmd("TermClose", {
+                callback = function()
+                    vim.cmd("cd " .. original_directory)
+                end,
+            })
+        end, { noremap = true, silent = true, nowait = true })
 
         keyset("n", "<C-`>", function()
             local cmd = "ipython"
-            -- Get current window dimensions
             local width = vim.o.columns
             local height = vim.o.lines
-
-            -- Calculate window size
             local win_height = math.floor(height * 0.8)
             local win_width = math.floor(width * 0.8)
-
-            -- Create buffer
             local buf = api.nvim_create_buf(false, true)
-
-            -- Window options
             local opts = {
                 style = "minimal",
                 relative = "editor",
@@ -82,7 +76,6 @@ autocmd({ "BufEnter" }, {
                 col = (width - win_width) / 2,
                 border = "rounded",
             }
-
             api.nvim_open_win(buf, true, opts)
             vim.fn.jobstart(cmd, { term = true })
         end, { noremap = true, silent = true })
