@@ -4,10 +4,8 @@ local autocmd = api.nvim_create_autocmd
 
 autocmd({ "Filetype" }, {
     pattern = { "c", "cpp", "asm", "python", "lua" },
-    callback = function(args)
-        -- A nasty hack to #34932 commit
-        vim.wo.foldmethod = "manual"
 
+    callback = function(args)
         local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
 
         if ft == "cpp" or ft == "c" then
@@ -22,7 +20,7 @@ autocmd({ "Filetype" }, {
                 },
                 cpp = {
                     response_file = ".compile_flags",
-                }
+                },
             }
         })
     end,
