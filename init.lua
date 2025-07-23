@@ -11,6 +11,7 @@
       ░                            ░                               ░
 --]]
 
+require("ipython").init()
 require("core.options")
 require("core.lazy")
 require("core.lsp")

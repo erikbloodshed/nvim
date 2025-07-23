@@ -59,25 +59,25 @@ autocmd({ "BufEnter" }, {
             })
         end, { noremap = true, silent = true, nowait = true })
 
-        keyset("n", "<C-`>", function()
-            local cmd = "ipython"
-            local width = vim.o.columns
-            local height = vim.o.lines
-            local win_height = math.floor(height * 0.8)
-            local win_width = math.floor(width * 0.8)
-            local buf = api.nvim_create_buf(false, true)
-            local opts = {
-                style = "minimal",
-                relative = "editor",
-                width = win_width,
-                height = win_height,
-                row = (height - win_height) / 2 - 1,
-                col = (width - win_width) / 2,
-                border = "rounded",
-            }
-            api.nvim_open_win(buf, true, opts)
-            vim.fn.jobstart(cmd, { term = true })
-        end, { noremap = true, silent = true })
+        -- keyset("n", "<C-`>", function()
+        --     local cmd = "ipython"
+        --     local width = vim.o.columns
+        --     local height = vim.o.lines
+        --     local win_height = math.floor(height * 0.8)
+        --     local win_width = math.floor(width * 0.8)
+        --     local buf = api.nvim_create_buf(false, true)
+        --     local opts = {
+        --         style = "minimal",
+        --         relative = "editor",
+        --         width = win_width,
+        --         height = win_height,
+        --         row = (height - win_height) / 2 - 1,
+        --         col = (width - win_width) / 2,
+        --         border = "rounded",
+        --     }
+        --     api.nvim_open_win(buf, true, opts)
+        --     vim.fn.jobstart(cmd, { term = true })
+        -- end, { noremap = true, silent = true })
     end,
 })
 
