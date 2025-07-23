@@ -86,7 +86,7 @@ function M.init()
     -- Create user command
     vim.api.nvim_create_user_command('TogglePython', M.toggle_python, {})
     -- Set up keymapping
-    vim.keymap.set('n', '<leader>`', ':TogglePython<CR>', { desc = 'Toggle Python terminal' })
+    vim.keymap.set('n', '<leader>`', M.toggle_python, { desc = 'Toggle Python terminal' })
     vim.keymap.set('t', '<leader>`', '<C-\\><C-n>:TogglePython<CR>', { noremap = true, silent = true })
 
     -- Additional escape keymapping for the terminal
