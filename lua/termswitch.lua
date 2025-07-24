@@ -100,8 +100,8 @@ function M.setup(user_config)
     vim.api.nvim_create_user_command('ToggleTerm', M.toggle_terminal, {})
 
     -- Default keymapping
-    vim.api.nvim_set_keymap('n', '<leader>t', ':ToggleTerm<CR>', { noremap = true, silent = true })
-    vim.api.nvim_set_keymap('t', '<leader>t', '<C-\\><C-n>:ToggleTerm<CR>', { noremap = true, silent = true })
+    vim.api.nvim_set_keymap('n', '<C-`>', ':ToggleTerm<CR>', { noremap = true, silent = true })
+    vim.api.nvim_set_keymap('t', '<C-`>', '<C-\\><C-n>:ToggleTerm<CR>', { noremap = true, silent = true })
 
     -- Additional escape keymapping for floating terminal
     vim.api.nvim_set_keymap('t', '<Esc>', '<C-\\><C-n>', { noremap = true, silent = true })
