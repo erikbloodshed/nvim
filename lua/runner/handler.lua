@@ -2,7 +2,6 @@
 local fn = vim.fn
 local api = vim.api
 local execute = require("runner.process").execute
-local termswitch = require("termswitch")
 
 local get_buffer_hash = function()
     local lines = api.nvim_buf_get_lines(0, 0, -1, true)
@@ -53,7 +52,7 @@ M.run = function(cmd_str, args, datfile)
     if datfile then cmd = cmd .. " < " .. datfile end
 
     -- vim.cmd.terminal()
-    termswitch.toggle_terminal()
+    vim.cmd("ToggleTerm")
 
     vim.defer_fn(function()
         local term_id = api.nvim_get_option_value("channel", { buf = 0 })
@@ -62,7 +61,7 @@ M.run = function(cmd_str, args, datfile)
         else
             vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
         end
-    end, 75)
+    end, 100)
 end
 
 return M

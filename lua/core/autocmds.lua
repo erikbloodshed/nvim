@@ -40,8 +40,6 @@ autocmd({ "BufEnter" }, {
     callback = function()
         require("custom_ui.input")
         require("custom_ui.select")
-        require("termswitch").setup()
-        require("python").init()
 
         local bufswitch = require("bufferswitch")
 
