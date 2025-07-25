@@ -251,20 +251,21 @@ function M.list_terminals()
 end
 
 function M.setup(user_config)
-    -- Validate and merge global configuration
     if user_config then
         default_global_config = vim.tbl_extend('force', default_global_config, user_config)
 
-        -- Basic validation
         if default_global_config.width <= 0 or default_global_config.width > 1 then
             vim.notify("TermSwitch: 'width' must be between 0 and 1. Using default.", vim.log.levels.WARN)
             default_global_config.width = 0.8
         end
+
         if default_global_config.height <= 0 or default_global_config.height > 1 then
             vim.notify("TermSwitch: 'height' must be between 0 and 1. Using default.", vim.log.levels.WARN)
             default_global_config.height = 0.8
         end
+
         local valid_borders = { 'none', 'single', 'double', 'rounded', 'solid', 'shadow' }
+
         if not vim.tbl_contains(valid_borders, default_global_config.border) then
             vim.notify(
                 string.format("TermSwitch: Invalid 'border' style '%s'. Using 'rounded'.", default_global_config.border),
@@ -297,7 +298,8 @@ function M.setup(user_config)
         local terminal = terminals[name]
         if not terminal then
             vim.notify(
-                string.format("Terminal '%s' not found. Create it first with require('termswitch').create_terminal('%s', config)",
+                string.format(
+                    "Terminal '%s' not found. Create it first with require('termswitch').create_terminal('%s', config)",
                     name,
                     name), vim.log.levels.ERROR)
             return
