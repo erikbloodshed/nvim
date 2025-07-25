@@ -87,6 +87,16 @@ end
 function M.init()
     -- Create user command
     api.nvim_create_user_command('TogglePython', M.toggle_terminal, {})
+    local group_id = api.nvim_create_augroup("Python", { clear = true })
+
+    vim.api.nvim_create_autocmd({ "TermClose" }, {
+        group = group_id,
+        pattern = "*",
+        callback = function(args)
+            api.nvim_buf_delete(term_buf or args.buf, { force = true })
+        end,
+    })
+
     --
     -- Set up keymapping
     keyset('n', '<F5>', M.toggle_terminal, { desc = 'Toggle Python terminal' })
