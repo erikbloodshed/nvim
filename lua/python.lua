@@ -1,4 +1,6 @@
 -- Store terminal buffer and window IDs
+local api = vim.api
+local keyset = vim.keymap.set
 local M = {}
 
 local term_buf = nil
@@ -28,30 +30,30 @@ end
 
 local function open_python()
     -- Create new terminal buffer if none exists
-    if term_buf == nil or not vim.api.nvim_buf_is_valid(term_buf) then
-        term_buf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value('buflisted', false, { buf = term_buf })
-        vim.api.nvim_set_option_value('bufhidden', 'hide', { buf = term_buf })
+    if term_buf == nil or not api.nvim_buf_is_valid(term_buf) then
+        term_buf = api.nvim_create_buf(false, true)
+        api.nvim_set_option_value('buflisted', false, { buf = term_buf })
+        api.nvim_set_option_value('bufhidden', 'hide', { buf = term_buf })
     end
 
     -- Create floating window if it doesn't exist
-    if term_win == nil or not vim.api.nvim_win_is_valid(term_win) then
+    if term_win == nil or not api.nvim_win_is_valid(term_win) then
         local float_config = get_float_config()
-        term_win = vim.api.nvim_open_win(term_buf, true, float_config)
+        term_win = api.nvim_open_win(term_buf, true, float_config)
 
         -- Start IPython in the buffer if it's not already a terminal
-        if vim.api.nvim_get_option_value('buftype', { buf = term_buf }) ~= 'terminal' then
+        if api.nvim_get_option_value('buftype', { buf = term_buf }) ~= 'terminal' then
             vim.fn.jobstart('python3.14', { term = true })
         end
 
         -- Set window options
-        vim.api.nvim_set_option_value('number', false, { win = term_win })
-        vim.api.nvim_set_option_value('relativenumber', false, { win = term_win })
-        vim.api.nvim_set_option_value('signcolumn', 'no', { win = term_win })
-        vim.api.nvim_set_option_value('wrap', false, { win = term_win })
+        api.nvim_set_option_value('number', false, { win = term_win })
+        api.nvim_set_option_value('relativenumber', false, { win = term_win })
+        api.nvim_set_option_value('signcolumn', 'no', { win = term_win })
+        api.nvim_set_option_value('wrap', false, { win = term_win })
 
         -- Set up autocmd to clean up when window is closed
-        vim.api.nvim_create_autocmd('WinClosed', {
+        api.nvim_create_autocmd('WinClosed', {
             pattern = tostring(term_win),
             callback = function()
                 term_win = nil
@@ -60,7 +62,7 @@ local function open_python()
         })
     else
         -- If window exists, just focus it
-        vim.api.nvim_set_current_win(term_win)
+        api.nvim_set_current_win(term_win)
     end
 
     -- Enter terminal mode
@@ -68,14 +70,14 @@ local function open_python()
 end
 
 local function hide_python()
-    if term_win ~= nil and vim.api.nvim_win_is_valid(term_win) then
-        vim.api.nvim_win_close(term_win, false)
+    if term_win ~= nil and api.nvim_win_is_valid(term_win) then
+        api.nvim_win_close(term_win, false)
         term_win = nil
     end
 end
 
 function M.toggle_python()
-    if term_win ~= nil and vim.api.nvim_win_is_valid(term_win) then
+    if term_win ~= nil and api.nvim_win_is_valid(term_win) then
         hide_python()
     else
         open_python()
@@ -84,13 +86,14 @@ end
 
 function M.init()
     -- Create user command
-    vim.api.nvim_create_user_command('TogglePython', M.toggle_python, {})
+    api.nvim_create_user_command('TogglePython', M.toggle_python, {})
+    --
     -- Set up keymapping
-    vim.keymap.set('n', '<F5>', M.toggle_python, { desc = 'Toggle Python terminal' })
-    vim.keymap.set('t', '<F5>', '<C-\\><C-n>:TogglePython<CR>', { noremap = true, silent = true })
+    keyset('n', '<F5>', M.toggle_python, { desc = 'Toggle Python terminal' })
+    keyset('t', '<F5>', '<C-\\><C-n>:TogglePython<CR>', { noremap = true, silent = true })
 
     -- Additional escape keymapping for the terminal
-    vim.keymap.set('t', '<Esc>', '<C-\\><C-n>', { noremap = true, silent = true })
+    keyset('t', '<Esc>', '<C-\\><C-n>', { noremap = true, silent = true })
 end
 
 return M
