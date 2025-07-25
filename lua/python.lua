@@ -28,7 +28,7 @@ local function get_float_config()
     }
 end
 
-local function open_python()
+local function open_terminal()
     -- Create new terminal buffer if none exists
     if term_buf == nil or not api.nvim_buf_is_valid(term_buf) then
         term_buf = api.nvim_create_buf(false, true)
@@ -69,27 +69,27 @@ local function open_python()
     vim.cmd('startinsert')
 end
 
-local function hide_python()
+local function hide_terminal()
     if term_win ~= nil and api.nvim_win_is_valid(term_win) then
         api.nvim_win_close(term_win, false)
         term_win = nil
     end
 end
 
-function M.toggle_python()
+function M.toggle_terminal()
     if term_win ~= nil and api.nvim_win_is_valid(term_win) then
-        hide_python()
+        hide_terminal()
     else
-        open_python()
+        open_terminal()
     end
 end
 
 function M.init()
     -- Create user command
-    api.nvim_create_user_command('TogglePython', M.toggle_python, {})
+    api.nvim_create_user_command('TogglePython', M.toggle_terminal, {})
     --
     -- Set up keymapping
-    keyset('n', '<F5>', M.toggle_python, { desc = 'Toggle Python terminal' })
+    keyset('n', '<F5>', M.toggle_terminal, { desc = 'Toggle Python terminal' })
     keyset('t', '<F5>', '<C-\\><C-n>:TogglePython<CR>', { noremap = true, silent = true })
 
     -- Additional escape keymapping for the terminal
