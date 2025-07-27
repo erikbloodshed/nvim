@@ -19,10 +19,9 @@ local M = {}
 local Terminal = {}
 Terminal.__index = Terminal
 
---- Creates a new Terminal instance
----@param name string Unique name for this terminal
----@param config TerminalConfig | nil Configuration for the terminal
----@return Terminal
+--- @param name string Unique name for this terminal
+--- @param config TerminalConfig | nil Configuration for the terminal
+--- @return Terminal
 function Terminal:new(name, config)
     local default_config = {
         width = 0.8,
@@ -31,6 +30,7 @@ function Terminal:new(name, config)
         shell = nil,
         title = nil,
         filetype = 'terminal',
+        auto_delete_on_close = false,
     }
 
     local obj = {
@@ -56,7 +56,7 @@ function Terminal:get_float_config()
     local width = math.floor(ui.width * self.config.width)
     local height = math.floor(ui.height * self.config.height)
     local col = math.floor((ui.width - width) / 2)
-    local row = math.floor((ui.height - height) / 2)
+    local row = math.floor((ui.height - height) / 2) - 1
 
     return {
         relative = 'editor',
@@ -71,7 +71,6 @@ function Terminal:get_float_config()
     }
 end
 
---- Ensures the terminal buffer exists and is valid.
 --- @private
 function Terminal:ensure_buffer()
     if self.buf == nil or not api.nvim_buf_is_valid(self.buf) then
@@ -105,10 +104,21 @@ function Terminal:start_process()
 
         vim.cmd(term_cmd)
         self.buf = api.nvim_get_current_buf()
+
+        -- Add TermClose autocmd if configured
+        if self.config.auto_delete_on_close then
+            api.nvim_create_autocmd('TermClose', {
+                group = api.nvim_create_augroup('TermSwitch_' .. self.name .. '_TermClose', { clear = true }),
+                buffer = self.buf,
+                callback = function()
+                    vim.cmd('bdelete! ' .. self.buf)
+                end,
+                desc = 'Auto-delete terminal buffer on close for ' .. self.name
+            })
+        end
     end
 end
 
---- Check if we're currently in this terminal window
 ---@return boolean
 function Terminal:is_current_window()
     local current_win = api.nvim_get_current_win()
@@ -117,7 +127,6 @@ function Terminal:is_current_window()
         and current_win == self.win
 end
 
---- Check if the terminal window exists and is valid
 ---@return boolean
 function Terminal:is_window_valid()
     return self.win ~= nil and api.nvim_win_is_valid(self.win)
@@ -276,7 +285,8 @@ function M.setup(user_config)
 
     -- Create default terminals for backward compatibility
     local default_terminal = M.create_terminal('terminal', { shell = nil })
-    local python_terminal = M.create_terminal('python', { shell = 'python3.14' })
+    local python_terminal = M.create_terminal('python',
+        { shell = 'python3.14', filetype = "pyterm", auto_delete_on_close = true })
 
     -- Create commands
     api.nvim_create_user_command('ToggleTerm', function()
