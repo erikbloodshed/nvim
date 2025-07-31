@@ -57,11 +57,11 @@ M.run = function(cmd_str, args, datfile)
     vim.defer_fn(function()
         local term_id = api.nvim_get_option_value("channel", { buf = 0 })
         if term_id then
-            api.nvim_chan_send(term_id, cmd .. "\n")
+            vim.fn.chansend(term_id, cmd .. "\n")
         else
             vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
         end
-    end, 100)
+    end, 75)
 end
 
 return M
