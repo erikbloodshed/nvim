@@ -3,5 +3,4 @@ if vim.g.loaded_termswitch then
 end
 
 require("termswitch").setup()
-
 vim.g.loaded_termswitch = 1
