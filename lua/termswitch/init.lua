@@ -1,27 +1,10 @@
--- luacheck: globals vim
 local api = vim.api
 
 local M = {}
 
----@class TerminalConfig
----@field width number
----@field height number
----@field border 'none' | 'single' | 'double' | 'rounded' | 'solid' | 'shadow'
----@field shell string | nil
----@field title string | nil
----@field filetype string | nil
-
----@class Terminal
----@field config TerminalConfig
----@field buf number | nil
----@field win number | nil
----@field name string
 local Terminal = {}
 Terminal.__index = Terminal
 
---- @param name string Unique name for this terminal
---- @param config TerminalConfig | nil Configuration for the terminal
---- @return Terminal
 function Terminal:new(name, config)
     local default_config = {
         width = 0.8,
@@ -40,7 +23,6 @@ function Terminal:new(name, config)
         win = nil,
     }
 
-    -- Set default title if not provided
     if not obj.config.title then
         obj.config.title = ' ' .. name:gsub("^%l", string.upper) .. ' '
     end
@@ -49,8 +31,6 @@ function Terminal:new(name, config)
     return obj
 end
 
---- @private
---- @return table float_config The configuration table for nvim_open_win.
 function Terminal:get_float_config()
     local ui = api.nvim_list_uis()[1]
     local width = math.floor(ui.width * self.config.width)
@@ -71,7 +51,6 @@ function Terminal:get_float_config()
     }
 end
 
---- @private
 function Terminal:ensure_buffer()
     if self.buf == nil or not api.nvim_buf_is_valid(self.buf) then
         self.buf = api.nvim_create_buf(false, true)
@@ -81,7 +60,6 @@ function Terminal:ensure_buffer()
     end
 end
 
---- @private
 function Terminal:setup_window_options()
     if self.win and api.nvim_win_is_valid(self.win) then
         api.nvim_set_option_value('number', false, { win = self.win })
@@ -92,7 +70,6 @@ function Terminal:setup_window_options()
     end
 end
 
---- @private
 function Terminal:start_process()
     if api.nvim_get_option_value('buftype', { buf = self.buf }) ~= 'terminal' then
         api.nvim_set_current_buf(self.buf)
@@ -105,7 +82,6 @@ function Terminal:start_process()
         vim.cmd(term_cmd)
         self.buf = api.nvim_get_current_buf()
 
-        -- Add TermClose autocmd if configured
         if self.config.auto_delete_on_close then
             api.nvim_create_autocmd('TermClose', {
                 group = api.nvim_create_augroup('TermSwitch_' .. self.name .. '_TermClose', { clear = true }),
@@ -119,7 +95,6 @@ function Terminal:start_process()
     end
 end
 
----@return boolean
 function Terminal:is_current_window()
     local current_win = api.nvim_get_current_win()
     return self.win ~= nil
@@ -127,12 +102,10 @@ function Terminal:is_current_window()
         and current_win == self.win
 end
 
----@return boolean
 function Terminal:is_window_valid()
     return self.win ~= nil and api.nvim_win_is_valid(self.win)
 end
 
---- Open the terminal window
 function Terminal:open()
     self:ensure_buffer()
 
@@ -142,7 +115,6 @@ function Terminal:open()
         self:setup_window_options()
         self:start_process()
 
-        -- Set up autocmd to clean up when window is closed
         api.nvim_create_autocmd('WinClosed', {
             group = api.nvim_create_augroup('TermSwitch_' .. self.name .. '_Closed', { clear = true }),
             pattern = tostring(self.win),
@@ -158,17 +130,14 @@ function Terminal:open()
     api.nvim_command('startinsert')
 end
 
---- Hide the terminal window
 function Terminal:hide()
     if self:is_window_valid() then
         api.nvim_win_close(self.win, false)
         self.win = nil
-        -- Clear the autocmd since the window is now closed
         pcall(api.nvim_clear_autocmds, { group = 'TermSwitch_' .. self.name .. '_Closed' })
     end
 end
 
---- Focus the terminal window if it exists
 function Terminal:focus()
     if self:is_window_valid() then
         api.nvim_set_current_win(self.win)
@@ -178,7 +147,6 @@ function Terminal:focus()
     return false
 end
 
---- Toggle the terminal window (open/hide/focus)
 function Terminal:toggle()
     if self:is_current_window() then
         self:hide()
@@ -189,8 +157,6 @@ function Terminal:toggle()
     end
 end
 
---- Send text to the terminal
----@param text string Text to send to the terminal
 function Terminal:send(text)
     if self.buf and api.nvim_buf_is_valid(self.buf) then
         if api.nvim_get_option_value('buftype', { buf = self.buf }) == 'terminal' then
@@ -199,8 +165,6 @@ function Terminal:send(text)
     end
 end
 
---- Check if the terminal process is running
----@return boolean
 function Terminal:is_running()
     if self.buf and api.nvim_buf_is_valid(self.buf) then
         local job_id = api.nvim_buf_get_var(self.buf, 'terminal_job_id')
@@ -217,31 +181,21 @@ local default_global_config = {
 
 local terminals = {}
 
---- Create a new terminal instance
----@param name string Unique name for the terminal
----@param config TerminalConfig | nil Configuration for the terminal
----@return Terminal
 function M.create_terminal(name, config)
     if terminals[name] then
         vim.notify(string.format("Terminal '%s' already exists", name), vim.log.levels.WARN)
         return terminals[name]
     end
 
-    -- Merge with global defaults
     local merged_config = vim.tbl_extend('force', default_global_config, config or {})
     terminals[name] = Terminal:new(name, merged_config)
     return terminals[name]
 end
 
---- Get an existing terminal by name
----@param name string Name of the terminal
----@return Terminal | nil
 function M.get_terminal(name)
     return terminals[name]
 end
 
---- Remove a terminal instance
----@param name string Name of the terminal to remove
 function M.remove_terminal(name)
     if terminals[name] then
         terminals[name]:hide()
@@ -249,8 +203,6 @@ function M.remove_terminal(name)
     end
 end
 
---- List all terminal names
----@return string[]
 function M.list_terminals()
     local names = {}
     for name, _ in pairs(terminals) do
@@ -283,12 +235,11 @@ function M.setup(user_config)
         end
     end
 
-    -- Create default terminals for backward compatibility
     local default_terminal = M.create_terminal('terminal', { shell = nil })
     local python_terminal = M.create_terminal('python',
         { shell = 'python3.14', filetype = "pyterm", auto_delete_on_close = true })
 
-    -- Create commands
+
     api.nvim_create_user_command('ToggleTerm', function()
         default_terminal:toggle()
     end, { desc = 'Toggle floating terminal window' })
@@ -297,7 +248,6 @@ function M.setup(user_config)
         python_terminal:toggle()
     end, { desc = 'Toggle floating Python interpreter' })
 
-    -- Generic command to toggle any terminal
     api.nvim_create_user_command('ToggleTerminal', function(opts)
         local name = opts.args
         if name == '' then
@@ -324,19 +274,27 @@ function M.setup(user_config)
         desc = 'Toggle any terminal by name'
     })
 
-    -- Set up default keymaps
-    vim.keymap.set('n', '<leader>tt', ':ToggleTerm<CR>',
-        { noremap = true, silent = true, desc = 'Toggle Terminal (Normal mode)' })
-    vim.keymap.set('t', '<leader>tt', '<C-\\><C-n>:ToggleTerm<CR>',
-        { noremap = true, silent = true, desc = 'Toggle Terminal (Terminal mode)' })
+    local key = vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true)
 
-    vim.keymap.set('n', '<leader>tp', ':TogglePython<CR>',
-        { noremap = true, silent = true, desc = 'Toggle Python interpreter (Normal mode)' })
-    vim.keymap.set('t', '<leader>tp', '<C-\\><C-n>:TogglePython<CR>',
-        { noremap = true, silent = true, desc = 'Toggle Python interpreter (Terminal mode)' })
+    vim.keymap.set('n', '<leader>tt', function()
+        default_terminal:open()
+    end, { noremap = true, silent = true, desc = 'Toggle Terminal (Normal mode)' })
+
+    vim.keymap.set('t', '<leader>tt', function()
+        vim.api.nvim_feedkeys(key, "t", false)
+        default_terminal:hide()
+    end, { noremap = true, silent = true, desc = 'Toggle Terminal (Terminal mode)' })
+
+    vim.keymap.set('n', '<leader>tp', function()
+        python_terminal:open()
+    end, { noremap = true, silent = true, desc = 'Toggle Python Terminal (Normal mode)' })
+
+    vim.keymap.set('t', '<leader>tp', function()
+        vim.api.nvim_feedkeys(key, "t", false)
+        python_terminal:hide()
+    end, { noremap = true, silent = true, desc = 'Toggle Python Terminal (Terminal mode)' })
 end
 
--- Expose the Terminal class for advanced usage
 M.Terminal = Terminal
 
 return M
