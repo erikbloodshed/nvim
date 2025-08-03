@@ -1,12 +1,14 @@
 return {
     "nvim-treesitter/nvim-treesitter",
-    event = "VeryLazy",
+    lazy = false,
     branch = "main",
+
     build = function()
         local parsers = { "asm", "bash", "cpp", "fish", "python", "rust", "toml" }
         require("nvim-treesitter").install(parsers)
         require("nvim-treesitter").update()
     end,
+
     opts = function()
         vim.api.nvim_create_autocmd("FileType", {
             callback = function(args)

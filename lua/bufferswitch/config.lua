@@ -15,7 +15,7 @@ function M.create(user_config)
         disable_in_special = true,           -- Disable keybindings in special buffers
         passthrough_keys_in_special = false, -- Pass through keys in special buffers
         special_buftypes = {                 -- Special buftypes to disable in
-            "quickfix", "help", "nofile", "prompt", "terminal"
+            "quickfix", "help", "nofile", "prompt",
         },
         special_filetypes = { -- Special filetypes to disable in
             "qf", "help", "netrw", "fugitive", "NvimTree", "neo-tree",
@@ -25,10 +25,10 @@ function M.create(user_config)
             "^term://", "^fugitive://", "^neo%-tree "
         },
         exclude_buftypes = { -- Buffer types to exclude from list
-            "quickfix", "nofile", "help", "terminal", "prompt"
+            "quickfix", "nofile", "help", "prompt"
         },
         exclude_filetypes = { -- Filetypes to exclude from list
-            "qf", "netrw", "Trouble", "fugitive"
+            "qf", "netrw", "Trouble", "fugitive",
         },
         periodic_cleanup = true, -- Enable periodic cleanup
         debug = false,           -- Enable debug logging

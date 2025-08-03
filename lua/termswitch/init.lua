@@ -35,7 +35,6 @@ local function validate_config(cfg)
     end
 end
 
--- Terminal Class
 function Terminal:new(name, config)
     local default_cfg = {
         width = 0.8,
@@ -75,17 +74,6 @@ function Terminal:get_float_config()
     }
 end
 
-function Terminal:ensure_buffer()
-    if not self.buf or not api.nvim_buf_is_valid(self.buf) then
-        self.buf = api.nvim_create_buf(false, true)
-        set_buf_options(self.buf, {
-            buflisted = false,
-            bufhidden = 'hide',
-            filetype = self.config.filetype,
-        })
-    end
-end
-
 function Terminal:setup_window_options()
     if self:valid_win() then
         set_win_options(self.win, {
@@ -93,18 +81,20 @@ function Terminal:setup_window_options()
             relativenumber = false,
             signcolumn = 'no',
             wrap = false,
-            winhighlight = 'Normal:Normal,FloatBorder:FloatBorder',
         })
     end
 end
 
 function Terminal:start_process()
-    if api.nvim_get_option_value('buftype', { buf = self.buf }) == 'terminal' then return end
-
-    api.nvim_set_current_buf(self.buf)
     local cmd = self.config.shell and string.format("terminal %s", vim.fn.shellescape(self.config.shell)) or 'terminal'
     vim.cmd(cmd)
     self.buf = api.nvim_get_current_buf()
+
+    set_buf_options(self.buf, {
+        buflisted = false,
+        bufhidden = 'wipe',
+        filetype = self.config.filetype,
+    })
 
     if self.config.auto_delete_on_close then
         api.nvim_create_autocmd('TermClose', {
@@ -127,9 +117,9 @@ function Terminal:is_current_window()
 end
 
 function Terminal:open()
-    self:ensure_buffer()
     if not self:valid_win() then
-        self.win = api.nvim_open_win(self.buf, true, self:get_float_config())
+        local temp_buf = api.nvim_create_buf(false, true)
+        self.win = api.nvim_open_win(temp_buf, true, self:get_float_config())
         self:setup_window_options()
         self:start_process()
         api.nvim_create_autocmd('WinClosed', {
@@ -185,7 +175,7 @@ function Terminal:is_running()
     return false
 end
 
--- Module Logic
+-- Terminal manager
 local terminals = {}
 
 function M.create_terminal(name, config)
