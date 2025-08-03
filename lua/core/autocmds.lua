@@ -38,34 +38,12 @@ autocmd({ "Filetype" }, {
 
 autocmd({ "VimEnter" }, {
     callback = function()
-        require("termswitch").lazy_setup()
-    end
-})
-
-autocmd({ "BufEnter" }, {
-    callback = function()
         require("custom_ui.input")
         require("custom_ui.select")
+        require("termswitch").setup()
 
-        local bufswitch = require("bufferswitch")
-
-        keyset('n', "<Right>", function() bufswitch.goto_next_buffer() end, { noremap = true, silent = true })
-        keyset('n', "<Left>", function() bufswitch.goto_prev_buffer() end, { noremap = true, silent = true })
-
-        keyset("n", "<leader>ot", function()
-            local original_directory = vim.fn.getcwd()
-            local current_file = api.nvim_buf_get_name(0)
-            local directory = current_file ~= "" and vim.fn.fnamemodify(current_file, ":h")
-                or original_directory
-
-            vim.cmd("cd " .. directory .. " | term")
-
-            api.nvim_create_autocmd("TermClose", {
-                callback = function()
-                    vim.cmd("cd " .. original_directory)
-                end,
-            })
-        end, { noremap = true, silent = true, nowait = true })
+        keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end, { noremap = true, silent = true })
+        keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end, { noremap = true, silent = true })
     end,
 })
 

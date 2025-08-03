@@ -6,6 +6,11 @@ vim.ui.input = function(opts, on_confirm)
     opts = opts or {}
 
     local prompt = opts.prompt or "Input: "
+
+    if prompt == "New Name: " then
+        prompt = " New Name "
+    end
+
     local default = opts.default or ""
     on_confirm = on_confirm or function() end
 
@@ -23,10 +28,11 @@ vim.ui.input = function(opts, on_confirm)
         width = input_width,
         height = 1,
         title = prompt,
+        title_pos = "center",
         noautocmd = true,
     }
 
-    if prompt ~= "New Name: " then
+    if prompt ~= " New Name " then
         default_win_config.relative = "win"
         default_win_config.row = math.max(api.nvim_win_get_height(0) / 2 - 1, 0)
         default_win_config.col = math.max(api.nvim_win_get_width(0) / 2 - input_width / 2, 0)

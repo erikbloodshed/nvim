@@ -5,9 +5,6 @@ local M = {}
 local Terminal = {}
 Terminal.__index = Terminal
 
--- Lazy-load cache
-local initialized = false
-
 -- Helpers
 local function set_win_options(win, options)
     for opt, val in pairs(options) do
@@ -217,26 +214,6 @@ function M.list_terminals()
         table.insert(names, name)
     end
     return names
-end
-
-local function lazy_init(user_config)
-    if initialized then return end
-    initialized = true
-    M.setup(user_config)
-end
-
-function M.lazy_setup(user_config)
-    if vim.fn.exists("#User#VeryLazy") == 0 then
-        lazy_init(user_config)
-    else
-        vim.api.nvim_create_autocmd("User", {
-            pattern = "VeryLazy",
-            once = true,
-            callback = function()
-                lazy_init(user_config)
-            end,
-        })
-    end
 end
 
 function M.setup(user_config)
