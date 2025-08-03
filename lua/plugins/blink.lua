@@ -1,7 +1,7 @@
 return {
     "saghen/blink.cmp",
     event = { "VeryLazy" },
-    build = "cargo +nightly build --release",
+    build = "cargo build --release",
 
     opts = {
         completion = {
