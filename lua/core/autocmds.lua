@@ -36,6 +36,12 @@ autocmd({ "Filetype" }, {
     end,
 })
 
+autocmd({ "VimEnter" }, {
+    callback = function()
+        require("termswitch").lazy_setup()
+    end
+})
+
 autocmd({ "BufEnter" }, {
     callback = function()
         require("custom_ui.input")
