@@ -46,6 +46,29 @@ function M.setup(terminal_manager)
             end
         end, { desc = cmd.desc })
     end
+
+    api.nvim_create_user_command('SendToTerm', function(opts)
+        local terminal = terminal_manager.get_default_terminal()
+        if not terminal then
+            vim.notify("Default terminal not found", vim.log.levels.ERROR)
+            return
+        end
+
+        if not terminal:is_running() then
+            vim.notify("Default terminal is not running", vim.log.levels.WARN)
+            return
+        end
+
+        local success = terminal:send(opts.args .. '\n')
+        if success then
+            vim.notify("Sent to default terminal: " .. opts.args, vim.log.levels.INFO)
+        else
+            vim.notify("Failed to send text to default terminal", vim.log.levels.ERROR)
+        end
+    end, {
+        nargs = '+',
+        desc = 'Send text to default terminal',
+    })
 end
 
 return M

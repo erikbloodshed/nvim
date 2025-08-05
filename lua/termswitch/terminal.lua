@@ -204,9 +204,12 @@ function Terminal:send(text)
 
     local success, job_id = pcall(api.nvim_buf_get_var, self.buf, 'terminal_job_id')
     if success and job_id and job_id > 0 then
-        api.nvim_chan_send(job_id, text)
+        vim.defer_fn(function()
+            vim.fn.chansend(job_id, text)
+        end, 75)
         return true
     end
+
     return false
 end
 

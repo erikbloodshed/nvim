@@ -10,7 +10,7 @@ function M.setup(user_config)
     M.create_terminal('terminal', default_config)
 
     local python_config = vim.tbl_extend('force', default_config, {
-        shell = 'python3',
+        shell = 'python3.14',
         filetype = 'pyterm',
         auto_delete_on_close = true,
     })

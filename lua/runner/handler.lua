@@ -51,16 +51,12 @@ M.run = function(cmd_str, args, datfile)
     if args then cmd = cmd .. " " .. args end
     if datfile then cmd = cmd .. " < " .. datfile end
 
-    -- vim.cmd.terminal()
     vim.cmd("ToggleTerm")
 
+    local buf = api.nvim_get_current_buf()
+    local job_id = api.nvim_buf_get_var(buf, "terminal_job_id")
     vim.defer_fn(function()
-        local term_id = api.nvim_get_option_value("channel", { buf = 0 })
-        if term_id then
-            vim.fn.chansend(term_id, cmd .. "\n")
-        else
-            vim.notify("Could not get terminal job ID to send command.", vim.log.levels.WARN)
-        end
+        vim.fn.chansend(job_id, cmd .. "\n")
     end, 75)
 end
 
