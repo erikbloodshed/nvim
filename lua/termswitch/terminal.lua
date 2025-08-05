@@ -18,7 +18,10 @@ function Terminal:new(name, user_config)
         config = merged_config,
         buf = nil,
         win = nil,
-        _autocmd_groups = {}, -- Track autocmd groups for cleanup
+        _autocmd_group = nil, -- Single group instead of multiple
+        _buf_valid = false,   -- Cache buffer validity
+        _is_terminal = false, -- Cache terminal state
+        _job_id = nil,        -- Cache job ID
     }
     setmetatable(obj, self)
     return obj
@@ -43,11 +46,21 @@ function Terminal:get_float_config()
 end
 
 function Terminal:ensure_buffer()
-    if self.buf and api.nvim_buf_is_valid(self.buf) then
-        return -- Buffer already exists and is valid
+    -- Use cached state first, but also verify the buffer still exists
+    if self._buf_valid and self.buf and api.nvim_buf_is_valid(self.buf) then
+        return -- Buffer exists and is valid
     end
 
+    -- Buffer is invalid or doesn't exist, create new one
     self.buf = api.nvim_create_buf(false, true)
+    if not self.buf then
+        error("Failed to create buffer")
+    end
+
+    self._buf_valid = true
+    self._is_terminal = false -- Reset terminal state for new buffer
+    self._job_id = nil        -- Reset job ID for new buffer
+
     utils.set_buf_options(self.buf, {
         buflisted = false,
         bufhidden = 'hide',
@@ -80,6 +93,9 @@ function Terminal:start_process()
 
     vim.cmd(cmd)
     self.buf = api.nvim_get_current_buf()
+    self._is_terminal = true -- Mark as terminal buffer
+    self._buf_valid = true
+    self._job_id = nil       -- Reset job ID cache
 
     -- Set buffer options after terminal creation
     utils.set_buf_options(self.buf, {
@@ -99,10 +115,15 @@ function Terminal:start_process()
     end
 end
 
+function Terminal:_ensure_autocmd_group()
+    if not self._autocmd_group then
+        self._autocmd_group = api.nvim_create_augroup('TermSwitch_' .. self.name, { clear = true })
+    end
+    return self._autocmd_group
+end
+
 function Terminal:setup_auto_delete()
-    local group_name = 'TermSwitch_' .. self.name .. '_TermClose'
-    local group = api.nvim_create_augroup(group_name, { clear = true })
-    self._autocmd_groups[group_name] = group
+    local group = self:_ensure_autocmd_group()
 
     api.nvim_create_autocmd('TermClose', {
         group = group,
@@ -112,6 +133,8 @@ function Terminal:setup_auto_delete()
                 if api.nvim_buf_is_valid(self.buf) then
                     vim.cmd('bdelete! ' .. self.buf)
                 end
+                -- Invalidate cache since buffer will be deleted
+                self:invalidate_cache()
             end)
         end,
         desc = 'Auto-delete terminal buffer on close for ' .. self.name
@@ -119,9 +142,7 @@ function Terminal:setup_auto_delete()
 end
 
 function Terminal:setup_window_close_handler()
-    local group_name = 'TermSwitch_' .. self.name .. '_WinClosed'
-    local group = api.nvim_create_augroup(group_name, { clear = true })
-    self._autocmd_groups[group_name] = group
+    local group = self:_ensure_autocmd_group()
 
     api.nvim_create_autocmd('WinClosed', {
         group = group,
@@ -142,9 +163,26 @@ function Terminal:is_current_window()
 end
 
 function Terminal:is_terminal_buffer()
-    return self.buf and
-        api.nvim_buf_is_valid(self.buf) and
-        api.nvim_get_option_value('buftype', { buf = self.buf }) == 'terminal'
+    -- First ensure we have a valid buffer
+    if not self._buf_valid or not self.buf or not api.nvim_buf_is_valid(self.buf) then
+        self._buf_valid = false
+        self._is_terminal = false
+        return false
+    end
+
+    -- If we've cached that it's a terminal, trust that
+    if self._is_terminal then
+        return true
+    end
+
+    -- Check if it's actually a terminal buffer
+    local success, buftype = pcall(api.nvim_get_option_value, 'buftype', { buf = self.buf })
+    if success and buftype == 'terminal' then
+        self._is_terminal = true
+        return true
+    end
+
+    return false
 end
 
 function Terminal:open()
@@ -172,13 +210,6 @@ function Terminal:hide()
 
     api.nvim_win_close(self.win, false)
     self.win = nil
-
-    -- Clean up autocmd group
-    local group_name = 'TermSwitch_' .. self.name .. '_WinClosed'
-    if self._autocmd_groups[group_name] then
-        pcall(api.nvim_clear_autocmds, { group = self._autocmd_groups[group_name] })
-        self._autocmd_groups[group_name] = nil
-    end
 end
 
 function Terminal:focus()
@@ -190,44 +221,70 @@ function Terminal:focus()
 end
 
 function Terminal:toggle()
-    if self:is_current_window() then
+    -- Optimized: Single state check with cached results
+    local current_win = api.nvim_get_current_win()
+    local win_valid = self.win and api.nvim_win_is_valid(self.win)
+
+    if win_valid and current_win == self.win then
         self:hide()
-    elseif self:is_valid_window() then
+    elseif win_valid then
         self:focus()
     else
         self:open()
     end
 end
 
-function Terminal:send(text)
-    if not self:is_terminal_buffer() then return false end
+function Terminal:_get_job_id()
+    -- Return cached job_id if available
+    if self._job_id and self._job_id > 0 then
+        return self._job_id
+    end
+
+    if not self:is_terminal_buffer() then
+        return nil
+    end
 
     local success, job_id = pcall(api.nvim_buf_get_var, self.buf, 'terminal_job_id')
     if success and job_id and job_id > 0 then
+        self._job_id = job_id
+        return job_id
+    end
+
+    return nil
+end
+
+function Terminal:send(text)
+    local job_id = self:_get_job_id()
+    if job_id then
         vim.defer_fn(function()
             vim.fn.chansend(job_id, text)
         end, 75)
         return true
     end
-
     return false
 end
 
 function Terminal:is_running()
-    if not self:is_terminal_buffer() then return false end
+    return self:_get_job_id() ~= nil
+end
 
-    local success, job_id = pcall(api.nvim_buf_get_var, self.buf, 'terminal_job_id')
-    return success and job_id and job_id > 0
+function Terminal:invalidate_cache()
+    self._buf_valid = false
+    self._is_terminal = false
+    self._job_id = nil
 end
 
 function Terminal:cleanup()
     self:hide()
 
-    -- Clean up all autocmd groups
-    for _, group in pairs(self._autocmd_groups) do
-        pcall(api.nvim_clear_autocmds, { group = group })
+    -- Single autocmd group cleanup
+    if self._autocmd_group then
+        pcall(api.nvim_clear_autocmds, { group = self._autocmd_group })
+        self._autocmd_group = nil
     end
-    self._autocmd_groups = {}
+
+    -- Reset cached state
+    self:invalidate_cache()
 
     -- Clean up buffer if it exists
     if self.buf and api.nvim_buf_is_valid(self.buf) then

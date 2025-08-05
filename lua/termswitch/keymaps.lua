@@ -1,60 +1,66 @@
+-- termswitch/keymaps.lua
 local api = vim.api
 
 local M = {}
 
-function M.setup(terminal_manager)
-    local default_terminal = terminal_manager.get_default_terminal()
-    local python_terminal = terminal_manager.get_python_terminal()
-
-    if not default_terminal or not python_terminal then
-        vim.notify("TermSwitch: Default terminals not found, skipping keymap setup", vim.log.levels.WARN)
+--- Sets up user-defined keymaps.
+---@param terminal_manager table The terminal manager module.
+---@param user_keymaps table A list of keymap configurations from the user.
+function M.setup(terminal_manager, user_keymaps)
+    if not user_keymaps or type(user_keymaps) ~= 'table' then
         return
     end
 
     local esc = api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true)
 
-    local keymaps = {
-        -- Default terminal keymaps
-        {
-            mode = 'n',
-            lhs = '<leader>tt',
-            rhs = function() default_terminal:toggle() end,
-            desc = 'Toggle Terminal'
-        },
-        {
-            mode = 't',
-            lhs = '<leader>tt',
-            rhs = function()
-                api.nvim_feedkeys(esc, 't', false)
-                vim.schedule(function() default_terminal:hide() end)
-            end,
-            desc = 'Hide Terminal (Terminal mode)'
-        },
+    for _, map_config in ipairs(user_keymaps) do
+        -- Validate the keymap configuration entry
+        if not (map_config.lhs and map_config.terminal and map_config.action) then
+            vim.notify("TermSwitch: Invalid keymap config. Requires 'lhs', 'terminal', and 'action'.",
+                vim.log.levels.WARN)
+            goto continue
+        end
 
-        -- Python terminal keymaps
-        {
-            mode = 'n',
-            lhs = '<leader>tp',
-            rhs = function() python_terminal:toggle() end,
-            desc = 'Toggle Python'
-        },
-        {
-            mode = 't',
-            lhs = '<leader>tp',
-            rhs = function()
-                api.nvim_feedkeys(esc, 't', false)
-                vim.schedule(function() python_terminal:hide() end)
-            end,
-            desc = 'Hide Python (Terminal mode)'
-        },
-    }
+        local terminal = terminal_manager.get_terminal(map_config.terminal)
+        if not terminal then
+            vim.notify(
+            string.format("TermSwitch: Terminal '%s' not found for keymap '%s'.", map_config.terminal, map_config.lhs),
+                vim.log.levels.WARN)
+            goto continue
+        end
 
-    for _, map in ipairs(keymaps) do
-        vim.keymap.set(map.mode, map.lhs, map.rhs, {
+        local rhs
+        if map_config.action == 'toggle' then
+            rhs = function() terminal:toggle() end
+        elseif map_config.action == 'hide' then
+            rhs = function()
+                -- Special handling for hiding from within terminal mode
+                if map_config.mode == 't' then
+                    api.nvim_feedkeys(esc, 't', false)
+                    vim.schedule(function() terminal:hide() end)
+                else
+                    terminal:hide()
+                end
+            end
+        elseif map_config.action == 'open' then
+            rhs = function() terminal:open() end
+        elseif map_config.action == 'focus' then
+            rhs = function() terminal:focus() end
+        else
+            vim.notify(
+            string.format("TermSwitch: Invalid keymap action '%s' for '%s'.", map_config.action, map_config.lhs),
+                vim.log.levels.WARN)
+            goto continue
+        end
+
+        vim.keymap.set(map_config.mode or 'n', map_config.lhs, rhs, {
             noremap = true,
             silent = true,
-            desc = map.desc
+            desc = map_config.desc or
+            string.format("%s '%s' terminal", map_config.action:gsub("^%l", string.upper), map_config.terminal)
         })
+
+        ::continue::
     end
 end
 
