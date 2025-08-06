@@ -11,7 +11,7 @@
       ░                            ░                               ░
 --]]
 
-require("ayu_dark").load()
+vim.cmd("colorscheme dracula")
 require("core.options")
 require("core.lazy")
 require("core.lsp")
