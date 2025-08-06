@@ -11,6 +11,7 @@
       ░                            ░                               ░
 --]]
 
+require("ayu_dark").load()
 require("core.options")
 require("core.lazy")
 require("core.lsp")
