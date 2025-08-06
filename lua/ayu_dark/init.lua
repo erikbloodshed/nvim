@@ -182,6 +182,7 @@ function highlights.apply(config)
     -- ==========================================================================
     hl("@variable", { fg = c.fg })
     hl("@variable.builtin", { fg = c.red })
+    hl("@variable.parameter", { fg = c.red })
     hl("@constant", { fg = c.orange })
     hl("@module", { fg = c.blue })
     hl("@string", { fg = c.green })
