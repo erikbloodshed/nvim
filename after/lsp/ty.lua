@@ -1,4 +1,4 @@
 return {
-    cmd = { "ty", "server" },
-    filetypes = { "python" },
+  cmd = { "ty", "server" },
+  filetypes = { "python" },
 }

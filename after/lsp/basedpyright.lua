@@ -1,15 +1,15 @@
 return {
-    cmd = {
-        "basedpyright-langserver",
-        "--stdio",
+  cmd = {
+    "basedpyright-langserver",
+    "--stdio",
+  },
+  filetypes = { "python" },
+  settings = {
+    basedpyright = {
+      analysis = {
+        diagnosticMode = "openFilesOnly",
+        typeCheckingMode = "standard",
+      },
     },
-    filetypes = { "python" },
-    settings = {
-        basedpyright = {
-            analysis = {
-                diagnosticMode = "openFilesOnly",
-                typeCheckingMode = "standard",
-            },
-        },
-    },
+  },
 }

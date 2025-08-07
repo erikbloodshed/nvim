@@ -1,4 +1,4 @@
 return {
-    cmd = { "pyrefly", "lsp"},
-    filetypes = { "python" },
+  cmd = { "pyrefly", "lsp" },
+  filetypes = { "python" },
 }
