@@ -3,7 +3,7 @@ return {
     event = "VeryLazy",
     opts = {
         options = {
-            theme = "auto",
+            theme = "ayu_dark",
             icons_enabled = true,
             component_separators = { left = "", right = "" },
             section_separators = { left = "", right = "" },
