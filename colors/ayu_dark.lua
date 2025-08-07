@@ -33,7 +33,8 @@ local colors = {
     alt_blue    = "#6994BF", -- Alternative blue
     ui_gray     = "#4D5566", -- UI elements
     dark_cyan   = "#4CBB17", -- Darker cyan variant
-    bright_blue = "#59C2FF"  -- Bright blue
+    -- bright_blue = "#59C2FF"  -- Bright blue
+    bright_blue = "#4DA6E6"  -- Bright blue
 }
 
 -- Main highlight groups, including base and syntax
