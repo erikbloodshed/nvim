@@ -11,44 +11,27 @@ end
 
 -- Set terminal colors and colorscheme name
 vim.o.termguicolors = true
-vim.g.colors_name = "dracula"
+vim.g.colors_name = "van_helsing"
 
--- local colors = {
---     bg = "none",
---     fg = "#e0e0da",
---     selection = "#3a3c4e",
---     comment = "#4a5a8a",
---     red = "#e63939",
---     orange = "#e69a4a",
---     yellow = "#d9e06b",
---     green = "#3ec566",
---     purple = "#a678d9",
---     cyan = "#5bc8e3",
---     pink = "#e65ba7",
---     dark_gray = "#181921",
---     gray = "#3a3c4e",
---     light_gray = "#4a5a8a",
--- }
-
--- Dracula color palette
 local colors = {
-    bg = "none",
-    fg = "#f8f8f2",
-    -- selection = "#44475a",
-    -- selection = "#3a3c4e",
-    selection = "#353746",
-    comment = "#6272a4",
-    red = "#ff5555",
-    orange = "#ffb86c",
-    yellow = "#f1fa8c",
-    green = "#50fa7b",
-    purple = "#bd93f9",
-    -- cyan = "#8be9fd",
-    cyan = "#5bc8e3",
-    pink = "#ff79c6",
-    dark_gray = "#21222c",
-    gray = "#44475a",
-    light_gray = "#6272a4",
+    bg = "#0B0D0F",         -- Background
+    fg = "#F8F8F2",         -- Foreground
+    selection = "#414D58",  -- Current-line/selection
+    comment = "#708DA9",    -- Comment
+    red = "#FF9580",        -- Red
+    orange = "#FFCA80",     -- Orange
+    yellow = "#FFFF80",     -- Yellow
+    green = "#8AFF80",      -- Green
+    purple = "#9580FF",     -- Purple
+    cyan = "#80FFEA",       -- Cyan
+    pink = "#FF80BF",       -- Pink
+    dark_gray = "#1F272E",  -- Secondary background
+    gray = "#29333D",       -- Tertiary background
+    light_gray = "#33404C", -- Quaternary background
+    fg2 = "#EDEDDE",        -- Secondary foreground
+    fg3 = "#D6D6C2",        -- Tertiary foreground
+    fg4 = "#BABAAB",        -- Quaternary foreground
+    alt_blue = "#8A75F0"    -- Alternative blue
 }
 
 -- Main highlight groups, including base and syntax
@@ -75,7 +58,7 @@ local highlights = {
     NormalFloat = { fg = colors.fg, bg = colors.bg },
     Pmenu = { fg = colors.fg, bg = colors.dark_gray },
     PmenuSbar = { bg = colors.gray },
-    PmenuSel = { fg = "#282a36", bg = colors.purple, bold = true },
+    PmenuSel = { fg = colors.bg, bg = colors.purple, bold = true },
     PmenuThumb = { bg = colors.purple },
     Question = { fg = colors.purple },
     SignColumn = { bg = colors.bg },
@@ -92,8 +75,7 @@ local highlights = {
     VisualNOS = { link = "Visual" },
     WarningMsg = { fg = colors.orange },
     Whitespace = { fg = colors.gray },
-    -- EndOfBuffer = { fg = "#282a36" },
-    EndOfBuffer = { fg = "#1e1f29" },
+    EndOfBuffer = { fg = colors.bg },
 
     -- Syntax highlighting
     Boolean = { fg = colors.purple },
