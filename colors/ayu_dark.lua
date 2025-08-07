@@ -11,79 +11,102 @@ end
 vim.o.termguicolors = true
 vim.g.colors_name = "ayu_dark"
 
+-- Ayu Dark Color Palette structured like OneDark
 local colors = {
-    bg          = "#0F1419", -- Background
-    bg2         = "#0C0F16", -- Background
-    fg          = "#BFBDB6", -- Foreground
-    selection   = "#161F26", -- Current-line/selection
-    comment     = "#5C6773", -- Comment
-    red         = "#F07178", -- Red
-    orange      = "#F29668", -- Orange
-    yellow      = "#E6B673", -- Yellow
-    green       = "#B8CC52", -- Green
-    purple      = "#D2A6FF", -- Purple
-    cyan        = "#95E6CB", -- Cyan
-    pink        = "#D96C75", -- Pink
-    dark_gray   = "#151A1E", -- Secondary background
-    gray        = "#1F2430", -- Tertiary background
-    light_gray  = "#343F4C", -- Quaternary background
-    fg2         = "#E6E1CF", -- Secondary foreground
-    fg3         = "#D9D7CE", -- Tertiary foreground
-    fg4         = "#C7C5BD", -- Quaternary foreground
-    alt_blue    = "#6994BF", -- Alternative blue
-    ui_gray     = "#4D5566", -- UI elements
-    dark_cyan   = "#4CBB17", -- Darker cyan variant
-    bright_blue = "#59C2FF"  -- Bright blue
+    -- Core Background Colors (Ayu Dark hierarchy)
+    none         = "none",
+    bg0          = "#0F1419", -- Main background (Ayu Dark signature)
+    bg1          = "#0C0F16", -- Slightly darker background (sidebars, popups)
+    bg2          = "#161F26", -- Lighter background (visual selection, current line)
+    bg3          = "#4D5566", -- Lightest background (borders, inactive elements)
+    bg_d         = "#0B0E14", -- Darker background variant
 
+    -- Core Foreground Colors (Ayu Dark)
+    fg           = "#BFBDB6", -- Main foreground text
+    light_grey   = "#E6E1CF", -- Primary text (brighter)
+    grey         = "#5C6773", -- Secondary text (comments, less important)
+    dark_grey    = "#343F4C", -- Tertiary text (line numbers, borders)
+
+    -- Ayu Dark Signature Colors
+    red          = "#F07178", -- Errors, delete operations
+    dark_red     = "#FF3333", -- Darker red variant
+    green        = "#B8CC52", -- Strings, additions, success
+    dark_green   = "#98B982", -- Darker green variant
+    yellow       = "#E6B673", -- Classes, warnings, constants
+    dark_yellow  = "#D19A66", -- Darker yellow/orange variant
+    blue         = "#59C2FF", -- Functions, methods, links
+    dark_blue    = "#6994BF", -- Darker blue variant (alt_blue)
+    purple       = "#D2A6FF", -- Keywords, types, special
+    dark_purple  = "#A679D9", -- Darker purple variant
+    cyan         = "#95E6CB", -- Operators, escape characters, info
+    dark_cyan    = "#4CBB17", -- Darker cyan variant
+    orange       = "#F29668", -- Numbers, constants, attributes
+    pink         = "#D96C75", -- Pink accent
+
+    -- UI and Special Colors (Ayu Dark)
+    cursor_grey  = "#161F26", -- Cursor line background (selection)
+    visual_grey  = "#161F26", -- Visual selection background
+    menu_grey    = "#151A1E", -- Menu/popup backgrounds (dark_gray)
+    special_grey = "#1F2430", -- Special backgrounds (gray)
+    gutter_grey  = "#4D5566", -- Gutter, line numbers (ui_gray)
+    comment_grey = "#5C6773", -- Comments, inactive text
+
+    -- Git Colors (Ayu Dark Style)
+    diff_add     = "#B8CC52", -- Git additions (using green)
+    diff_delete  = "#FF3333", -- Git deletions (using red)
+    diff_change  = "#E6B673", -- Git modifications (using yellow)
+    diff_text    = "#F29668", -- Git diff text highlighting (using orange)
 }
 
--- Main highlight groups, including base and syntax
--- Links are defined directly in this table
+-- Main highlight groups following OneDark structure with Ayu Dark colors
 local highlights = {
     -- Base highlights
-    ColorColumn = { bg = colors.selection },
-    Cursor = { fg = colors.bg, bg = colors.fg },
-    CursorLine = { bg = colors.selection },
+    ColorColumn = { bg = colors.bg2 },
+    Cursor = { fg = colors.bg0, bg = colors.fg },
+    CursorLine = { bg = colors.cursor_grey },
     CursorColumn = { link = "CursorLine" },
     CursorLineNr = { fg = colors.orange },
-    Directory = { fg = colors.bright_blue },
+    Directory = { fg = colors.blue },
     ErrorMsg = { fg = colors.red },
-    FloatBorder = { fg = colors.ui_gray },
-    FoldColumn = { fg = colors.light_gray, bg = colors.bg },
-    Folded = { fg = colors.light_gray, bg = colors.dark_gray },
-    Search = { fg = colors.bg, bg = colors.yellow },
+    FloatBorder = { fg = colors.gutter_grey },
+    FoldColumn = { fg = colors.dark_grey, bg = colors.bg0 },
+    Folded = { fg = colors.dark_grey, bg = colors.menu_grey },
+    Search = { fg = colors.bg0, bg = colors.yellow },
     IncSearch = { link = "Search" },
-    LineNr = { fg = colors.ui_gray },
+    LineNr = { fg = colors.gutter_grey },
     ModeMsg = { fg = colors.fg },
     MoreMsg = { fg = colors.green },
-    NonText = { fg = colors.ui_gray },
-    Normal = { fg = colors.fg, bg = colors.bg },
-    NormalFloat = { fg = colors.fg, bg = colors.bg2 },
-    Pmenu = { fg = colors.fg, bg = colors.dark_gray },
-    PmenuSbar = { bg = colors.gray },
-    PmenuSel = { fg = colors.bg, bg = colors.orange, bold = true },
+    NonText = { fg = colors.gutter_grey },
+    Normal = { fg = colors.fg, bg = colors.none },
+    NormalFloat = { fg = colors.fg, bg = colors.none },
+    Pmenu = { fg = colors.fg, bg = colors.menu_grey },
+    PmenuSbar = { bg = colors.special_grey },
+    PmenuSel = { fg = colors.bg0, bg = colors.dark_blue, bold = true },
     PmenuThumb = { bg = colors.orange },
     Question = { fg = colors.purple },
-    SignColumn = { bg = colors.bg },
-    SpecialKey = { fg = colors.ui_gray },
-    StatusLine = { fg = colors.fg, bg = colors.gray },
-    StatusLineNC = { fg = colors.light_gray, bg = colors.dark_gray },
-    TabLine = { fg = colors.light_gray, bg = colors.dark_gray },
+    SignColumn = { bg = colors.bg0 },
+    SpecialKey = { fg = colors.gutter_grey },
+    StatusLine = { fg = colors.fg, bg = colors.special_grey },
+    StatusLineNC = { fg = colors.dark_grey, bg = colors.menu_grey },
+    TabLine = { fg = colors.dark_grey, bg = colors.menu_grey },
     TabLineFill = { link = "TabLine" },
-    TabLineSel = { fg = colors.fg, bg = colors.bg },
-    Title = { fg = colors.bg, bg = colors.cyan, bold = true, },
-    VertSplit = { fg = colors.ui_gray },
+    TabLineSel = { fg = colors.fg, bg = colors.bg0 },
+    Title = { fg = colors.bg0, bg = colors.cyan, bold = true },
+    VertSplit = { fg = colors.gutter_grey },
     WinSeparator = { link = "VertSplit" },
-    Visual = { bg = colors.selection },
+    Visual = { bg = colors.visual_grey },
     VisualNOS = { link = "Visual" },
     WarningMsg = { fg = colors.yellow },
-    Whitespace = { fg = colors.ui_gray },
-    EndOfBuffer = { fg = colors.bg },
+    Whitespace = { fg = colors.gutter_grey },
+    EndOfBuffer = { fg = colors.bg0 },
+    WildMenu = { fg = colors.bg0, bg = colors.orange },
+    QuickFixLine = { bg = colors.visual_grey },
+    MatchParen = { fg = colors.orange, bold = true },
 
-    -- Syntax highlighting
+    -- Syntax highlighting (Ayu Dark style)
     Boolean = { fg = colors.orange },
     Character = { fg = colors.yellow },
-    Comment = { fg = colors.comment, italic = true },
+    Comment = { fg = colors.comment_grey, italic = true },
     Conditional = { fg = colors.orange },
     Constant = { fg = colors.orange },
     Debug = { fg = colors.red },
@@ -92,9 +115,9 @@ local highlights = {
     Error = { fg = colors.red },
     Exception = { fg = colors.orange },
     Float = { fg = colors.purple },
-    Function = { fg = colors.bright_blue },
+    Function = { fg = colors.blue },
     Identifier = { fg = colors.fg },
-    Ignore = { fg = colors.ui_gray },
+    Ignore = { fg = colors.gutter_grey },
     Include = { fg = colors.orange },
     Keyword = { fg = colors.purple },
     Label = { fg = colors.orange },
@@ -106,7 +129,7 @@ local highlights = {
     Repeat = { fg = colors.purple },
     Special = { fg = colors.orange },
     SpecialChar = { fg = colors.orange },
-    SpecialComment = { fg = colors.light_gray },
+    SpecialComment = { fg = colors.dark_grey },
     Statement = { fg = colors.orange },
     StorageClass = { fg = colors.orange },
     String = { fg = colors.green },
@@ -117,14 +140,14 @@ local highlights = {
     Typedef = { fg = colors.yellow },
     Underlined = { fg = colors.cyan, underline = true },
 
-    -- Treesitter highlights
+    -- Treesitter highlights (Ayu Dark mappings)
     ["@annotation"] = { fg = colors.yellow },
     ["@attribute"] = { fg = colors.yellow },
     ["@boolean"] = { fg = colors.orange },
     ["@character"] = { fg = colors.orange },
     ["@character.special"] = { fg = colors.orange },
-    ["@comment"] = { fg = colors.comment, italic = true },
-    ["@comment.documentation"] = { fg = colors.light_gray },
+    ["@comment"] = { fg = colors.comment_grey, italic = true },
+    ["@comment.documentation"] = { fg = colors.dark_grey },
     ["@comment.error"] = { fg = colors.red },
     ["@comment.note"] = { fg = colors.cyan },
     ["@comment.todo"] = { fg = colors.yellow, bold = true },
@@ -139,10 +162,10 @@ local highlights = {
     ["@exception"] = { fg = colors.orange },
     ["@field"] = { fg = colors.fg },
     ["@float"] = { link = "Number" },
-    ["@function"] = { fg = colors.bright_blue },
-    ["@function.builtin"] = { fg = colors.bright_blue },
-    ["@function.call"] = { fg = colors.bright_blue },
-    ["@function.macro"] = { fg = colors.bright_blue },
+    ["@function"] = { fg = colors.blue },
+    ["@function.builtin"] = { fg = colors.blue },
+    ["@function.call"] = { fg = colors.blue },
+    ["@function.macro"] = { fg = colors.blue },
     ["@include"] = { fg = colors.orange },
     ["@keyword"] = { link = "Keyword" },
     ["@keyword.function"] = { link = "Keyword" },
@@ -150,8 +173,8 @@ local highlights = {
     ["@keyword.return"] = { link = "Keyword" },
     ["@label"] = { fg = colors.orange },
     ["@markup.link"] = { fg = colors.cyan },
-    ["@method"] = { fg = colors.bright_blue },
-    ["@method.call"] = { fg = colors.bright_blue },
+    ["@method"] = { fg = colors.blue },
+    ["@method.call"] = { fg = colors.blue },
     ["@namespace"] = { fg = colors.yellow },
     ["@none"] = { fg = colors.fg },
     ["@number"] = { link = "Number" },
@@ -159,7 +182,7 @@ local highlights = {
     ["@parameter"] = { fg = colors.red },
     ["@parameter.reference"] = { fg = colors.fg },
     ["@preproc"] = { fg = colors.orange },
-    ["@property"] = { fg = colors.bright_blue },
+    ["@property"] = { fg = colors.blue },
     ["@punctuation.bracket"] = { fg = colors.fg },
     ["@punctuation.delimiter"] = { fg = colors.fg },
     ["@punctuation.special"] = { fg = colors.orange },
@@ -172,7 +195,7 @@ local highlights = {
     ["@string.special"] = { fg = colors.orange },
     ["@symbol"] = { fg = colors.yellow },
     ["@tag"] = { fg = colors.orange },
-    ["@tag.attribute"] = { fg = colors.bright_blue },
+    ["@tag.attribute"] = { fg = colors.blue },
     ["@tag.delimiter"] = { fg = colors.fg },
     ["@text"] = { fg = colors.fg },
     ["@text.danger"] = { fg = colors.red },
@@ -241,44 +264,44 @@ local highlights = {
     ["@lsp.typemod.variable.injected"] = { link = "@variable" },
     ["@lsp.typemod.variable.static"] = { link = "@constant" },
 
-    -- Diagnostic highlights
-    DiagnosticError = { fg = colors.red },
-    DiagnosticWarn = { fg = colors.yellow },
-    DiagnosticInfo = { fg = colors.bright_blue },
-    DiagnosticHint = { fg = colors.light_gray },
-    DiagnosticVirtualTextError = { fg = colors.red, bg = colors.dark_gray },
-    DiagnosticVirtualTextWarn = { fg = colors.yellow, bg = colors.dark_gray },
-    DiagnosticVirtualTextInfo = { fg = colors.bright_blue, bg = colors.dark_gray },
-    DiagnosticVirtualTextHint = { fg = colors.light_gray, bg = colors.dark_gray },
-    DiagnosticUnderlineError = { undercurl = true, sp = colors.red },
-    DiagnosticUnderlineWarn = { undercurl = true, sp = colors.yellow },
-    DiagnosticUnderlineInfo = { undercurl = true, sp = colors.bright_blue },
-    DiagnosticUnderlineHint = { undercurl = true, sp = colors.light_gray },
+    -- Diagnostic highlights (Ayu Dark style)
+    DiagnosticError = { fg = colors.dark_red },
+    DiagnosticWarn = { fg = colors.dark_yellow },
+    DiagnosticInfo = { fg = colors.dark_blue },
+    DiagnosticHint = { fg = colors.dark_grey },
+    DiagnosticVirtualTextError = { fg = colors.red, bg = colors.menu_grey },
+    DiagnosticVirtualTextWarn = { fg = colors.yellow, bg = colors.menu_grey },
+    DiagnosticVirtualTextInfo = { fg = colors.blue, bg = colors.menu_grey },
+    DiagnosticVirtualTextHint = { fg = colors.dark_grey, bg = colors.menu_grey },
+    DiagnosticUnderlineError = { undercurl = true, sp = colors.dark_red },
+    DiagnosticUnderlineWarn = { undercurl = true, sp = colors.dark_yellow },
+    DiagnosticUnderlineInfo = { undercurl = true, sp = colors.dark_blue },
+    DiagnosticUnderlineHint = { undercurl = true, sp = colors.dark_grey },
 
-    -- Git highlights
-    DiffAdd = { fg = colors.green, bg = colors.dark_gray },
-    DiffChange = { fg = colors.yellow, bg = colors.dark_gray },
-    DiffDelete = { fg = colors.red, bg = colors.dark_gray },
-    DiffText = { fg = colors.yellow, bg = colors.selection },
+    -- Git highlights (Ayu Dark style)
+    DiffAdd = { fg = colors.green, bg = colors.menu_grey },
+    DiffChange = { fg = colors.yellow, bg = colors.menu_grey },
+    DiffDelete = { fg = colors.red, bg = colors.menu_grey },
+    DiffText = { fg = colors.yellow, bg = colors.bg2 },
     GitSignsAdd = { fg = colors.green },
     GitSignsChange = { fg = colors.yellow },
     GitSignsDelete = { fg = colors.red },
 }
 
--- Modular highlights for plugins
+-- Modular highlights for plugins (Ayu Dark colors)
 local integrations = {
     blink_cmp = {
         BlinkCmpMenu = { link = "Pmenu" },
-        BlinkCmpMenuBorder = { fg = colors.ui_gray, bg = colors.dark_gray },
+        BlinkCmpMenuBorder = { fg = colors.gutter_grey, bg = colors.menu_grey },
         BlinkCmpMenuSelection = { link = "PmenuSel" },
         BlinkCmpLabel = { fg = colors.fg },
         BlinkCmpLabelMatch = { fg = colors.yellow, bold = true },
-        BlinkCmpLabelDescription = { fg = colors.light_gray },
-        BlinkCmpLabelDetail = { fg = colors.light_gray },
+        BlinkCmpLabelDescription = { fg = colors.dark_grey },
+        BlinkCmpLabelDetail = { fg = colors.dark_grey },
         BlinkCmpKind = { fg = colors.orange },
         BlinkCmpKindText = { fg = colors.fg },
-        BlinkCmpKindMethod = { fg = colors.bright_blue },
-        BlinkCmpKindFunction = { fg = colors.bright_blue },
+        BlinkCmpKindMethod = { fg = colors.blue },
+        BlinkCmpKindFunction = { fg = colors.blue },
         BlinkCmpKindConstructor = { fg = colors.orange },
         BlinkCmpKindField = { fg = colors.fg },
         BlinkCmpKindVariable = { fg = colors.orange },
@@ -304,42 +327,42 @@ local integrations = {
     },
     neotree = {
         NeoTreeBufferNumber = { fg = colors.orange },
-        NeoTreeCursorLine = { bg = colors.gray },
-        NeoTreeDimText = { fg = colors.light_gray },
+        NeoTreeCursorLine = { bg = colors.special_grey },
+        NeoTreeDimText = { fg = colors.dark_grey },
         NeoTreeDirectoryIcon = { link = "Directory" },
         NeoTreeDirectoryName = { link = "Directory", bold = true },
-        NeoTreeDotfile = { fg = colors.light_gray },
+        NeoTreeDotfile = { fg = colors.dark_grey },
         NeoTreeFileIcon = { fg = colors.fg },
         NeoTreeFileName = { fg = colors.fg },
-        NeoTreeFileNameOpened = { fg = colors.bright_blue, italic = true },
-        NeoTreeFilterTerm = { fg = colors.bright_blue },
+        NeoTreeFileNameOpened = { fg = colors.blue, italic = true },
+        NeoTreeFilterTerm = { fg = colors.blue },
         NeoTreeFloatBorder = { fg = colors.orange },
         NeoTreeFloatTitle = { fg = colors.orange, bold = true },
-        NeoTreeTitleBar = { fg = colors.orange, bg = colors.bg, bold = true },
+        NeoTreeTitleBar = { fg = colors.orange, bg = colors.bg0, bold = true },
         NeoTreeGitAdded = { fg = colors.green },
         NeoTreeGitConflict = { fg = colors.red, bold = true },
         NeoTreeGitDeleted = { fg = colors.red },
-        NeoTreeGitIgnored = { fg = colors.light_gray, italic = true },
+        NeoTreeGitIgnored = { fg = colors.dark_grey, italic = true },
         NeoTreeGitModified = { fg = colors.yellow },
         NeoTreeGitUnstaged = { fg = colors.yellow },
         NeoTreeGitUntracked = { fg = colors.orange },
         NeoTreeGitStaged = { fg = colors.green },
-        NeoTreeHiddenByName = { fg = colors.light_gray },
-        NeoTreeIndentMarker = { fg = colors.light_gray },
+        NeoTreeHiddenByName = { fg = colors.dark_grey },
+        NeoTreeIndentMarker = { fg = colors.dark_grey },
         NeoTreeExpander = { fg = colors.fg },
-        NeoTreeNormal = { fg = colors.fg, bg = colors.bg },
-        NeoTreeNormalNC = { fg = colors.light_gray, bg = colors.bg },
-        NeoTreeSignColumn = { bg = colors.bg },
+        NeoTreeNormal = { fg = colors.fg, bg = colors.none },
+        NeoTreeNormalNC = { fg = colors.dark_grey, bg = colors.none },
+        NeoTreeSignColumn = { bg = colors.bg0 },
         NeoTreeStats = { fg = colors.green },
         NeoTreeStatsHeader = { fg = colors.orange, bold = true },
-        NeoTreeStatusLine = { fg = colors.fg, bg = colors.gray },
-        NeoTreeStatusLineNC = { fg = colors.light_gray, bg = colors.gray },
-        NeoTreeVertSplit = { fg = colors.ui_gray, bg = colors.bg },
-        NeoTreeWinSeparator = { fg = colors.ui_gray, bg = colors.bg },
-        NeoTreeEndOfBuffer = { fg = colors.bg },
+        NeoTreeStatusLine = { fg = colors.fg, bg = colors.special_grey },
+        NeoTreeStatusLineNC = { fg = colors.dark_grey, bg = colors.special_grey },
+        NeoTreeVertSplit = { fg = colors.gutter_grey, bg = colors.bg0 },
+        NeoTreeWinSeparator = { fg = colors.gutter_grey, bg = colors.bg0 },
+        NeoTreeEndOfBuffer = { fg = colors.bg0 },
         NeoTreeRootName = { fg = colors.orange, bold = true },
         NeoTreeSymbolicLinkTarget = { fg = colors.cyan, italic = true },
-        NeoTreeWindowsHidden = { fg = colors.light_gray },
+        NeoTreeWindowsHidden = { fg = colors.dark_grey },
     }
 }
 
@@ -356,47 +379,36 @@ for group, opts in pairs(integrations.neotree) do
     hl(0, group, opts)
 end
 
-local boost = {
-    { type = "namespace" },
-    { type = "variable" },
+-- Terminal colors (Ayu Dark 16-color palette)
+vim.g.terminal_color_0  = colors.bg0        -- black
+vim.g.terminal_color_1  = colors.red        -- red
+vim.g.terminal_color_2  = colors.green      -- green
+vim.g.terminal_color_3  = colors.yellow     -- yellow
+vim.g.terminal_color_4  = colors.blue       -- blue
+vim.g.terminal_color_5  = colors.purple     -- magenta
+vim.g.terminal_color_6  = colors.cyan       -- cyan
+vim.g.terminal_color_7  = colors.fg         -- white
+vim.g.terminal_color_8  = colors.grey       -- bright black
+vim.g.terminal_color_9  = colors.red        -- bright red
+vim.g.terminal_color_10 = colors.green      -- bright green
+vim.g.terminal_color_11 = colors.yellow     -- bright yellow
+vim.g.terminal_color_12 = colors.blue       -- bright blue
+vim.g.terminal_color_13 = colors.purple     -- bright magenta
+vim.g.terminal_color_14 = colors.cyan       -- bright cyan
+vim.g.terminal_color_15 = colors.light_grey -- bright white
 
-    { modifier = "global" },
-    { modifier = "format" },
-
-    { treesitter = "constant.builtin",  priority = 126 },
-    { treesitter = "namespace.builtin", priority = 106 },
-    { treesitter = "variable.builtin", priority = 127 },
-    { treesitter = "boolean",           priority = 107 },
+local boost             = {
+    { treesitter = "variable.builtin",  priority = 126 },
 }
 
--- update certain tokens to use a highlight of a higher priority
+-- Update certain tokens to use a highlight of a higher priority
 vim.api.nvim_create_autocmd("LspTokenUpdate", {
     callback = function(args)
         local token = args.data.token
         local captures = vim.treesitter.get_captures_at_pos(args.buf, token.line, token.start_col)
 
         for _, t in pairs(boost) do
-            local priority = t.priority or 105
-            if t.type and token.type == t.type then
-                vim.lsp.semantic_tokens.highlight_token(
-                    token,
-                    args.buf,
-                    args.data.client_id,
-                    "@lsp.type." .. t.type,
-                    { priority = priority }
-                )
-            end
-
-            if t.modifier and token.modifiers[t.modifier] then
-                vim.lsp.semantic_tokens.highlight_token(
-                    token,
-                    args.buf,
-                    args.data.client_id,
-                    "@lsp.mod." .. t.modifier,
-                    { priority = priority }
-                )
-            end
-
+            local priority = t.priority
             if t.treesitter then
                 for _, capture in pairs(captures) do
                     if capture.capture == t.treesitter then
