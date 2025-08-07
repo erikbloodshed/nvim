@@ -2,64 +2,85 @@
 local hl = vim.api.nvim_set_hl
 local hl_token = vim.lsp.semantic_tokens.highlight_token
 local g = vim.g
+local o = vim.o
+local cmd = vim.cmd
 
 -- Clear existing highlights to prevent conflicts
-vim.cmd("hi clear")
+cmd.highlight("clear")
+
 if vim.fn.exists("syntax_on") then
-  vim.cmd("syntax reset")
+  cmd.syntax("reset")
 end
 
 -- Set terminal colors and colorscheme name
-vim.o.termguicolors = true
-vim.g.colors_name = "ayu_dark"
+o.termguicolors = true
+g.colors_name = "ayu_dark"
 
 -- Ayu Dark Color Palette structured like OneDark
 local c = {
   -- Core Background Colors (Ayu Dark hierarchy)
-  transparent = "none",
-  bg0 = "#0F1419",  -- Main background (Ayu Dark signature)
-  bg1 = "#0C0F16",  -- Slightly darker background (sidebars, popups)
-  bg2 = "#161F26",  -- Lighter background (visual selection, current line)
-  bg3 = "#4D5566",  -- Lightest background (borders, inactive elements)
-  bg_d = "#0B0E14", -- Darker background variant
+  clear        = "none",
+  bg0          = "#0F1419", -- Main background (Ayu Dark signature)
+  bg1          = "#0C0F16", -- Slightly darker background (sidebars, popups)
+  bg2          = "#161F26", -- Lighter background (visual selection, current line)
+  bg3          = "#4D5566", -- Lightest background (borders, inactive elements)
+  bg_d         = "#0B0E14", -- Darker background variant
 
   -- Core Foreground Colors (Ayu Dark)
-  fg = "#BFBDB6",         -- Main foreground text
-  light_grey = "#E6E1CF", -- Primary text (brighter)
-  grey = "#5C6773",       -- Secondary text (comments, less important)
-  dark_grey = "#343F4C",  -- Tertiary text (line numbers, borders)
+  fg           = "#BFBDB6", -- Main foreground text
+  light_grey   = "#E6E1CF", -- Primary text (brighter)
+  grey         = "#5C6773", -- Secondary text (comments, less important)
+  dark_grey    = "#343F4C", -- Tertiary text (line numbers, borders)
 
   -- Ayu Dark Signature Colors
-  red = "#F07178",         -- Errors, delete operations
-  green = "#B8CC52",       -- Strings, additions, success
-  yellow = "#E6B673",      -- Classes, warnings, constants
-  blue = "#59C2FF",        -- Functions, methods, links
-  purple = "#D2A6FF",      -- Keywords, types, special
-  cyan = "#95E6CB",        -- Operators, escape characters, info
-  orange = "#F29668",      -- Numbers, constants, attributes
-  pink = "#D96C75",        -- Pink accent
+  red          = "#F07178", -- Errors, delete operations
+  green        = "#B8CC52", -- Strings, additions, success
+  yellow       = "#E6B673", -- Classes, warnings, constants
+  blue         = "#59C2FF", -- Functions, methods, links
+  purple       = "#D2A6FF", -- Keywords, types, special
+  cyan         = "#95E6CB", -- Operators, escape characters, info
+  orange       = "#F29668", -- Numbers, constants, attributes
+  pink         = "#D96C75", -- Pink accent
 
-  dark_red = "#FF3333",    -- Darker red variant
-  dark_green = "#98B982",  -- Darker green variant
-  dark_yellow = "#D19A66", -- Darker yellow/orange variant
-  dark_blue = "#6994BF",   -- Darker blue variant (alt_blue)
-  dark_purple = "#A679D9", -- Darker purple variant
-  dark_cyan = "#4CBB17",   -- Darker cyan variant
+  dark_red     = "#FF3333", -- Darker red variant
+  dark_green   = "#98B982", -- Darker green variant
+  dark_yellow  = "#D19A66", -- Darker yellow/orange variant
+  dark_blue    = "#6994BF", -- Darker blue variant (alt_blue)
+  dark_purple  = "#A679D9", -- Darker purple variant
+  dark_cyan    = "#4CBB17", -- Darker cyan variant
 
   -- UI and Special Colors (Ayu Dark)
-  cursor_grey = "#161F26",  -- Cursor line background (selection)
-  visual_grey = "#161F26",  -- Visual selection background
-  menu_grey = "#151A1E",    -- Menu/popup backgrounds (dark_gray)
+  cursor_grey  = "#161F26", -- Cursor line background (selection)
+  visual_grey  = "#161F26", -- Visual selection background
+  menu_grey    = "#151A1E", -- Menu/popup backgrounds (dark_gray)
   special_grey = "#1F2430", -- Special backgrounds (gray)
-  gutter_grey = "#4D5566",  -- Gutter, line numbers (ui_gray)
+  gutter_grey  = "#4D5566", -- Gutter, line numbers (ui_gray)
   comment_grey = "#5C6773", -- Comments, inactive text
 
   -- Git Colors (Ayu Dark Style)
-  diff_add = "#B8CC52",    -- Git additions (using green)
-  diff_delete = "#FF3333", -- Git deletions (using red)
-  diff_change = "#E6B673", -- Git modifications (using yellow)
-  diff_text = "#F29668",   -- Git diff text highlighting (using orange)
+  diff_add     = "#B8CC52", -- Git additions (using green)
+  diff_delete  = "#FF3333", -- Git deletions (using red)
+  diff_change  = "#E6B673", -- Git modifications (using yellow)
+  diff_text    = "#F29668", -- Git diff text highlighting (using orange)
 }
+
+-- Terminal colors (Ayu Dark 16-color palette)
+g.terminal_color_0 = c.bg0
+g.terminal_color_1 = c.red
+g.terminal_color_2 = c.green
+g.terminal_color_3 = c.yellow
+g.terminal_color_4 = c.blue
+g.terminal_color_5 = c.purple
+g.terminal_color_6 = c.cyan
+g.terminal_color_7 = c.fg
+g.terminal_color_8 = c.grey
+g.terminal_color_9 = c.red
+g.terminal_color_10 = c.green
+g.terminal_color_11 = c.yellow
+g.terminal_color_12 = c.blue
+g.terminal_color_13 = c.purple
+g.terminal_color_14 = c.cyan
+g.terminal_color_15 = c.light_grey
 
 -- Main highlight groups following OneDark structure with Ayu Dark colors
 local highlights = {
@@ -80,8 +101,8 @@ local highlights = {
   ModeMsg = { fg = c.fg },
   MoreMsg = { fg = c.green },
   NonText = { fg = c.gutter_grey },
-  Normal = { fg = c.fg, bg = c.transparent },
-  NormalFloat = { fg = c.fg, bg = c.transparent },
+  Normal = { fg = c.fg, bg = c.clear },
+  NormalFloat = { fg = c.fg, bg = c.clear },
   Pmenu = { fg = c.fg, bg = c.menu_grey },
   PmenuSbar = { bg = c.special_grey },
   PmenuSel = { fg = c.bg0, bg = c.dark_blue, bold = true },
@@ -155,7 +176,7 @@ local highlights = {
   DiagnosticUnderlineError = { undercurl = true, sp = c.dark_red },
   DiagnosticUnderlineWarn = { undercurl = true, sp = c.dark_yellow },
   DiagnosticUnderlineInfo = { undercurl = true, sp = c.dark_blue },
-  DiagnosticUnderlineHint = { undercurl = true, sp = c.dark_grey },
+  DiagnosticUnderlineHint = { undercurl = true, sp = c.dark_blue },
 
   -- Git highlights (Ayu Dark style)
   DiffAdd = { fg = c.green, bg = c.menu_grey },
@@ -292,118 +313,99 @@ local highlights = {
 }
 
 -- Modular highlights for plugins (Ayu Dark colors)
-local plug = {
-  blink_cmp = {
-    BlinkCmpMenu = { link = "Pmenu" },
-    BlinkCmpMenuBorder = { fg = c.gutter_grey, bg = c.menu_grey },
-    BlinkCmpMenuSelection = { link = "PmenuSel" },
-    BlinkCmpLabel = { fg = c.fg },
-    BlinkCmpLabelMatch = { fg = c.yellow, bold = true },
-    BlinkCmpLabelDescription = { fg = c.dark_grey },
-    BlinkCmpLabelDetail = { fg = c.dark_grey },
-    BlinkCmpKind = { fg = c.orange },
-    BlinkCmpKindText = { fg = c.fg },
-    BlinkCmpKindMethod = { fg = c.blue },
-    BlinkCmpKindFunction = { fg = c.blue },
-    BlinkCmpKindConstructor = { fg = c.orange },
-    BlinkCmpKindField = { fg = c.fg },
-    BlinkCmpKindVariable = { fg = c.orange },
-    BlinkCmpKindClass = { fg = c.yellow },
-    BlinkCmpKindInterface = { fg = c.yellow },
-    BlinkCmpKindModule = { fg = c.yellow },
-    BlinkCmpKindProperty = { fg = c.fg },
-    BlinkCmpKindUnit = { fg = c.orange },
-    BlinkCmpKindValue = { fg = c.orange },
-    BlinkCmpKindEnum = { fg = c.yellow },
-    BlinkCmpKindKeyword = { fg = c.orange },
-    BlinkCmpKindSnippet = { fg = c.green },
-    BlinkCmpKindColor = { fg = c.red },
-    BlinkCmpKindFile = { fg = c.green },
-    BlinkCmpKindReference = { fg = c.fg },
-    BlinkCmpKindFolder = { fg = c.yellow },
-    BlinkCmpKindEnumMember = { fg = c.orange },
-    BlinkCmpKindConstant = { fg = c.orange },
-    BlinkCmpKindStruct = { fg = c.yellow },
-    BlinkCmpKindEvent = { fg = c.orange },
-    BlinkCmpKindOperator = { fg = c.orange },
-    BlinkCmpKindTypeParameter = { fg = c.yellow },
-  },
-  neotree = {
-    NeoTreeBufferNumber = { fg = c.orange },
-    NeoTreeCursorLine = { bg = c.special_grey },
-    NeoTreeDimText = { fg = c.dark_grey },
-    NeoTreeDirectoryIcon = { link = "Directory" },
-    NeoTreeDirectoryName = { link = "Directory", bold = true },
-    NeoTreeDotfile = { fg = c.dark_grey },
-    NeoTreeFileIcon = { fg = c.fg },
-    NeoTreeFileName = { fg = c.fg },
-    NeoTreeFileNameOpened = { fg = c.blue, italic = true },
-    NeoTreeFilterTerm = { fg = c.blue },
-    NeoTreeFloatBorder = { fg = c.orange },
-    NeoTreeFloatTitle = { fg = c.orange, bold = true },
-    NeoTreeTitleBar = { fg = c.orange, bg = c.bg0, bold = true },
-    NeoTreeGitAdded = { fg = c.green },
-    NeoTreeGitConflict = { fg = c.red, bold = true },
-    NeoTreeGitDeleted = { fg = c.red },
-    NeoTreeGitIgnored = { fg = c.dark_grey, italic = true },
-    NeoTreeGitModified = { fg = c.yellow },
-    NeoTreeGitUnstaged = { fg = c.yellow },
-    NeoTreeGitUntracked = { fg = c.orange },
-    NeoTreeGitStaged = { fg = c.green },
-    NeoTreeHiddenByName = { fg = c.dark_grey },
-    NeoTreeIndentMarker = { fg = c.dark_grey },
-    NeoTreeExpander = { fg = c.fg },
-    NeoTreeNormal = { fg = c.fg, bg = c.transparent },
-    NeoTreeNormalNC = { fg = c.dark_grey, bg = c.transparent },
-    NeoTreeSignColumn = { bg = c.bg0 },
-    NeoTreeStats = { fg = c.green },
-    NeoTreeStatsHeader = { fg = c.orange, bold = true },
-    NeoTreeStatusLine = { fg = c.fg, bg = c.special_grey },
-    NeoTreeStatusLineNC = { fg = c.dark_grey, bg = c.special_grey },
-    NeoTreeVertSplit = { fg = c.gutter_grey, bg = c.bg0 },
-    NeoTreeWinSeparator = { fg = c.gutter_grey, bg = c.bg0 },
-    NeoTreeEndOfBuffer = { fg = c.bg0 },
-    NeoTreeRootName = { fg = c.orange, bold = true },
-    NeoTreeSymbolicLinkTarget = { fg = c.cyan, italic = true },
-    NeoTreeWindowsHidden = { fg = c.dark_grey },
-  },
+local blink_cmp = {
+  BlinkCmpMenu = { link = "Pmenu" },
+  BlinkCmpMenuBorder = { fg = c.gutter_grey, bg = c.menu_grey },
+  BlinkCmpMenuSelection = { link = "PmenuSel" },
+  BlinkCmpLabel = { fg = c.fg },
+  BlinkCmpLabelMatch = { fg = c.yellow, bold = true },
+  BlinkCmpLabelDescription = { fg = c.dark_grey },
+  BlinkCmpLabelDetail = { fg = c.dark_grey },
+  BlinkCmpKind = { fg = c.orange },
+  BlinkCmpKindText = { fg = c.fg },
+  BlinkCmpKindMethod = { fg = c.blue },
+  BlinkCmpKindFunction = { fg = c.blue },
+  BlinkCmpKindConstructor = { fg = c.orange },
+  BlinkCmpKindField = { fg = c.fg },
+  BlinkCmpKindVariable = { fg = c.orange },
+  BlinkCmpKindClass = { fg = c.yellow },
+  BlinkCmpKindInterface = { fg = c.yellow },
+  BlinkCmpKindModule = { fg = c.yellow },
+  BlinkCmpKindProperty = { fg = c.fg },
+  BlinkCmpKindUnit = { fg = c.orange },
+  BlinkCmpKindValue = { fg = c.orange },
+  BlinkCmpKindEnum = { fg = c.yellow },
+  BlinkCmpKindKeyword = { fg = c.orange },
+  BlinkCmpKindSnippet = { fg = c.green },
+  BlinkCmpKindColor = { fg = c.red },
+  BlinkCmpKindFile = { fg = c.green },
+  BlinkCmpKindReference = { fg = c.fg },
+  BlinkCmpKindFolder = { fg = c.yellow },
+  BlinkCmpKindEnumMember = { fg = c.orange },
+  BlinkCmpKindConstant = { fg = c.orange },
+  BlinkCmpKindStruct = { fg = c.yellow },
+  BlinkCmpKindEvent = { fg = c.orange },
+  BlinkCmpKindOperator = { fg = c.orange },
+  BlinkCmpKindTypeParameter = { fg = c.yellow },
 }
 
-highlights = vim.tbl_extend("force", highlights, plug.blink_cmp, plug.neotree)
+local neotree = {
+  NeoTreeBufferNumber = { fg = c.orange },
+  NeoTreeCursorLine = { bg = c.special_grey },
+  NeoTreeDimText = { fg = c.dark_grey },
+  NeoTreeDirectoryIcon = { link = "Directory" },
+  NeoTreeDirectoryName = { link = "Directory", bold = true },
+  NeoTreeDotfile = { fg = c.dark_grey },
+  NeoTreeFileIcon = { fg = c.fg },
+  NeoTreeFileName = { fg = c.fg },
+  NeoTreeFileNameOpened = { fg = c.blue, italic = true },
+  NeoTreeFilterTerm = { fg = c.blue },
+  NeoTreeFloatBorder = { fg = c.orange },
+  NeoTreeFloatTitle = { fg = c.orange, bold = true },
+  NeoTreeTitleBar = { fg = c.orange, bg = c.bg0, bold = true },
+  NeoTreeGitAdded = { fg = c.green },
+  NeoTreeGitConflict = { fg = c.red, bold = true },
+  NeoTreeGitDeleted = { fg = c.red },
+  NeoTreeGitIgnored = { fg = c.dark_grey, italic = true },
+  NeoTreeGitModified = { fg = c.yellow },
+  NeoTreeGitUnstaged = { fg = c.yellow },
+  NeoTreeGitUntracked = { fg = c.orange },
+  NeoTreeGitStaged = { fg = c.green },
+  NeoTreeHiddenByName = { fg = c.dark_grey },
+  NeoTreeIndentMarker = { fg = c.dark_grey },
+  NeoTreeExpander = { fg = c.fg },
+  NeoTreeNormal = { fg = c.fg, bg = c.clear },
+  NeoTreeNormalNC = { fg = c.dark_grey, bg = c.clear },
+  NeoTreeSignColumn = { bg = c.bg0 },
+  NeoTreeStats = { fg = c.green },
+  NeoTreeStatsHeader = { fg = c.orange, bold = true },
+  NeoTreeStatusLine = { fg = c.fg, bg = c.special_grey },
+  NeoTreeStatusLineNC = { fg = c.dark_grey, bg = c.special_grey },
+  NeoTreeVertSplit = { fg = c.gutter_grey, bg = c.bg0 },
+  NeoTreeWinSeparator = { fg = c.gutter_grey, bg = c.bg0 },
+  NeoTreeEndOfBuffer = { fg = c.bg0 },
+  NeoTreeRootName = { fg = c.orange, bold = true },
+  NeoTreeSymbolicLinkTarget = { fg = c.cyan, italic = true },
+  NeoTreeWindowsHidden = { fg = c.dark_grey },
+}
+
+highlights = vim.tbl_extend("force", highlights, blink_cmp, neotree)
 
 -- Apply all highlights in a single loop for better performance
-for group, opts in pairs(highlights) do
-  hl(0, group, opts)
+for grp, opts in pairs(highlights) do
+  hl(0, grp, opts)
 end
 
--- Terminal colors (Ayu Dark 16-color palette)
-g.terminal_color_0 = c.bg0         -- black
-g.terminal_color_1 = c.red         -- red
-g.terminal_color_2 = c.green       -- green
-g.terminal_color_3 = c.yellow      -- yellow
-g.terminal_color_4 = c.blue        -- blue
-g.terminal_color_5 = c.purple      -- magenta
-g.terminal_color_6 = c.cyan        -- cyan
-g.terminal_color_7 = c.fg          -- white
-g.terminal_color_8 = c.grey        -- bright black
-g.terminal_color_9 = c.red         -- bright red
-g.terminal_color_10 = c.green      -- bright green
-g.terminal_color_11 = c.yellow     -- bright yellow
-g.terminal_color_12 = c.blue       -- bright blue
-g.terminal_color_13 = c.purple     -- bright magenta
-g.terminal_color_14 = c.cyan       -- bright cyan
-g.terminal_color_15 = c.light_grey -- bright white
-
 -- Update 'variable.builtin' to use a highlight of a higher priority
-local target = "variable.builtin"
+local key = "variable.builtin"
 vim.api.nvim_create_autocmd("LspTokenUpdate", {
-  callback = function(args)
-    local token = args.data.token
-    local captures = vim.treesitter.get_captures_at_pos(args.buf, token.line, token.start_col)
+  callback = function (args)
+    local t = args.data.token
+    local captures = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
 
     for _, x in ipairs(captures) do
-      if x.capture == target then
-        hl_token(token, args.buf, args.data.client_id, "@" .. target, { priority = 126 })
+      if x.capture == key then
+        hl_token(t, args.buf, args.data.client_id, "@" .. key, { priority = 126 })
         break
       end
     end
