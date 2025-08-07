@@ -14,6 +14,8 @@ vim.o.termguicolors = true
 vim.g.colors_name = "van_helsing"
 
 local colors = {
+    bk = "#1a1a1d",
+    bc = "#151518",
     bg = "#0B0D0F",         -- Background
     fg = "#F8F8F2",         -- Foreground
     selection = "#414D58",  -- Current-line/selection
