@@ -12,7 +12,7 @@ vim.o.termguicolors = true
 vim.g.colors_name = "ayu_dark"
 
 local colors = {
-    bg          = "#0B0E14", -- Background
+    bg          = "#0F1419", -- Background
     bg2         = "#0C0F16", -- Background
     fg          = "#BFBDB6", -- Foreground
     selection   = "#161F26", -- Current-line/selection
@@ -33,8 +33,8 @@ local colors = {
     alt_blue    = "#6994BF", -- Alternative blue
     ui_gray     = "#4D5566", -- UI elements
     dark_cyan   = "#4CBB17", -- Darker cyan variant
-    -- bright_blue = "#59C2FF"  -- Bright blue
-    bright_blue = "#4DA6E6"  -- Bright blue
+    bright_blue = "#59C2FF"  -- Bright blue
+
 }
 
 -- Main highlight groups, including base and syntax
@@ -159,7 +159,7 @@ local highlights = {
     ["@parameter"] = { fg = colors.red },
     ["@parameter.reference"] = { fg = colors.fg },
     ["@preproc"] = { fg = colors.orange },
-    ["@property"] = { fg = colors.fg },
+    ["@property"] = { fg = colors.bright_blue },
     ["@punctuation.bracket"] = { fg = colors.fg },
     ["@punctuation.delimiter"] = { fg = colors.fg },
     ["@punctuation.special"] = { fg = colors.orange },
