@@ -41,6 +41,11 @@ autocmd({ "VimEnter" }, {
         require("custom_ui.input")
         require("custom_ui.select")
 
+        keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
+            { noremap = true, silent = true })
+        keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
+            { noremap = true, silent = true })
+
         require('termswitch').setup({
             -- Default settings applied to all terminals unless overridden
             defaults = {
@@ -76,11 +81,6 @@ autocmd({ "VimEnter" }, {
                 { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide',   desc = 'Hide Python' },
             },
         })
-
-        keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
-            { noremap = true, silent = true })
-        keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
-            { noremap = true, silent = true })
     end,
 })
 
