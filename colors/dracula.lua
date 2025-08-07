@@ -13,11 +13,30 @@ end
 vim.o.termguicolors = true
 vim.g.colors_name = "dracula"
 
+-- local colors = {
+--     bg = "none",
+--     fg = "#e0e0da",
+--     selection = "#3a3c4e",
+--     comment = "#4a5a8a",
+--     red = "#e63939",
+--     orange = "#e69a4a",
+--     yellow = "#d9e06b",
+--     green = "#3ec566",
+--     purple = "#a678d9",
+--     cyan = "#5bc8e3",
+--     pink = "#e65ba7",
+--     dark_gray = "#181921",
+--     gray = "#3a3c4e",
+--     light_gray = "#4a5a8a",
+-- }
+
 -- Dracula color palette
 local colors = {
     bg = "none",
     fg = "#f8f8f2",
-    selection = "#44475a",
+    -- selection = "#44475a",
+    -- selection = "#3a3c4e",
+    selection = "#353746",
     comment = "#6272a4",
     red = "#ff5555",
     orange = "#ffb86c",
@@ -72,7 +91,8 @@ local highlights = {
     VisualNOS = { link = "Visual" },
     WarningMsg = { fg = colors.orange },
     Whitespace = { fg = colors.gray },
-    EndOfBuffer = { fg = "#282a36" },
+    -- EndOfBuffer = { fg = "#282a36" },
+    EndOfBuffer = { fg = "#1e1f29" },
 
     -- Syntax highlighting
     Boolean = { fg = colors.purple },
