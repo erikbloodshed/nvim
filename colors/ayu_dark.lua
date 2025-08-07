@@ -354,3 +354,61 @@ end
 for group, opts in pairs(integrations.neotree) do
     hl(0, group, opts)
 end
+
+local boost = {
+    { type = "namespace" },
+    { type = "variable" },
+
+    { modifier = "global" },
+    { modifier = "format" },
+
+    { treesitter = "constant.builtin",  priority = 126 },
+    { treesitter = "namespace.builtin", priority = 106 },
+    { treesitter = "variable.builtin", priority = 127 },
+    { treesitter = "boolean",           priority = 107 },
+}
+
+-- update certain tokens to use a highlight of a higher priority
+vim.api.nvim_create_autocmd("LspTokenUpdate", {
+    callback = function(args)
+        local token = args.data.token
+        local captures = vim.treesitter.get_captures_at_pos(args.buf, token.line, token.start_col)
+
+        for _, t in pairs(boost) do
+            local priority = t.priority or 105
+            if t.type and token.type == t.type then
+                vim.lsp.semantic_tokens.highlight_token(
+                    token,
+                    args.buf,
+                    args.data.client_id,
+                    "@lsp.type." .. t.type,
+                    { priority = priority }
+                )
+            end
+
+            if t.modifier and token.modifiers[t.modifier] then
+                vim.lsp.semantic_tokens.highlight_token(
+                    token,
+                    args.buf,
+                    args.data.client_id,
+                    "@lsp.mod." .. t.modifier,
+                    { priority = priority }
+                )
+            end
+
+            if t.treesitter then
+                for _, capture in pairs(captures) do
+                    if capture.capture == t.treesitter then
+                        vim.lsp.semantic_tokens.highlight_token(
+                            token,
+                            args.buf,
+                            args.data.client_id,
+                            "@" .. t.treesitter,
+                            { priority = priority }
+                        )
+                    end
+                end
+            end
+        end
+    end,
+})
