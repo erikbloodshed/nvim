@@ -19,49 +19,61 @@ g.colors_name = "ayu_dark"
 -- Ayu Dark Color Palette structured like OneDark
 local c = {
   -- Core Background Colors (Ayu Dark hierarchy)
-  clear        = "none",
-  bg0          = "#0F1419", -- Main background (Ayu Dark signature)
-  bg1          = "#0C0F16", -- Slightly darker background (sidebars, popups)
-  bg2          = "#161F26", -- Lighter background (visual selection, current line)
-  bg3          = "#4D5566", -- Lightest background (borders, inactive elements)
-  bg_d         = "#0B0E14", -- Darker background variant
+  clear = "none",
+  bg0 = "#0F1419",  -- Main background (Ayu Dark signature)
+  bg1 = "#0C0F16",  -- Slightly darker background (sidebars, popups)
+  bg2 = "#161F26",  -- Lighter background (visual selection, current line)
+  bg3 = "#4D5566",  -- Lightest background (borders, inactive elements)
+  bg_d = "#0B0E14", -- Darker background variant
 
   -- Core Foreground Colors (Ayu Dark)
-  fg           = "#BFBDB6", -- Main foreground text
-  light_grey   = "#E6E1CF", -- Primary text (brighter)
-  grey         = "#5C6773", -- Secondary text (comments, less important)
-  dark_grey    = "#343F4C", -- Tertiary text (line numbers, borders)
+  fg = "#BFBDB6",         -- Main foreground text
+  light_grey = "#E6E1CF", -- Primary text (brighter)
+  grey = "#5C6773",       -- Secondary text (comments, less important)
+  dark_grey = "#343F4C",  -- Tertiary text (line numbers, borders)
 
   -- Ayu Dark Signature Colors
-  red          = "#F07178", -- Errors, delete operations
-  green        = "#B8CC52", -- Strings, additions, success
-  yellow       = "#E6B673", -- Classes, warnings, constants
-  blue         = "#59C2FF", -- Functions, methods, links
-  purple       = "#D2A6FF", -- Keywords, types, special
-  cyan         = "#95E6CB", -- Operators, escape characters, info
-  orange       = "#F29668", -- Numbers, constants, attributes
-  pink         = "#D96C75", -- Pink accent
+  red = "#F07178",         -- Errors, delete operations
+  green = "#B8CC52",       -- Strings, additions, success
+  yellow = "#E6B673",      -- Classes, warnings, constants
+  blue = "#59C2FF",        -- Functions, methods, links
+  purple = "#D2A6FF",      -- Keywords, types, special
+  cyan = "#95E6CB",        -- Operators, escape characters, info
+  orange = "#F29668",      -- Numbers, constants, attributes
+  pink = "#D96C75",        -- Pink accent
 
-  dark_red     = "#FF3333", -- Darker red variant
-  dark_green   = "#98B982", -- Darker green variant
-  dark_yellow  = "#D19A66", -- Darker yellow/orange variant
-  dark_blue    = "#6994BF", -- Darker blue variant (alt_blue)
-  dark_purple  = "#A679D9", -- Darker purple variant
-  dark_cyan    = "#4CBB17", -- Darker cyan variant
+  dark_red = "#FF3333",    -- Darker red variant
+  dark_green = "#98B982",  -- Darker green variant
+  dark_yellow = "#D19A66", -- Darker yellow/orange variant
+  dark_blue = "#6994BF",   -- Darker blue variant (alt_blue)
+  dark_purple = "#A679D9", -- Darker purple variant
+  dark_cyan = "#4CBB17",   -- Darker cyan variant
 
   -- UI and Special Colors (Ayu Dark)
-  cursor_grey  = "#161F26", -- Cursor line background (selection)
-  visual_grey  = "#161F26", -- Visual selection background
-  menu_grey    = "#151A1E", -- Menu/popup backgrounds (dark_gray)
+  cursor_grey = "#161F26",  -- Cursor line background (selection)
+  visual_grey = "#161F26",  -- Visual selection background
+  menu_grey = "#151A1E",    -- Menu/popup backgrounds (dark_gray)
   special_grey = "#1F2430", -- Special backgrounds (gray)
-  gutter_grey  = "#4D5566", -- Gutter, line numbers (ui_gray)
+  gutter_grey = "#4D5566",  -- Gutter, line numbers (ui_gray)
   comment_grey = "#5C6773", -- Comments, inactive text
 
   -- Git Colors (Ayu Dark Style)
-  diff_add     = "#B8CC52", -- Git additions (using green)
-  diff_delete  = "#FF3333", -- Git deletions (using red)
-  diff_change  = "#E6B673", -- Git modifications (using yellow)
-  diff_text    = "#F29668", -- Git diff text highlighting (using orange)
+  diff_add = "#B8CC52",    -- Git additions (using green)
+  diff_delete = "#FF3333", -- Git deletions (using red)
+  diff_change = "#E6B673", -- Git modifications (using yellow)
+  diff_text = "#F29668",   -- Git diff text highlighting (using orange)
+
+  -- Semantic Message Colors (Ayu Dark Style)
+  error = "#C44545", -- Error messages (using red)
+  warn = "#B8A045",  -- Warning messages (using yellow)
+  info = "#2E7DB8",  -- Info messages (using blue)
+  hint = "#4AAF7D",  -- Hint messages (using cyan)
+
+  -- Alternative semantic colors with backgrounds for better contrast
+  error_bg = "#1F1010", -- Error background (dark red tint)
+  warn_bg = "#1F1B10",  -- Warning background (dark yellow tint)
+  info_bg = "#101B2F",  -- Info background (dark blue tint)
+  hint_bg = "#101F1B",  -- Hint background (dark cyan tint)
 }
 
 -- Terminal colors (Ayu Dark 16-color palette)
@@ -91,8 +103,9 @@ local highlights = {
   CursorColumn = { link = "CursorLine" },
   CursorLineNr = { fg = c.orange },
   Directory = { fg = c.blue },
-  ErrorMsg = { fg = c.dark_red },
+  ErrorMsg = { fg = c.error },
   FloatBorder = { fg = c.gutter_grey },
+  FloatTitle = { fg = c.gutter_grey, bg = c.clear },
   FoldColumn = { fg = c.dark_grey, bg = c.bg0 },
   Folded = { fg = c.dark_grey, bg = c.menu_grey },
   Search = { fg = c.bg0, bg = c.yellow },
@@ -115,12 +128,12 @@ local highlights = {
   TabLine = { fg = c.dark_grey, bg = c.menu_grey },
   TabLineFill = { link = "TabLine" },
   TabLineSel = { fg = c.fg, bg = c.bg0 },
-  Title = { fg = c.bg0, bg = c.blue, bold = true },
+  Title = { fg = c.cyan, bold = true },
   VertSplit = { fg = c.gutter_grey },
   WinSeparator = { link = "VertSplit" },
   Visual = { bg = c.visual_grey },
   VisualNOS = { link = "Visual" },
-  WarningMsg = { fg = c.yellow },
+  WarningMsg = { fg = c.warn },
   Whitespace = { fg = c.gutter_grey },
   EndOfBuffer = { fg = c.bg0 },
   WildMenu = { fg = c.bg0, bg = c.orange },
@@ -136,7 +149,7 @@ local highlights = {
   Debug = { fg = c.red },
   Define = { fg = c.orange },
   Delimiter = { fg = c.fg },
-  Error = { fg = c.red },
+  Error = { fg = c.error, bg = c.error_bg },
   Exception = { fg = c.orange },
   Float = { fg = c.purple },
   Function = { fg = c.blue },
@@ -165,18 +178,18 @@ local highlights = {
   Underlined = { fg = c.cyan, underline = true },
 
   -- Diagnostic highlights (Ayu Dark style)
-  DiagnosticError = { fg = c.dark_red },
-  DiagnosticWarn = { fg = c.dark_yellow },
-  DiagnosticInfo = { fg = c.dark_blue },
-  DiagnosticHint = { fg = c.dark_grey },
-  DiagnosticVirtualTextError = { fg = c.red, bg = c.menu_grey },
-  DiagnosticVirtualTextWarn = { fg = c.yellow, bg = c.menu_grey },
-  DiagnosticVirtualTextInfo = { fg = c.blue, bg = c.menu_grey },
-  DiagnosticVirtualTextHint = { fg = c.dark_grey, bg = c.menu_grey },
-  DiagnosticUnderlineError = { undercurl = true, sp = c.dark_red },
-  DiagnosticUnderlineWarn = { undercurl = true, sp = c.dark_yellow },
-  DiagnosticUnderlineInfo = { undercurl = true, sp = c.dark_blue },
-  DiagnosticUnderlineHint = { undercurl = true, sp = c.dark_blue },
+  DiagnosticError = { fg = c.error },
+  DiagnosticWarn = { fg = c.warn },
+  DiagnosticInfo = { fg = c.info },
+  DiagnosticHint = { fg = c.hint },
+  DiagnosticVirtualTextError = { fg = c.error, bg = c.error_bg },
+  DiagnosticVirtualTextWarn = { fg = c.warn, bg = c.warn_bg },
+  DiagnosticVirtualTextInfo = { fg = c.info, bg = c.info_bg },
+  DiagnosticVirtualTextHint = { fg = c.hint, bg = c.hint_bg },
+  DiagnosticUnderlineError = { undercurl = true, sp = c.error },
+  DiagnosticUnderlineWarn = { undercurl = true, sp = c.warn },
+  DiagnosticUnderlineInfo = { undercurl = true, sp = c.info },
+  DiagnosticUnderlineHint = { undercurl = true, sp = c.hint },
 
   -- Git highlights (Ayu Dark style)
   DiffAdd = { fg = c.green, bg = c.menu_grey },

@@ -11,7 +11,7 @@
       ░                            ░                               ░
 --]]
 
-vim.cmd("colorscheme ayu_dark")
+vim.cmd("colorscheme blade")
 require("core.options")
 require("core.lazy")
 require("core.lsp")

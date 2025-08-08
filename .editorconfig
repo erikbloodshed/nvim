@@ -24,7 +24,7 @@ max_line_length = 120
 
 # optional crlf/lf/cr/auto, if it is 'auto', in windows it is crlf other platforms are lf
 # in neovim the value 'auto' is not a valid option, please use 'unset' 
-end_of_line = auto
+end_of_line = unset
 
 #  none/ comma / semicolon / only_kv_colon
 table_separator_style = none
@@ -104,9 +104,9 @@ align_function_params = true
 # true/false or always
 align_continuous_assign_statement = false
 
-align_continuous_rect_table_field = true
+align_continuous_rect_table_field = false
 
-align_continuous_line_space = 2
+align_continuous_line_spacf = 2
 
 align_if_branch = false
 
