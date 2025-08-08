@@ -1,18 +1,15 @@
--- Localize the API for performance
 local hl = vim.api.nvim_set_hl
 local hl_token = vim.lsp.semantic_tokens.highlight_token
 local g = vim.g
 local o = vim.o
 local cmd = vim.cmd
 
--- Clear existing highlights to prevent conflicts
 cmd.highlight("clear")
 
 if vim.fn.exists("syntax_on") then
   cmd.syntax("reset")
 end
 
--- Set terminal colors and colorscheme name
 o.termguicolors = true
 g.colors_name = "ayu_dark"
 

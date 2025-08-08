@@ -1,37 +1,23 @@
--- Dracula colorscheme for Neovim
 -- Based on the official Dracula specification: https://spec.draculatheme.com/
-
--- Performance optimizations
-local hl = vim.api.nvim_set_hl
-local hl_token = vim.lsp.semantic_tokens.highlight_token
 local g = vim.g
 local o = vim.o
 local cmd = vim.cmd
+local api = vim.api
 
--- Clear existing highlights to prevent conflicts
 cmd.highlight("clear")
 if vim.fn.exists("syntax_on") then
   cmd.syntax("reset")
 end
 
--- Set terminal colors and colorscheme name
 o.termguicolors = true
 g.colors_name = "dracula"
 
--- Official Dracula color palette from specification
 local c = {
   none = "NONE",
   -- Standard colors
   -- background = "#282a36",
   -- selection = "#44475a",
   -- foreground = "#f8f8f2",
-  -- yellow = "#f1fa8c",
-
-  background = '#1a1a2e', -- Slightly deeper than Dracula's #282a36
-  foreground = "#e2dce8",
-  selection = '#302c4a',  -- Same as Dracula but fits the theme
-  comment = '#6272a4',    -- Keep Dracula's perfect comment color
-
   red = "#ff5555",
   orange = "#ffb86c",
   yellow = "#f1fa8c",
@@ -39,6 +25,12 @@ local c = {
   purple = "#bd93f9",
   cyan = "#8be9fd",
   pink = "#ff79c6",
+
+  -- Non-standard colors
+  background = '#1a1a2e',
+  foreground = "#e2dce8",
+  selection = '#302c4a',
+  comment = '#6272a4',
 
   -- ANSI colors
   ansi_black = "#21222c",
@@ -87,7 +79,6 @@ local highlights = {
   Directory = { fg = c.cyan },
   ErrorMsg = { fg = c.red },
   FloatBorder = { fg = c.purple },
-  FloatTitle = { fg = c.cyan, bold = true },
   FoldColumn = { fg = c.comment, bg = c.background },
   Folded = { fg = c.comment, bg = c.selection },
   Search = { fg = c.background, bg = c.yellow },
@@ -123,29 +114,22 @@ local highlights = {
   MatchParen = { fg = c.pink, underline = true },
 
   -- Syntax highlighting (following Dracula spec)
-  Boolean = { fg = c.purple },
-  Character = { fg = c.green },
-  Comment = { fg = c.comment },
-  Conditional = { fg = c.pink },
   Constant = { fg = c.purple },
+  Character = { fg = c.green },
+  Comment = { fg = c.comment, italic = true },
   Debug = { fg = c.yellow },
   Define = { fg = c.pink },
   Delimiter = { fg = c.foreground },
   Error = { fg = c.red },
   Exception = { fg = c.pink },
-  Float = { fg = c.purple },
   Function = { fg = c.green },
   Identifier = { fg = c.foreground },
   Ignore = { fg = c.comment },
   Include = { fg = c.pink },
-  Keyword = { fg = c.pink },
-  Label = { fg = c.pink },
   Macro = { fg = c.green },
-  Number = { fg = c.purple },
   Operator = { fg = c.pink },
   PreCondit = { fg = c.pink },
   PreProc = { fg = c.pink },
-  Repeat = { fg = c.pink },
   Special = { fg = c.green },
   SpecialChar = { fg = c.pink },
   SpecialComment = { fg = c.cyan },
@@ -164,20 +148,16 @@ local highlights = {
   DiagnosticWarn = { fg = c.yellow },
   DiagnosticInfo = { fg = c.cyan },
   DiagnosticHint = { fg = c.comment },
-  DiagnosticVirtualTextError = { fg = c.red, bg = c.none },
-  DiagnosticVirtualTextWarn = { fg = c.yellow, bg = c.none },
-  DiagnosticVirtualTextInfo = { fg = c.cyan, bg = c.none },
-  DiagnosticVirtualTextHint = { fg = c.comment, bg = c.none },
   DiagnosticUnderlineError = { undercurl = true, sp = c.red },
   DiagnosticUnderlineWarn = { undercurl = true, sp = c.yellow },
   DiagnosticUnderlineInfo = { undercurl = true, sp = c.cyan },
   DiagnosticUnderlineHint = { undercurl = true, sp = c.comment },
 
   -- Git/Diff highlights
-  DiffAdd = { fg = c.green, bg = c.none },
-  DiffChange = { fg = c.yellow, bg = c.none },
-  DiffDelete = { fg = c.red, bg = c.none },
-  DiffText = { fg = c.orange, bg = c.none },
+  DiffAdd = { fg = c.green },
+  DiffChange = { fg = c.yellow },
+  DiffDelete = { fg = c.red },
+  DiffText = { fg = c.orange },
   GitSignsAdd = { fg = c.green },
   GitSignsChange = { fg = c.yellow },
   GitSignsDelete = { fg = c.red },
@@ -185,7 +165,7 @@ local highlights = {
   -- Treesitter highlights (following Dracula spec)
   ["@annotation"] = { fg = c.yellow },
   ["@attribute"] = { fg = c.green },
-  ["@boolean"] = { fg = c.purple },
+  -- ["@boolean"] = { fg = c.purple },
   ["@character"] = { fg = c.green },
   ["@character.special"] = { fg = c.pink },
   ["@comment"] = { fg = c.comment, italic = true },
@@ -224,7 +204,7 @@ local highlights = {
   ["@method.call"] = { fg = c.green },
   ["@namespace"] = { fg = c.cyan },
   ["@none"] = { fg = c.foreground },
-  ["@number"] = { fg = c.purple },
+  -- ["@number"] = { fg = c.purple },
   ["@operator"] = { fg = c.pink },
   ["@parameter"] = { fg = c.orange },
   ["@parameter.reference"] = { fg = c.orange },
@@ -311,13 +291,7 @@ local highlights = {
   ["@lsp.typemod.variable.injected"] = { link = "@variable" },
   ["@lsp.typemod.variable.static"] = { link = "@constant" },
 
-  -- Plugin highlights
-
-  -- Blink completion
-  BlinkCmpMenu = { fg = c.foreground, bg = c.selection },
   BlinkCmpMenuBorder = { fg = c.purple },
-  BlinkCmpMenuSelection = { fg = c.background, bg = c.purple },
-  BlinkCmpLabel = { fg = c.foreground },
   BlinkCmpLabelMatch = { fg = c.green, bold = true },
   BlinkCmpLabelDescription = { fg = c.comment },
   BlinkCmpLabelDetail = { fg = c.cyan },
@@ -347,46 +321,10 @@ local highlights = {
   BlinkCmpKindEvent = { fg = c.yellow },
   BlinkCmpKindOperator = { fg = c.pink },
   BlinkCmpKindTypeParameter = { fg = c.orange },
-
-  -- NeoTree
-  NeoTreeBufferNumber = { fg = c.comment },
-  NeoTreeCursorLine = { bg = c.selection },
-  NeoTreeDimText = { fg = c.comment },
-  NeoTreeDirectoryIcon = { fg = c.cyan },
-  NeoTreeDirectoryName = { fg = c.cyan },
-  NeoTreeDotfile = { fg = c.comment },
-  NeoTreeFileIcon = { fg = c.foreground },
-  NeoTreeFileName = { fg = c.foreground },
-  NeoTreeFileNameOpened = { fg = c.green },
-  NeoTreeFilterTerm = { fg = c.green, bold = true },
-  NeoTreeFloatBorder = { fg = c.purple },
-  NeoTreeFloatTitle = { fg = c.cyan, bold = true },
-  NeoTreeTitleBar = { fg = c.background, bg = c.purple },
-  NeoTreeGitAdded = { fg = c.green },
-  NeoTreeGitConflict = { fg = c.red },
-  NeoTreeGitDeleted = { fg = c.red },
-  NeoTreeGitIgnored = { fg = c.comment },
-  NeoTreeGitModified = { fg = c.yellow },
-  NeoTreeGitUnstaged = { fg = c.orange },
-  NeoTreeGitUntracked = { fg = c.cyan },
-  NeoTreeGitStaged = { fg = c.green },
-  NeoTreeHiddenByName = { fg = c.comment },
-  NeoTreeIndentMarker = { fg = c.comment },
-  NeoTreeExpander = { fg = c.comment },
-  NeoTreeNormal = { fg = c.foreground, bg = c.background },
-  NeoTreeNormalNC = { fg = c.foreground, bg = c.background },
-  NeoTreeSignColumn = { fg = c.comment, bg = c.background },
-  NeoTreeStats = { fg = c.comment },
-  NeoTreeStatsHeader = { fg = c.cyan, bold = true },
-  NeoTreeStatusLine = { fg = c.foreground, bg = c.selection },
-  NeoTreeStatusLineNC = { fg = c.comment, bg = c.background },
-  NeoTreeVertSplit = { fg = c.selection },
-  NeoTreeWinSeparator = { fg = c.selection },
-  NeoTreeEndOfBuffer = { fg = c.background },
-  NeoTreeRootName = { fg = c.purple, bold = true },
-  NeoTreeSymbolicLinkTarget = { fg = c.cyan },
-  NeoTreeWindowsHidden = { fg = c.comment },
 }
+
+local hl = vim.api.nvim_set_hl
+local hl_token = vim.lsp.semantic_tokens.highlight_token
 
 -- Apply all highlights
 for group, opts in pairs(highlights) do
@@ -396,7 +334,7 @@ end
 
 -- Update 'variable.builtin' to use a highlight of a higher priority
 local key = "variable.builtin"
-vim.api.nvim_create_autocmd("LspTokenUpdate", {
+api.nvim_create_autocmd("LspTokenUpdate", {
   callback = function (args)
     local t = args.data.token
     local captures = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
