@@ -19,9 +19,8 @@ g.colors_name = "blade"
 
 -- Blade color palette
 local c = {
-  -- background = "#282a36",
   clear = "none",
-  background = "#212c2a",
+  background = "#282a36",
   foreground = "#f8f8f2",
   selection = "#44475a",
   comment = "#6272a4",
@@ -71,7 +70,7 @@ local highlights = {
   ModeMsg = {},
   MoreMsg = {},
   NonText = {},
-  Normal = { fg = c.foreground, bg = c.background },
+  Normal = { fg = c.foreground, bg = c.none },
   NormalFloat = {},
   Pmenu = {},
   PmenuSbar = {},
