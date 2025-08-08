@@ -11,7 +11,7 @@
       ░                            ░                               ░
 --]]
 
-vim.cmd("colorscheme dracula")
+vim.cmd.colorscheme("dracula-velvet")
 require("core.options")
 require("core.lazy")
 require("core.lsp")

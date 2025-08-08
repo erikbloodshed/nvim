@@ -1,4 +1,3 @@
--- Based on the official Dracula specification: https://spec.draculatheme.com/
 local g = vim.g
 local o = vim.o
 local cmd = vim.cmd
@@ -10,7 +9,7 @@ if vim.fn.exists("syntax_on") then
 end
 
 o.termguicolors = true
-g.colors_name = "dracula"
+g.colors_name = "dracula-velvet"
 
 local c = {
   none = "NONE",
