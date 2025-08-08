@@ -259,6 +259,7 @@ local highlights = {
   ["@lsp.type.property"] = { link = "@property" },
   ["@lsp.type.selfKeyword"] = { fg = c.purple },
   ["@lsp.type.selfTypeKeyword"] = { fg = c.purple },
+  ["@lsp.type.selfTypeParameter"] = { fg = c.purple },
   ["@lsp.type.string"] = { link = "@string" },
   ["@lsp.type.typeAlias"] = { link = "@type.definition" },
   ["@lsp.type.unresolvedReference"] = { fg = c.red, undercurl = true },
@@ -320,19 +321,22 @@ for group, opts in pairs(highlights) do
   hl(0, group, opts)
 end
 
+local key_priorities = {
+  ["constant.builtin"] = 127,
+}
 
--- Update 'variable.builtin' to use a highlight of a higher priority
-local key = "variable.builtin"
 api.nvim_create_autocmd("LspTokenUpdate", {
-  callback = function (args)
+  callback = function(args)
     local t = args.data.token
     local cap = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
 
     for _, x in ipairs(cap) do
-      if x.capture == key then
-        hl_token(t, args.buf, args.data.client_id, "@" .. key, { priority = 126 })
-        break
+      local priority = key_priorities[x.capture]
+      if priority then
+        hl_token(t, args.buf, args.data.client_id, "@" .. x.capture, { priority = priority })
+        return
       end
     end
   end,
 })
+
