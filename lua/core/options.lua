@@ -53,3 +53,6 @@ set.showmode = false
 opt.viewoptions:append({ options = true })
 opt.shortmess:append("cC")
 opt.formatoptions:remove({ "c", "r", "o" })
+opt.fillchars:remove("eob:~")
+
+vim.cmd.colorscheme("dracula-velvet")
