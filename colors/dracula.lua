@@ -14,25 +14,18 @@ g.colors_name = "dracula"
 
 local c = {
   none = "NONE",
-  -- Standard colors
-  -- background = "#282a36",
-  -- selection = "#44475a",
-  -- foreground = "#f8f8f2",
-  red = "#ff5555",
-  orange = "#ffb86c",
-  yellow = "#f1fa8c",
-  green = "#50fa7b",
-  purple = "#bd93f9",
-  cyan = "#8be9fd",
-  pink = "#ff79c6",
-
-  -- Non-standard colors
   background = '#1a1a2e',
   foreground = "#e2dce8",
   selection = '#302c4a',
   comment = '#6272a4',
+  red = "#ff5555",
+  orange = "#ffb86c",
+  yellow = "#f1fa8c",
+  green = "#50fa7b",
+  purple = "#bf9aff",
+  cyan = "#8be9fd",
+  pink = "#ff79c6",
 
-  -- ANSI colors
   ansi_black = "#21222c",
   ansi_red = "#ff5555",
   ansi_green = "#50fa7b",
@@ -87,7 +80,7 @@ local highlights = {
   ModeMsg = { fg = c.foreground },
   MoreMsg = { fg = c.green },
   NonText = { fg = c.comment },
-  Normal = { fg = c.foreground, bg = c.background },
+  Normal = { fg = c.foreground, bg = c.none },
   NormalFloat = { fg = c.foreground, bg = c.background },
   Pmenu = { fg = c.foreground, bg = c.selection },
   PmenuSbar = { bg = c.selection },
@@ -165,7 +158,6 @@ local highlights = {
   -- Treesitter highlights (following Dracula spec)
   ["@annotation"] = { fg = c.yellow },
   ["@attribute"] = { fg = c.green },
-  -- ["@boolean"] = { fg = c.purple },
   ["@character"] = { fg = c.green },
   ["@character.special"] = { fg = c.pink },
   ["@comment"] = { fg = c.comment, italic = true },
@@ -204,7 +196,6 @@ local highlights = {
   ["@method.call"] = { fg = c.green },
   ["@namespace"] = { fg = c.cyan },
   ["@none"] = { fg = c.foreground },
-  -- ["@number"] = { fg = c.purple },
   ["@operator"] = { fg = c.pink },
   ["@parameter"] = { fg = c.orange },
   ["@parameter.reference"] = { fg = c.orange },
@@ -326,7 +317,6 @@ local highlights = {
 local hl = vim.api.nvim_set_hl
 local hl_token = vim.lsp.semantic_tokens.highlight_token
 
--- Apply all highlights
 for group, opts in pairs(highlights) do
   hl(0, group, opts)
 end
@@ -337,9 +327,9 @@ local key = "variable.builtin"
 api.nvim_create_autocmd("LspTokenUpdate", {
   callback = function (args)
     local t = args.data.token
-    local captures = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
+    local cap = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
 
-    for _, x in ipairs(captures) do
+    for _, x in ipairs(cap) do
       if x.capture == key then
         hl_token(t, args.buf, args.data.client_id, "@" .. key, { priority = 126 })
         break
