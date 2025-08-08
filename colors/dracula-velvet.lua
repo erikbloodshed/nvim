@@ -29,10 +29,10 @@ local c = {
   ansi_red = "#ff5555",
   ansi_green = "#50fa7b",
   ansi_yellow = "#f1fa8c",
-  ansi_blue = "#bd93f9",
+  ansi_blue = "#bf9aff",
   ansi_magenta = "#ff79c6",
   ansi_cyan = "#8be9fd",
-  ansi_white = "#f8f8f2",
+  ansi_white = "#e2dce8",
   ansi_bright_black = "#6272a4",
   ansi_bright_red = "#ff6e6e",
   ansi_bright_green = "#69ff94",
@@ -68,9 +68,9 @@ local highlights = {
   CursorLine = { bg = c.selection },
   CursorColumn = { bg = c.selection },
   CursorLineNr = { fg = c.foreground, bg = c.selection },
-  Directory = { fg = c.cyan },
+  Directory = { fg = c.purple, bold = true },
   ErrorMsg = { fg = c.red },
-  FloatBorder = { fg = c.purple },
+  FloatBorder = { fg = c.purple, bg = c.none },
   FoldColumn = { fg = c.comment, bg = c.background },
   Folded = { fg = c.comment, bg = c.selection },
   Search = { fg = c.background, bg = c.yellow },
@@ -80,7 +80,7 @@ local highlights = {
   MoreMsg = { fg = c.green },
   NonText = { fg = c.comment },
   Normal = { fg = c.foreground, bg = c.none },
-  NormalFloat = { fg = c.foreground, bg = c.background },
+  NormalFloat = { fg = c.foreground, bg = c.none },
   Pmenu = { fg = c.foreground, bg = c.selection },
   PmenuSbar = { bg = c.selection },
   PmenuSel = { fg = c.background, bg = c.purple },
@@ -312,6 +312,44 @@ local highlights = {
   BlinkCmpKindEvent = { fg = c.yellow },
   BlinkCmpKindOperator = { fg = c.pink },
   BlinkCmpKindTypeParameter = { fg = c.orange },
+
+  NeoTreeBufferNumber = { fg = c.comment },
+  NeoTreeCursorLine = { bg = c.selection },
+  NeoTreeDimText = { fg = c.comment },
+  NeoTreeDirectoryIcon = { fg = c.purple },
+  NeoTreeDirectoryName = { fg = c.purple, bold = true },
+  NeoTreeDotfile = { fg = c.comment },
+  NeoTreeFileIcon = { fg = c.foreground },
+  NeoTreeFileName = { fg = c.foreground },
+  NeoTreeFileNameOpened = { fg = c.green },
+  NeoTreeFilterTerm = { fg = c.green, bold = true },
+  NeoTreeFloatBorder = { fg = c.purple },
+  NeoTreeFloatTitle = { fg = c.cyan, bold = true },
+  NeoTreeTitleBar = { fg = c.background, bg = c.purple },
+  NeoTreeGitAdded = { fg = c.green },
+  NeoTreeGitConflict = { fg = c.red },
+  NeoTreeGitDeleted = { fg = c.red },
+  NeoTreeGitIgnored = { fg = c.comment },
+  NeoTreeGitModified = { fg = c.yellow },
+  NeoTreeGitUnstaged = { fg = c.orange },
+  NeoTreeGitUntracked = { fg = c.cyan },
+  NeoTreeGitStaged = { fg = c.green },
+  NeoTreeHiddenByName = { fg = c.comment },
+  NeoTreeIndentMarker = { fg = c.comment },
+  NeoTreeExpander = { fg = c.comment },
+  NeoTreeNormal = { fg = c.foreground, bg = c.background },
+  NeoTreeNormalNC = { fg = c.foreground, bg = c.background },
+  NeoTreeSignColumn = { fg = c.comment, bg = c.background },
+  NeoTreeStats = { fg = c.comment },
+  NeoTreeStatsHeader = { fg = c.cyan, bold = true },
+  NeoTreeStatusLine = { fg = c.foreground, bg = c.selection },
+  NeoTreeStatusLineNC = { fg = c.comment, bg = c.background },
+  NeoTreeVertSplit = { fg = c.selection },
+  NeoTreeWinSeparator = { fg = c.selection },
+  NeoTreeEndOfBuffer = { fg = c.background },
+  NeoTreeRootName = { fg = c.purple, bold = true },
+  NeoTreeSymbolicLinkTarget = { fg = c.cyan },
+  NeoTreeWindowsHidden = { fg = c.comment },
 }
 
 local hl = vim.api.nvim_set_hl
@@ -326,7 +364,7 @@ local key_priorities = {
 }
 
 api.nvim_create_autocmd("LspTokenUpdate", {
-  callback = function(args)
+  callback = function (args)
     local t = args.data.token
     local cap = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
 
@@ -339,4 +377,3 @@ api.nvim_create_autocmd("LspTokenUpdate", {
     end
   end,
 })
-
