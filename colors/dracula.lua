@@ -27,10 +27,6 @@ local c = {
   -- foreground = "#f8f8f2",
   -- yellow = "#f1fa8c",
 
-  -- background = '#1e1b29',
-  -- foreground = "#e2dce8",
-  -- selection = "#302c4a",
-  -- comment = "#6272a4",
   background = '#1a1a2e', -- Slightly deeper than Dracula's #282a36
   foreground = "#e2dce8",
   selection = '#302c4a',  -- Same as Dracula but fits the theme
