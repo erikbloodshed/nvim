@@ -360,6 +360,7 @@ end
 
 local key_priorities = {
   ["constant.builtin"] = 127,
+  ["variable.builtin"] = 127
 }
 
 api.nvim_create_autocmd("LspTokenUpdate", {

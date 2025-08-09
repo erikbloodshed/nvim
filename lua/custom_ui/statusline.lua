@@ -30,6 +30,7 @@ local config = {
     hint = '',
     lsp = '',
   },
+
   center_filename = true, -- Controls whether the filename is centered.
   exclude = {
     buftypes = { 'terminal', 'quickfix', 'help', 'nofile', 'prompt' },
@@ -67,22 +68,22 @@ local modes = {
 --]]
 local function setup_highlights()
   local highlights = {
-    StatusLineNormal = { fg = '#89b4fa', bg = 'NONE', bold = true },
-    StatusLineInsert = { fg = '#a6e3a1', bg = 'NONE', bold = true },
-    StatusLineVisual = { fg = '#f38ba8', bg = 'NONE', bold = true },
-    StatusLineCommand = { fg = '#f9e2af', bg = 'NONE', bold = true },
-    StatusLineReplace = { fg = '#fab387', bg = 'NONE', bold = true },
-    StatusLineTerminal = { fg = '#cba6f7', bg = 'NONE', bold = true },
-    StatusLineFile = { fg = '#cdd6f4', bg = 'NONE' },
-    StatusLineModified = { fg = '#ff6b6b', bg = 'NONE', bold = true },
-    StatusLineReadonly = { fg = '#f38ba8', bg = 'NONE' },
-    StatusLineGit = { fg = '#fab387', bg = 'NONE' },
-    StatusLineInfo = { fg = '#a6adc8', bg = 'NONE' },
-    StatusLineDiagError = { fg = '#f38ba8', bg = 'NONE' },
-    StatusLineDiagWarn = { fg = '#f9e2af', bg = 'NONE' },
-    StatusLineDiagInfo = { fg = '#89dceb', bg = 'NONE' },
-    StatusLineDiagHint = { fg = '#94e2d5', bg = 'NONE' },
-    StatusLineLSP = { fg = '#a6e3a1', bg = 'NONE' },
+    StatusLineNormal = { fg = '#bd93f9', bg = 'NONE', bold = true },
+    StatusLineInsert = { fg = '#50fa7b', bg = 'NONE', bold = true },
+    StatusLineVisual = { fg = '#ff79c6', bg = 'NONE', bold = true },
+    StatusLineCommand = { fg = '#f1fa8c', bg = 'NONE', bold = true },
+    StatusLineReplace = { fg = '#ffb86c', bg = 'NONE', bold = true },
+    StatusLineTerminal = { fg = '#8be9fd', bg = 'NONE', bold = true },
+    StatusLineFile = { fg = '#f8f8f2', bg = 'NONE' },
+    StatusLineModified = { fg = '#ff5555', bg = 'NONE', bold = true },
+    StatusLineReadonly = { fg = '#6272a4', bg = 'NONE' },
+    StatusLineGit = { fg = '#ffb86c', bg = 'NONE' },
+    StatusLineInfo = { fg = '#6272a4', bg = 'NONE' },
+    StatusLineDiagError = { fg = '#ff5555', bg = 'NONE' },
+    StatusLineDiagWarn = { fg = '#f1fa8c', bg = 'NONE' },
+    StatusLineDiagInfo = { fg = '#8be9fd', bg = 'NONE' },
+    StatusLineDiagHint = { fg = '#50fa7b', bg = 'NONE' },
+    StatusLineLSP = { fg = '#50fa7b', bg = 'NONE' },
   }
   for name, opts in pairs(highlights) do
     vim.api.nvim_set_hl(0, name, opts)
