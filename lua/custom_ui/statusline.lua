@@ -1,6 +1,3 @@
--- statusline.lua
--- A refactored, performant, and feature-rich statusline module for Neovim.
-
 local M = {}
 
 --[[
@@ -93,11 +90,10 @@ local function setup_highlights()
 end
 
 --[[
-  Smart Cache with TTL (Time-To-Live) and dependency tracking.
+  Smart Cache with TTL (Time-To-Live).
 --]]
 local cache = {
   data = {},
-  dependencies = {},
   last_update = {},
   update_intervals = {
     mode = 50,
@@ -119,26 +115,14 @@ local function is_cache_valid(component, force_refresh)
   return (now - last_update) < ttl and cache.data[component] ~= nil
 end
 
-local function update_cache(component, value, dependencies)
+local function update_cache(component, value)
   cache.data[component] = value
   cache.last_update[component] = vim.loop.hrtime() / 1e6
-  cache.dependencies[component] = dependencies or {}
 end
 
 local function invalidate_cache(component)
   cache.data[component] = nil
   cache.last_update[component] = nil
-end
-
-local function invalidate_dependent_caches(changed_dependency)
-  for component, deps in pairs(cache.dependencies) do
-    for _, dep in ipairs(deps) do
-      if dep == changed_dependency then
-        invalidate_cache(component)
-        break
-      end
-    end
-  end
 end
 
 --[[
@@ -153,7 +137,6 @@ function ComponentLoader:new()
     loaded_components = {},
     lazy_components = {},
     dependencies = {
-      git_branch = { 'fugitive', 'gitsigns' },
       file_info = { 'nvim-web-devicons' },
       diagnostics = { 'vim.diagnostic' },
       lsp_status = { 'vim.lsp' }
@@ -169,12 +152,13 @@ end
 
 function ComponentLoader:check_dependencies(component)
   local deps = self.dependencies[component] or {}
+  if #deps == 0 then return true end -- No dependencies to check
   for _, dep in ipairs(deps) do
     if self:is_dependency_available(dep) then
       return true -- At least one dependency is available
     end
   end
-  return #deps == 0
+  return false
 end
 
 function ComponentLoader:should_load_component(component)
@@ -244,7 +228,7 @@ function components.file_info()
   end
 
   local result = table.concat(parts, ' ')
-  update_cache('file_info', result, { 'nvim-web-devicons' })
+  update_cache('file_info', result)
   return result
 end
 
@@ -252,44 +236,26 @@ function components.git_branch()
   if not loader:should_load_component('git_branch') then return '' end
   if is_cache_valid('git_branch') then return cache.data.git_branch end
 
-  local branch
-  local dependencies = {}
-
-  local gitsigns_ok, gitsigns = pcall(require, 'gitsigns')
-  if gitsigns_ok then
-    table.insert(dependencies, 'gitsigns')
-    branch = gitsigns.get_head()
-  end
-
-  if not branch and pcall(vim.fn.exists, '*FugitiveHead') then
-    table.insert(dependencies, 'fugitive')
-    branch = vim.fn.FugitiveHead()
-  end
-
-  if not branch or branch == '' then
-    -- Non-blocking git command
-    local cwd = vim.fn.expand('%:p:h')
-    if cwd ~= '' and vim.system then
-      vim.system({ 'git', 'branch', '--show-current' }, { cwd = cwd, text = true }, vim.schedule_wrap(function (obj)
-        if obj.code == 0 and obj.stdout ~= '' then
-          local git_branch = obj.stdout:gsub("\n", "")
-          local git_result = string.format('%%#StatusLineGit#%s %s%%*', config.icons.git, git_branch)
-          update_cache('git_branch', git_result, dependencies)
-          vim.cmd('redrawstatus')
+  -- Non-blocking git command
+  local cwd = vim.fn.expand('%:p:h')
+  if cwd ~= '' and vim.system then
+    vim.system({ 'git', 'branch', '--show-current' }, { cwd = cwd, text = true }, vim.schedule_wrap(function (obj)
+      local git_result = ''
+      if obj.code == 0 and obj.stdout ~= '' then
+        local git_branch = obj.stdout:gsub('[\n\r]', '') -- Clean newline characters
+        if git_branch ~= '' then
+          git_result = string.format('%%#StatusLineGit#%s %s%%*', config.icons.git, git_branch)
         end
-      end))
-    end
-    -- Return cached or empty while job runs
-    return cache.data.git_branch or ''
+      end
+      -- Update cache only if value changes, and redraw
+      if cache.data.git_branch ~= git_result then
+        update_cache('git_branch', git_result)
+        vim.cmd('redrawstatus')
+      end
+    end))
   end
-
-  local result = ''
-  if branch and branch ~= '' then
-    result = string.format('%%#StatusLineGit#%s %s%%*', config.icons.git, branch)
-  end
-
-  update_cache('git_branch', result, dependencies)
-  return result
+  -- Return cached value or empty string while job runs
+  return cache.data.git_branch or ''
 end
 
 function components.diagnostics()
@@ -310,17 +276,21 @@ function components.diagnostics()
   end
 
   local parts = {}
-  if counts.error > 0 then table.insert(parts,
-      string.format('%%#StatusLineDiagError#%s %d%%*', config.icons.error, counts.error)) end
-  if counts.warn > 0 then table.insert(parts,
-      string.format('%%#StatusLineDiagWarn#%s %d%%*', config.icons.warn, counts.warn)) end
-  if counts.info > 0 then table.insert(parts,
-      string.format('%%#StatusLineDiagInfo#%s %d%%*', config.icons.info, counts.info)) end
-  if counts.hint > 0 then table.insert(parts,
-      string.format('%%#StatusLineDiagHint#%s %d%%*', config.icons.hint, counts.hint)) end
+  if counts.error > 0 then
+    table.insert(parts, string.format('%%#StatusLineDiagError#%s %d%%*', config.icons.error, counts.error))
+  end
+  if counts.warn > 0 then
+    table.insert(parts, string.format('%%#StatusLineDiagWarn#%s %d%%*', config.icons.warn, counts.warn))
+  end
+  if counts.info > 0 then
+    table.insert(parts, string.format('%%#StatusLineDiagInfo#%s %d%%*', config.icons.info, counts.info))
+  end
+  if counts.hint > 0 then
+    table.insert(parts, string.format('%%#StatusLineDiagHint#%s %d%%*', config.icons.hint, counts.hint))
+  end
 
   local result = table.concat(parts, ' ')
-  update_cache('diagnostics', result, { 'vim.diagnostic' })
+  update_cache('diagnostics', result)
   return result
 end
 
@@ -328,9 +298,9 @@ function components.lsp_status()
   if not loader:should_load_component('lsp_status') then return '' end
   if is_cache_valid('lsp_status') then return cache.data.lsp_status end
 
-  local clients = vim.lsp.get_active_clients({ bufnr = 0 })
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
   if #clients == 0 then
-    update_cache('lsp_status', '', { 'vim.lsp' })
+    update_cache('lsp_status', '')
     return ''
   end
 
@@ -346,7 +316,7 @@ function components.lsp_status()
     result = string.format('%%#StatusLineLSP#%s %s%%*', config.icons.lsp, table.concat(client_names, ', '))
   end
 
-  update_cache('lsp_status', result, { 'vim.lsp' })
+  update_cache('lsp_status', result)
   return result
 end
 
@@ -430,27 +400,22 @@ function M.statusline()
     local available_center = win_width - total_side_width
 
     if available_center < center_width + 4 then
-      return left_section .. '%=' .. center_section .. '%=' .. right_section
+      -- Fallback to simple layout if there is not enough space
+      return left_section .. ' ' .. center_section .. '%=' .. right_section
     end
 
     local center_start = math.floor((win_width - center_width) / 2)
     local left_padding = math.max(1, center_start - left_width)
-    local right_padding = math.max(1, win_width - center_start - center_width - right_width)
 
     local statusline = left_section
     statusline = statusline .. string.rep(' ', left_padding)
     statusline = statusline .. center_section
-    statusline = statusline .. string.rep(' ', right_padding)
+    statusline = statusline .. '%=' -- Align right section to the right
     statusline = statusline .. right_section
-
-    local current_width = get_display_width(statusline)
-    if current_width < win_width then
-      statusline = statusline .. "%="   -- Fill the rest of the space
-    end
 
     return statusline
   else
-    return left_section .. '%=' .. center_section .. '%=' .. right_section
+    return left_section .. ' ' .. center_section .. '%=' .. right_section
   end
 end
 
@@ -518,17 +483,20 @@ function M.setup(user_config)
   local group = vim.api.nvim_create_augroup('CustomStatusline', { clear = true })
   local autocmd = vim.api.nvim_create_autocmd
 
-  autocmd('ModeChanged', { group = group, callback = function () invalidate_cache('mode') end })
+  autocmd('ModeChanged', { group = group, pattern = "*", callback = function () invalidate_cache('mode') end })
   autocmd({ 'BufEnter', 'BufWritePost', 'TextChanged', 'TextChangedI', 'BufModifiedSet' }, {
     group = group,
+    pattern = "*",
     callback = function ()
       invalidate_cache('file_info')
       vim.schedule(function () loader:check_lazy_components() end)
     end
   })
-  autocmd('DiagnosticChanged', { group = group, callback = function () invalidate_cache('diagnostics') end })
+  autocmd('DiagnosticChanged',
+    { group = group, pattern = "*", callback = function () invalidate_cache('diagnostics') end })
   autocmd({ 'LspAttach', 'LspDetach' }, {
     group = group,
+    pattern = "*",
     callback = function ()
       invalidate_cache('lsp_status')
       vim.schedule(function () loader:check_lazy_components() end)
@@ -536,19 +504,23 @@ function M.setup(user_config)
   })
   autocmd({ 'CursorMoved', 'CursorMovedI' }, {
     group = group,
+    pattern = "*",
     callback = function ()
       invalidate_cache('position')
       invalidate_cache('percentage')
     end
   })
-  autocmd({ 'FocusGained', 'BufEnter' }, { group = group, callback = function () invalidate_cache('git_branch') end })
-  autocmd({ 'VimResized', 'WinResized' }, { group = group, command = 'redrawstatus' })
+  autocmd({ 'FocusGained', 'DirChanged', 'BufEnter' },
+    { group = group, pattern = "*", callback = function () invalidate_cache('git_branch') end })
+  autocmd({ 'VimResized', 'WinResized' }, { group = group, pattern = "*", command = 'redrawstatus' })
   autocmd({ 'WinEnter', 'BufWinEnter', 'WinNew' }, {
     group = group,
+    pattern = "*",
     callback = function () vim.schedule(set_window_statusline) end
   })
   autocmd({ 'TabEnter', 'SessionLoadPost' }, {
     group = group,
+    pattern = "*",
     callback = function () vim.schedule(refresh_all_statuslines) end
   })
 
