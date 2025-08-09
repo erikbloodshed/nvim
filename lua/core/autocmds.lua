@@ -38,7 +38,7 @@ autocmd({ "Filetype" }, {
 
 autocmd({ "VimEnter" }, {
   callback = function ()
-    require("custom_ui.statusline")
+    -- require("custom_ui.statusline")
     require("custom_ui.input")
     require("custom_ui.select")
 

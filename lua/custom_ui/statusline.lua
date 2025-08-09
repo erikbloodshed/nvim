@@ -27,6 +27,19 @@ local config = {
     hint = '',
     lsp = '󰒋',
   },
+
+  center_filename = true, -- New option to control fixed centering
+  exclude = {
+    buftypes = { 'terminal', 'quickfix', 'help', 'nofile', 'prompt' },
+    filetypes = {
+      'NvimTree', 'neo-tree', 'aerial', 'Outline', 'packer', 'alpha', 'starter',
+      'TelescopePrompt', 'TelescopeResults', 'TelescopePreview',
+      'lazy', 'mason', 'lspinfo', 'null-ls-info',
+      'checkhealth', 'help', 'man', 'qf', 'fugitive'
+    },
+    floating_windows = true,                            -- Disable statusline for floating windows
+    small_windows = { min_height = 3, min_width = 20 }, -- Skip very small windows
+  }
 }
 
 -- Mode configuration with colors
@@ -145,6 +158,17 @@ function components.git_branch()
   if not config.components.git_branch then return '' end
   if is_cache_valid('git_branch', 5000) then return cache.git_branch end
 
+  -- Try vim-fugitive first
+  local has_fugitive, fugitive = pcall(require, 'fugitive')
+  if has_fugitive then
+    local branch = vim.fn['FugitiveHead']()
+    if branch and branch ~= '' then
+      local result = string.format('%%#StatusLineGit#%s %s%%*', config.icons.git, branch)
+      update_cache('git_branch', result)
+      return result
+    end
+  end
+
   -- Fallback to git command
   local handle = io.popen('cd ' .. vim.fn.expand('%:p:h') .. ' 2>/dev/null && git branch --show-current 2>/dev/null')
   if handle then
@@ -204,7 +228,7 @@ function components.lsp_status()
   if not config.components.lsp_status then return '' end
   if is_cache_valid('lsp_status', 1000) then return cache.lsp_status end
 
-  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  local clients = vim.lsp.get_active_clients({ bufnr = 0 })
   if #clients == 0 then
     update_cache('lsp_status', '')
     return ''
@@ -247,13 +271,25 @@ function components.percentage()
   return string.format('%%#StatusLineInfo#%d%%%%%%*', percentage)
 end
 
--- Main statusline builder
+-- Utility function to strip highlight groups and get display width
+local function get_display_width(str)
+  -- Remove highlight groups (%#...#, %*)
+  local clean_str = str:gsub('%%#[^#]*#', ''):gsub('%%*', '')
+  -- Handle other vim statusline format specifiers
+  clean_str = clean_str:gsub('%%=', ''):gsub('%%<', '')
+  return vim.fn.strdisplaywidth(clean_str)
+end
+
+-- Main statusline builder with fixed centered filename
 function M.statusline()
+  -- Get current window info for context
+  local win_id = vim.api.nvim_get_current_win()
+  local buf_id = vim.api.nvim_win_get_buf(win_id)
+
   local left_parts = {}
-  local center_parts = {}
   local right_parts = {}
 
-  -- Left side
+  -- Left side components
   table.insert(left_parts, components.mode())
 
   local git = components.git_branch()
@@ -261,10 +297,7 @@ function M.statusline()
     table.insert(left_parts, git)
   end
 
-  -- Center
-  table.insert(center_parts, components.file_info())
-
-  -- Right side
+  -- Right side components
   local diagnostics = components.diagnostics()
   if diagnostics ~= '' then
     table.insert(right_parts, diagnostics)
@@ -285,12 +318,149 @@ function M.statusline()
     table.insert(right_parts, components.percentage())
   end
 
-  -- Build final statusline
-  local left = table.concat(left_parts, ' ')
-  local center = table.concat(center_parts, ' ')
-  local right = table.concat(right_parts, config.separators.section)
+  -- Build left and right sections
+  local left_section = table.concat(left_parts, ' ')
+  local right_section = table.concat(right_parts, config.separators.section)
+  local center_section = components.file_info()
 
-  return left .. '%=' .. center .. '%=' .. right
+  -- Use fixed centering if enabled
+  if config.center_filename then
+    -- Calculate display widths (excluding highlight codes)
+    local left_width = get_display_width(left_section)
+    local right_width = get_display_width(right_section)
+    local center_width = get_display_width(center_section)
+
+    -- Get current window width (not global)
+    local win_width = vim.api.nvim_win_get_width(win_id)
+
+    -- Calculate padding needed to center the filename
+    local total_side_width = left_width + right_width
+    local available_center = win_width - total_side_width
+
+    -- If there's not enough space, fall back to simple layout
+    if available_center < center_width + 4 then -- +4 for minimum padding
+      return left_section .. '%=' .. center_section .. '%=' .. right_section
+    end
+
+    -- Calculate exact positioning for perfect centering
+    local center_start = math.floor((win_width - center_width) / 2)
+    local left_padding = center_start - left_width
+    local right_padding = win_width - center_start - center_width - right_width
+
+    -- Ensure minimum padding
+    left_padding = math.max(left_padding, 1)
+    right_padding = math.max(right_padding, 1)
+
+    -- Build the statusline with precise positioning
+    local statusline = left_section
+    statusline = statusline .. string.rep(' ', left_padding)
+    statusline = statusline .. center_section
+    statusline = statusline .. string.rep(' ', right_padding)
+    statusline = statusline .. right_section
+
+    -- Handle any remaining space to prevent line wrapping
+    local current_width = get_display_width(statusline)
+    if current_width < win_width then
+      statusline = statusline .. string.rep(' ', win_width - current_width)
+    elseif current_width > win_width then
+      -- Fallback if calculation is off
+      return left_section .. '%=' .. center_section .. '%=' .. right_section
+    end
+
+    return statusline
+  else
+    -- Use standard vim statusline alignment
+    return left_section .. '%=' .. center_section .. '%=' .. right_section
+  end
+end
+
+-- Function to enable statusline for current window
+function M.enable()
+  local win_id = vim.api.nvim_get_current_win()
+  vim.wo[win_id].statusline = '%!v:lua.require("custom_ui.statusline").statusline()'
+end
+
+-- Function to disable statusline for current window
+function M.disable()
+  local win_id = vim.api.nvim_get_current_win()
+  vim.wo[win_id].statusline = ''
+end
+
+-- Function to refresh all statuslines
+function M.refresh()
+  refresh_all_statuslines()
+end
+
+-- Function to check if a window should have the statusline
+local function should_have_statusline(win_id)
+  -- Check if it's a floating window
+  if config.exclude.floating_windows then
+    local win_config = vim.api.nvim_win_get_config(win_id)
+    if win_config.relative ~= '' then
+      -- It's a floating window, don't add statusline
+      return false
+    end
+  end
+
+  local buf_id = vim.api.nvim_win_get_buf(win_id)
+  local buf_type = vim.api.nvim_get_option_value('buftype', { buf = buf_id })
+  local file_type = vim.api.nvim_get_option_value('filetype', { buf = buf_id })
+
+  -- Skip configured buffer types
+  for _, skip_type in ipairs(config.exclude.buftypes) do
+    if buf_type == skip_type then return false end
+  end
+
+  -- Skip configured file types
+  for _, skip_type in ipairs(config.exclude.filetypes) do
+    if file_type == skip_type then return false end
+  end
+
+  -- Additional checks for Neo-tree specific cases
+  local buf_name = vim.api.nvim_buf_get_name(buf_id)
+  if buf_name:match('neo%-tree') or buf_name:match('NvimTree') then
+    return false
+  end
+
+  -- Check if window is very small (likely a popup or split)
+  if config.exclude.small_windows then
+    local win_height = vim.api.nvim_win_get_height(win_id)
+    local win_width = vim.api.nvim_win_get_width(win_id)
+    local min_height = config.exclude.small_windows.min_height or 3
+    local min_width = config.exclude.small_windows.min_width or 20
+
+    if win_height < min_height or win_width < min_width then
+      return false
+    end
+  end
+
+  return true
+end
+
+-- Function to set statusline for current window
+local function set_window_statusline()
+  local win_id = vim.api.nvim_get_current_win()
+  if should_have_statusline(win_id) then
+    vim.wo[win_id].statusline = '%!v:lua.require("custom_ui.statusline").statusline()'
+  else
+    -- Explicitly disable statusline for windows that shouldn't have it
+    vim.wo[win_id].statusline = ''
+  end
+end
+
+-- Function to handle all windows (useful for refreshing)
+local function refresh_all_statuslines()
+  for _, win_id in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(win_id) then
+      vim.api.nvim_win_call(win_id, function ()
+        if should_have_statusline(win_id) then
+          vim.wo[win_id].statusline = '%!v:lua.require("custom_ui.statusline").statusline()'
+        else
+          vim.wo[win_id].statusline = ''
+        end
+      end)
+    end
+  end
 end
 
 -- Setup function
@@ -298,7 +468,7 @@ function M.setup(user_config)
   config = vim.tbl_deep_extend('force', config, user_config or {})
   setup_highlights()
 
-  -- Set up autocommands for cache invalidation
+  -- Set up autocommands for cache invalidation and window-local statuslines
   local group = vim.api.nvim_create_augroup('StatuslineUpdate', { clear = true })
 
   vim.api.nvim_create_autocmd({ 'ModeChanged' }, {
@@ -339,8 +509,64 @@ function M.setup(user_config)
     end
   })
 
-  -- Set the statusline
-  vim.opt.statusline = '%!v:lua.require("custom_ui.statusline").statusline()'
+  -- Window resize events to refresh centering calculations
+  vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
+    group = group,
+    callback = function ()
+      -- Force statusline refresh on window size change
+      vim.cmd('redrawstatus')
+    end
+  })
+
+  -- Set up window-local statuslines with better event handling
+  vim.api.nvim_create_autocmd({ 'WinEnter', 'BufWinEnter', 'WinNew' }, {
+    group = group,
+    callback = function ()
+      -- Small delay to ensure window is fully initialized
+      vim.schedule(set_window_statusline)
+    end,
+    desc = 'Set window-local statusline'
+  })
+
+  -- Handle floating windows specifically
+  vim.api.nvim_create_autocmd({ 'WinNew' }, {
+    group = group,
+    callback = function ()
+      vim.schedule(function ()
+        local win_id = vim.api.nvim_get_current_win()
+        local win_config = vim.api.nvim_win_get_config(win_id)
+        -- Force disable statusline for floating windows
+        if win_config.relative ~= '' then
+          vim.wo[win_id].statusline = ''
+        end
+      end)
+    end,
+    desc = 'Disable statusline for floating windows'
+  })
+
+  -- Handle window closing to clean up
+  vim.api.nvim_create_autocmd({ 'WinClosed' }, {
+    group = group,
+    callback = function ()
+      -- Clear any cached data that might be window-specific
+      -- This helps prevent memory leaks in long sessions
+      vim.schedule(function ()
+        collectgarbage('collect')
+      end)
+    end
+  })
+
+  -- Global refresh on certain events that might affect window layout
+  vim.api.nvim_create_autocmd({ 'TabEnter', 'SessionLoadPost' }, {
+    group = group,
+    callback = function ()
+      vim.schedule(refresh_all_statuslines)
+    end,
+    desc = 'Refresh all statuslines on layout changes'
+  })
+
+  -- Set statusline for current window immediately
+  set_window_statusline()
 end
 
 -- Auto-setup with default config
