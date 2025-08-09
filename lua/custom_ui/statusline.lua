@@ -27,7 +27,7 @@ config = {
   center_filename = true,
   enable_profiling = false,
   throttle_ms = 50,
-  async = { file_info = false }, -- async mode config
+  async = { file_info = true, git_branch = true },
   exclude = {
     buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
     filetypes = {
@@ -72,7 +72,7 @@ local modes = {
   t = { "TERMINAL", "StatusLineTerminal" },
 }
 
--- Profiling wrapper
+-- Profiling
 local function prof(name, fnc)
   if not config.enable_profiling then
     return fnc
@@ -128,8 +128,6 @@ end
 local function hl(name, text)
   return ("%%#%s#%s%%*"):format(name, text)
 end
-
--- Lazy dependency loader
 local loaded = {}
 local function require_lazy(mod)
   if not loaded[mod] then
@@ -179,9 +177,8 @@ comp.file_info = prof("file_info", function()
     end
     local icon = cache.data.file_icon or ""
 
-    -- Async icon loading if enabled
-    if config.async and config.async.file_info and icon == "" then
-      cache.data.file_icon = " " -- placeholder to prevent retriggers
+    if config.async.file_info and icon == "" then
+      cache.data.file_icon = " "
       vim.schedule(function()
         local dev = require_lazy("nvim-web-devicons")
         if dev then
@@ -233,33 +230,33 @@ comp.git_branch = prof("git_branch", function()
     if git_cache[root] then
       return git_cache[root]
     end
-    if vim.system then
-      if git_job and git_job.kill then
-        git_job:kill()
-      end
-      git_job = vim.system(
-        { "git", "branch", "--show-current" },
-        { cwd = root, text = true },
-        vim.schedule_wrap(function(o)
-          git_job = nil
-          local res = ""
-          if o.code == 0 and o.stdout ~= "" then
-            local b = o.stdout:gsub("[\n\r]", "")
-            if b ~= "" then
-              res = hl("StatusLineGit", config.icons.git .. " " .. b)
-            end
-          end
-          if git_cache[root] ~= res then
-            git_cache[root] = res
-            update("git_branch", res)
-            vim.schedule(function()
-              vim.cmd("redrawstatus")
+
+    if config.async.git_branch and not git_job then
+      git_job = true
+      vim.schedule(function()
+        if vim.system then
+          vim.system(
+            { "git", "branch", "--show-current" },
+            { cwd = root, text = true },
+            vim.schedule_wrap(function(o)
+              git_job = nil
+              local res = ""
+              if o.code == 0 and o.stdout ~= "" then
+                local b = o.stdout:gsub("[\n\r]", "")
+                if b ~= "" then
+                  res = hl("StatusLineGit", config.icons.git .. " " .. b)
+                end
+              end
+              git_cache[root] = res
+              invalidate("git_branch")
+              M.refresh(api.nvim_get_current_win())
             end)
-          end
-        end)
-      )
+          )
+        end
+      end)
     end
-    return git_cache[root] or ""
+
+    return "" -- no branch yet, async will update
   end)
 end)
 
@@ -415,7 +412,7 @@ end
 
 local expr = '%!v:lua.require("custom_ui.statusline").statusline()'
 local function refresh(win)
-  api.nvim_win_set_option(win, "statusline", show(win) and expr or "")
+  api.nvim_set_option_value("statusline", show(win) and expr or "", { win = win })
 end
 M.refresh = function(win)
   if win then
