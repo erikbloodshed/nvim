@@ -21,7 +21,7 @@ local config = {
     section = ' | ',
   },
   icons = {
-    modified = '●',
+    modified = '',
     readonly = '',
     git = '',
     error = '',
@@ -75,7 +75,7 @@ local function setup_highlights()
     StatusLineReplace = { fg = '#ffb86c', bg = 'NONE', bold = true },
     StatusLineTerminal = { fg = '#8be9fd', bg = 'NONE', bold = true },
     StatusLineFile = { fg = '#f8f8f2', bg = 'NONE' },
-    StatusLineModified = { fg = '#ff5555', bg = 'NONE', bold = true },
+    StatusLineModified = { fg = '#f1fa8c', bg = 'NONE', bold = true },
     StatusLineReadonly = { fg = '#6272a4', bg = 'NONE' },
     StatusLineGit = { fg = '#ffb86c', bg = 'NONE' },
     StatusLineInfo = { fg = '#6272a4', bg = 'NONE' },
@@ -307,9 +307,7 @@ function components.lsp_status()
 
   local client_names = {}
   for _, client in ipairs(clients) do
-    if not client.name:match('^null%-ls') and not client.name:match('^efm') then
-      table.insert(client_names, client.name)
-    end
+    table.insert(client_names, client.name)
   end
 
   local result = ''
@@ -485,6 +483,7 @@ function M.setup(user_config)
   local autocmd = vim.api.nvim_create_autocmd
 
   autocmd('ModeChanged', { group = group, pattern = "*", callback = function () invalidate_cache('mode') end })
+
   autocmd({ 'BufEnter', 'BufWritePost', 'TextChanged', 'TextChangedI', 'BufModifiedSet' }, {
     group = group,
     pattern = "*",
@@ -493,8 +492,10 @@ function M.setup(user_config)
       vim.schedule(function () loader:check_lazy_components() end)
     end
   })
+
   autocmd('DiagnosticChanged',
     { group = group, pattern = "*", callback = function () invalidate_cache('diagnostics') end })
+
   autocmd({ 'LspAttach', 'LspDetach' }, {
     group = group,
     pattern = "*",
@@ -503,6 +504,7 @@ function M.setup(user_config)
       vim.schedule(function () loader:check_lazy_components() end)
     end
   })
+
   autocmd({ 'CursorMoved', 'CursorMovedI' }, {
     group = group,
     pattern = "*",
@@ -511,9 +513,12 @@ function M.setup(user_config)
       invalidate_cache('percentage')
     end
   })
+
   autocmd({ 'FocusGained', 'DirChanged', 'BufEnter' },
     { group = group, pattern = "*", callback = function () invalidate_cache('git_branch') end })
+
   autocmd({ 'VimResized', 'WinResized' }, { group = group, pattern = "*", command = 'redrawstatus' })
+
   autocmd({ 'WinEnter', 'BufWinEnter', 'WinNew' }, {
     group = group,
     pattern = "*",
