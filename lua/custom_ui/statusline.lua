@@ -86,6 +86,7 @@ local function prof(name, fnc)
     return r
   end
 end
+
 M.get_profile = function()
   return vim.deepcopy(profile)
 end
@@ -101,12 +102,15 @@ local ttl = {
   lsp_status = 2000,
   encoding = 120000,
 }
+
 local function valid(k)
   return cache.data[k] and cache.ts[k] and (loop.hrtime() / 1e6 - cache.ts[k]) < (ttl[k] or 1000)
 end
+
 local function update(k, v)
   cache.data[k], cache.ts[k], cache.widths[k] = v, loop.hrtime() / 1e6, M.width(v)
 end
+
 local function get_or_set(k, fnc)
   if valid(k) then
     return cache.data[k]
@@ -115,6 +119,7 @@ local function get_or_set(k, fnc)
   update(k, v)
   return v
 end
+
 local function invalidate(keys)
   for _, k in ipairs(type(keys) == "string" and { keys } or keys) do
     cache.data[k], cache.ts[k], cache.widths[k] = nil, nil, nil
@@ -518,6 +523,7 @@ function M.setup(user)
       end)
     end,
   })
+
   api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
     group = g,
     callback = function()
