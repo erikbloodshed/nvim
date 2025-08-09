@@ -27,6 +27,7 @@ config = {
   center_filename = true,
   enable_profiling = false,
   throttle_ms = 50,
+  async = { file_info = false }, -- async mode config
   exclude = {
     buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
     filetypes = {
@@ -76,7 +77,7 @@ local function prof(name, fnc)
   if not config.enable_profiling then
     return fnc
   end
-  return function (...)
+  return function(...)
     local st = loop.hrtime()
     local r = fnc(...)
     local elapsed = (loop.hrtime() - st) / 1e6
@@ -85,7 +86,7 @@ local function prof(name, fnc)
     return r
   end
 end
-M.get_profile = function ()
+M.get_profile = function()
   return vim.deepcopy(profile)
 end
 
@@ -121,7 +122,7 @@ local function invalidate(keys)
 end
 
 -- Helpers
-M.width = function (s)
+M.width = function(s)
   return fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
 end
 local function hl(name, text)
@@ -157,8 +158,8 @@ end
 -- Components
 local comp = {}
 
-comp.mode = prof("mode", function ()
-  return get_or_set("mode", function ()
+comp.mode = prof("mode", function()
+  return get_or_set("mode", function()
     if not has("mode") then
       return ""
     end
@@ -167,8 +168,8 @@ comp.mode = prof("mode", function ()
   end)
 end)
 
-comp.file_info = prof("file_info", function ()
-  return get_or_set("file_info", function ()
+comp.file_info = prof("file_info", function()
+  return get_or_set("file_info", function()
     if not has("file_info") then
       return ""
     end
@@ -177,7 +178,23 @@ comp.file_info = prof("file_info", function ()
       fnm = "[No Name]"
     end
     local icon = cache.data.file_icon or ""
-    if icon == "" then
+
+    -- Async icon loading if enabled
+    if config.async and config.async.file_info and icon == "" then
+      cache.data.file_icon = " " -- placeholder to prevent retriggers
+      vim.schedule(function()
+        local dev = require_lazy("nvim-web-devicons")
+        if dev then
+          local ic = dev.get_icon(fnm, fn.expand("%:e"), { default = true }) or ""
+          if ic ~= "" then
+            ic = ic .. " "
+          end
+          cache.data.file_icon = ic
+          invalidate("file_info")
+          M.refresh(api.nvim_get_current_win())
+        end
+      end)
+    elseif icon == "" then
       local dev = require_lazy("nvim-web-devicons")
       if dev then
         icon = dev.get_icon(fnm, fn.expand("%:e"), { default = true }) or ""
@@ -187,21 +204,22 @@ comp.file_info = prof("file_info", function ()
         cache.data.file_icon = icon
       end
     end
+
     local parts = {}
     if vim.bo.readonly then
       parts[#parts + 1] = hl("StatusLineReadonly", config.icons.readonly)
     end
     parts[#parts + 1] = hl(
       vim.bo.modified and "StatusLineModified" or "StatusLineFile",
-      icon .. fnm .. (vim.bo.modified and " " .. config.icons.modified or "")
+      (cache.data.file_icon or "") .. fnm .. (vim.bo.modified and " " .. config.icons.modified or "")
     )
     return table.concat(parts, " ")
   end)
 end)
 
 local git_cache, git_job = {}, nil
-comp.git_branch = prof("git_branch", function ()
-  return get_or_set("git_branch", function ()
+comp.git_branch = prof("git_branch", function()
+  return get_or_set("git_branch", function()
     if not has("git_branch") then
       return ""
     end
@@ -222,7 +240,7 @@ comp.git_branch = prof("git_branch", function ()
       git_job = vim.system(
         { "git", "branch", "--show-current" },
         { cwd = root, text = true },
-        vim.schedule_wrap(function (o)
+        vim.schedule_wrap(function(o)
           git_job = nil
           local res = ""
           if o.code == 0 and o.stdout ~= "" then
@@ -234,7 +252,7 @@ comp.git_branch = prof("git_branch", function ()
           if git_cache[root] ~= res then
             git_cache[root] = res
             update("git_branch", res)
-            vim.schedule(function ()
+            vim.schedule(function()
               vim.cmd("redrawstatus")
             end)
           end
@@ -245,8 +263,8 @@ comp.git_branch = prof("git_branch", function ()
   end)
 end)
 
-comp.diagnostics = prof("diagnostics", function ()
-  return get_or_set("diagnostics", function ()
+comp.diagnostics = prof("diagnostics", function()
+  return get_or_set("diagnostics", function()
     if not has("diagnostics") then
       return ""
     end
@@ -279,8 +297,8 @@ comp.diagnostics = prof("diagnostics", function ()
   end)
 end)
 
-comp.lsp_status = prof("lsp_status", function ()
-  return get_or_set("lsp_status", function ()
+comp.lsp_status = prof("lsp_status", function()
+  return get_or_set("lsp_status", function()
     if not has("lsp_status") then
       return ""
     end
@@ -296,8 +314,8 @@ comp.lsp_status = prof("lsp_status", function ()
   end)
 end)
 
-comp.encoding = prof("encoding", function ()
-  return get_or_set("encoding", function ()
+comp.encoding = prof("encoding", function()
+  return get_or_set("encoding", function()
     if not has("encoding") then
       return ""
     end
@@ -306,8 +324,8 @@ comp.encoding = prof("encoding", function ()
   end)
 end)
 
-comp.position = prof("position", function ()
-  return get_or_set("position", function ()
+comp.position = prof("position", function()
+  return get_or_set("position", function()
     if not has("position") then
       return ""
     end
@@ -316,8 +334,8 @@ comp.position = prof("position", function ()
   end)
 end)
 
-comp.percentage = prof("percentage", function ()
-  return get_or_set("percentage", function ()
+comp.percentage = prof("percentage", function()
+  return get_or_set("percentage", function()
     if not has("percentage") then
       return ""
     end
@@ -328,7 +346,7 @@ comp.percentage = prof("percentage", function ()
 end)
 
 -- Statusline builder
-M.statusline = function ()
+M.statusline = function()
   local win, left, git, right, names = api.nvim_get_current_win(), { comp.mode() }, comp.git_branch(), {}, {}
   if git ~= "" then
     left[#left + 1] = git
@@ -396,10 +414,10 @@ local function show(win)
 end
 
 local expr = '%!v:lua.require("custom_ui.statusline").statusline()'
-local function refresh(winid)
-  api.nvim_set_option_value("statusline", show(winid) and expr or "", { win = winid })
+local function refresh(win)
+  api.nvim_win_set_option(win, "statusline", show(win) and expr or "")
 end
-M.refresh = function (win)
+M.refresh = function(win)
   if win then
     refresh(win)
   else
@@ -416,7 +434,7 @@ local function cursor_update()
   if now - last > config.throttle_ms then
     last = now
     invalidate({ "position", "percentage" })
-    vim.schedule(function ()
+    vim.schedule(function()
       M.refresh(api.nvim_get_current_win())
     end)
   end
@@ -453,13 +471,13 @@ function M.setup(user)
   config.exclude.buftypes = list_to_set(config.exclude.buftypes)
   config.exclude.filetypes = list_to_set(config.exclude.filetypes)
   set_hl()
-  local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
-  api.nvim_create_autocmd("ColorScheme", { group = group, callback = set_hl })
+  local g = api.nvim_create_augroup("CustomStatusline", { clear = true })
+  api.nvim_create_autocmd("ColorScheme", { group = g, callback = set_hl })
   api.nvim_create_autocmd("ModeChanged", {
-    group = group,
-    callback = function ()
+    group = g,
+    callback = function()
       invalidate("mode")
-      vim.schedule(function ()
+      vim.schedule(function()
         M.refresh(api.nvim_get_current_win())
       end)
     end,
@@ -467,56 +485,46 @@ function M.setup(user)
   api.nvim_create_autocmd(
     { "BufEnter", "BufWritePost", "TextChanged", "TextChangedI", "BufModifiedSet", "LspAttach", "LspDetach" },
     {
-      group = group,
-      callback = function ()
+      group = g,
+      callback = function()
         invalidate({ "file_info", "lsp_status" })
-        vim.schedule(function ()
+        vim.schedule(function()
           M.refresh(api.nvim_get_current_win())
         end)
       end,
     }
   )
   api.nvim_create_autocmd("DiagnosticChanged", {
-    group = group,
-    callback = function ()
+    group = g,
+    callback = function()
       invalidate("diagnostics")
-      vim.schedule(function ()
+      vim.schedule(function()
         M.refresh(api.nvim_get_current_win())
       end)
     end,
   })
-  api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = group, callback = cursor_update })
+  api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
   api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" }, {
-    group = group,
-    callback = function ()
+    group = g,
+    callback = function()
       invalidate("git_branch")
-      vim.schedule(function ()
+      vim.schedule(function()
         M.refresh(api.nvim_get_current_win())
       end)
     end,
   })
   api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
-    group = group,
-    callback = function ()
-      vim.schedule(function ()
+    group = g,
+    callback = function()
+      vim.schedule(function()
         vim.cmd("redrawstatus")
       end)
     end,
   })
-  api.nvim_create_autocmd({ "WinEnter", "BufWinEnter", "WinNew" }, {
-    group = group,
-    callback = function ()
-      vim.schedule(function ()
-        M.refresh(api.nvim_get_current_win())
-      end)
-    end,
-  })
-  api.nvim_create_autocmd({ "TabEnter", "SessionLoadPost" }, {
-    group = group,
-    callback = function ()
-      vim.schedule(function ()
-        M.refresh()
-      end)
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
+    group = g,
+    callback = function()
+      M.refresh()
     end,
   })
 end
