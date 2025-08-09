@@ -484,18 +484,31 @@ function M.setup(user)
       end)
     end,
   })
-  api.nvim_create_autocmd(
-    { "BufEnter", "BufWritePost", "TextChanged", "TextChangedI", "BufModifiedSet", "LspAttach", "LspDetach" },
-    {
-      group = g,
-      callback = function()
-        invalidate({ "file_info", "lsp_status" })
-        vim.schedule(function()
-          M.refresh(api.nvim_get_current_win())
-        end)
-      end,
-    }
-  )
+
+  -- On major context switches, clear the git cache to prevent memory leaks.
+  api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
+    group = g,
+    callback = function()
+      git_cache = {} -- Clear the unbounded git branch cache
+      cache.data.git_root = nil -- Invalidate the cached git root path
+      invalidate("git_branch")
+      vim.schedule(function()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
+
+  -- On buffer switches, just invalidate the component to allow for an update.
+  api.nvim_create_autocmd({ "BufEnter" }, {
+    group = g,
+    callback = function()
+      invalidate("git_branch")
+      vim.schedule(function()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
+
   api.nvim_create_autocmd("DiagnosticChanged", {
     group = g,
     callback = function()
@@ -505,7 +518,9 @@ function M.setup(user)
       end)
     end,
   })
+
   api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
+
   api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" }, {
     group = g,
     callback = function()
@@ -515,6 +530,7 @@ function M.setup(user)
       end)
     end,
   })
+
   api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
     group = g,
     callback = function()
