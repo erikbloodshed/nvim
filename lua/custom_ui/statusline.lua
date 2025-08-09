@@ -1,3 +1,4 @@
+local api, fn, loop = vim.api, vim.fn, vim.loop
 local M, config, cache, profile = {}, {}, { data = {}, ts = {}, widths = {} }, { times = {}, counts = {} }
 
 -- Defaults
@@ -27,27 +28,12 @@ config = {
   enable_profiling = false,
   throttle_ms = 50,
   exclude = {
-    buftypes = { terminal = 1, quickfix = 1, help = 1, nofile = 1, prompt = 1 },
+    buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
     filetypes = {
-      NvimTree = 1,
-      ["neo-tree"] = 1,
-      aerial = 1,
-      Outline = 1,
-      packer = 1,
-      alpha = 1,
-      starter = 1,
-      TelescopePrompt = 1,
-      TelescopeResults = 1,
-      TelescopePreview = 1,
-      lazy = 1,
-      mason = 1,
-      lspinfo = 1,
-      ["null-ls-info"] = 1,
-      checkhealth = 1,
-      help = 1,
-      man = 1,
-      qf = 1,
-      fugitive = 1,
+      "NvimTree", "neo-tree", "aerial", "Outline", "packer", "alpha", "starter",
+      "TelescopePrompt", "TelescopeResults", "TelescopePreview",
+      "lazy", "mason", "lspinfo", "null-ls-info", "checkhealth",
+      "help", "man", "qf", "fugitive",
     },
     floating_windows = true,
     small_windows = { min_height = 3, min_width = 20 },
@@ -71,22 +57,18 @@ local modes = {
 }
 
 -- Profiling wrapper
-local function prof(name, fn)
-  if not config.enable_profiling then
-    return fn
-  end
-  return function(...)
-    local st = vim.loop.hrtime()
-    local r = fn(...)
-    local e = (vim.loop.hrtime() - st) / 1e6
-    profile.times[name] = (profile.times[name] or 0) + e
+local function prof(name, fnc)
+  if not config.enable_profiling then return fnc end
+  return function (...)
+    local st = loop.hrtime()
+    local r = fnc(...)
+    local elapsed = (loop.hrtime() - st) / 1e6
+    profile.times[name] = (profile.times[name] or 0) + elapsed
     profile.counts[name] = (profile.counts[name] or 0) + 1
     return r
   end
 end
-M.get_profile = function()
-  return vim.deepcopy(profile)
-end
+M.get_profile = function () return vim.deepcopy(profile) end
 
 -- Cache utils
 local ttl = {
@@ -97,338 +79,217 @@ local ttl = {
   git_branch = 60000,
   diagnostics = 1000,
   lsp_status = 2000,
-  encoding = 120000,
+  encoding = 120000
 }
-local function valid(k, force)
-  if force or not cache.data[k] or not cache.ts[k] then
-    return false
-  end
-  return (vim.loop.hrtime() / 1e6 - cache.ts[k]) < (ttl[k] or 1000)
+local function valid(k) return cache.data[k] and cache.ts[k] and (loop.hrtime() / 1e6 - cache.ts[k]) < (ttl[k] or 1000) end
+local function update(k, v) cache.data[k], cache.ts[k], cache.widths[k] = v, loop.hrtime() / 1e6, M.width(v) end
+local function get_or_set(k, fnc)
+  if valid(k) then return cache.data[k] end
+  local v = fnc(); update(k, v); return v
 end
-local function update(k, v)
-  cache.data[k] = v
-  cache.ts[k] = vim.loop.hrtime() / 1e6
-  cache.widths[k] = M.width(v)
-end
-local function get_or_set(k, fn)
-  if valid(k) then
-    return cache.data[k]
-  end
-  local v = fn()
-  update(k, v)
-  return v
-end
-local function invalidate(keys)
-  if type(keys) == "string" then
-    keys = { keys }
-  end
-  for _, k in ipairs(keys) do
-    cache.data[k] = nil
-    cache.ts[k] = nil
-    cache.widths[k] = nil
-  end
-end
+local function invalidate(keys) for _, k in ipairs(type(keys) == "string" and { keys } or keys) do cache.data[k], cache.ts[k], cache.widths[k] =
+    nil, nil, nil end end
 
 -- Helpers
-M.width = function(s)
-  return vim.fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
+M.width = function (s) return fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")) end
+local function hl(name, text) return ("%%#%s#%s%%*"):format(name, text) end
+
+-- Lazy dependency loader
+local loaded = {}
+local function require_lazy(mod)
+  if not loaded[mod] then
+    local ok, res = pcall(require, mod)
+    loaded[mod] = ok and res or false
+  end
+  return loaded[mod]
 end
-local deps = {
-  file_info = function()
-    return pcall(require, "nvim-web-devicons")
-  end,
-  diagnostics = function()
-    return vim.diagnostic ~= nil
-  end,
-  lsp_status = function()
-    return vim.lsp ~= nil
-  end,
-}
+
 local function has(comp)
-  return config.components[comp] and (not deps[comp] or deps[comp]())
+  if not config.components[comp] then return false end
+  if comp == "file_info" then
+    return require_lazy("nvim-web-devicons") ~= false
+  elseif comp == "diagnostics" then
+    return vim.diagnostic ~= nil
+  elseif comp == "lsp_status" then
+    return vim.lsp ~= nil
+  elseif comp == "git_branch" then
+    return true
+  end
+  return true
 end
 
 -- Components
 local comp = {}
-comp.mode = prof("mode", function()
-  return get_or_set("mode", function()
-    if not has("mode") then
-      return ""
-    end
-    local m = modes[vim.api.nvim_get_mode().mode] or { "UNKNOWN", "StatusLineNormal" }
-    return ("%%#%s# %s %%*"):format(m[2], m[1])
+
+comp.mode = prof("mode", function ()
+  return get_or_set("mode", function ()
+    if not has("mode") then return "" end
+    local m = modes[api.nvim_get_mode().mode] or { "UNKNOWN", "StatusLineNormal" }
+    return hl(m[2], " " .. m[1] .. " ")
   end)
 end)
-comp.file_info = prof("file_info", function()
-  return get_or_set("file_info", function()
-    if not has("file_info") then
-      return ""
-    end
-    local fn = vim.fn.expand("%:t")
-    if fn == "" then
-      fn = "[No Name]"
-    end
+
+comp.file_info = prof("file_info", function ()
+  return get_or_set("file_info", function ()
+    if not has("file_info") then return "" end
+    local fnm = fn.expand("%:t"); if fnm == "" then fnm = "[No Name]" end
     local icon = cache.data.file_icon or ""
     if icon == "" then
-      local ok, dev = pcall(require, "nvim-web-devicons")
-      if ok then
-        icon = dev.get_icon(fn, vim.fn.expand("%:e"), { default = true }) or ""
-        if icon ~= "" then
-          icon = icon .. " "
-          cache.data.file_icon = icon
-        end
+      local dev = require_lazy("nvim-web-devicons")
+      if dev then
+        icon = dev.get_icon(fnm, fn.expand("%:e"), { default = true }) or ""
+        if icon ~= "" then icon = icon .. " " end
+        cache.data.file_icon = icon
       end
     end
     local parts = {}
-    if vim.bo.readonly then
-      parts[#parts + 1] = ("%%#StatusLineReadonly#%s%%*"):format(config.icons.readonly)
-    end
-    parts[#parts + 1] = ("%%#StatusLine%s#%s%s%s%%*"):format(
-      vim.bo.modified and "Modified" or "File",
-      icon,
-      fn,
-      vim.bo.modified and " " .. config.icons.modified or ""
-    )
+    if vim.bo.readonly then parts[#parts + 1] = hl("StatusLineReadonly", config.icons.readonly) end
+    parts[#parts + 1] = hl(vim.bo.modified and "StatusLineModified" or "StatusLineFile",
+      icon .. fnm .. (vim.bo.modified and " " .. config.icons.modified or ""))
     return table.concat(parts, " ")
   end)
 end)
 
--- Git branch (cached per repo)
 local git_cache, git_job = {}, nil
-comp.git_branch = prof("git_branch", function()
-  return get_or_set("git_branch", function()
-    if not has("git_branch") then
-      return ""
-    end
-    local root = vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "") or ""
-    if root == "" then
-      return ""
-    end
-    if git_cache[root] then
-      return git_cache[root]
-    end
+comp.git_branch = prof("git_branch", function ()
+  return get_or_set("git_branch", function ()
+    if not has("git_branch") then return "" end
+    local root = cache.data.git_root or vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "")
+    if not cache.data.git_root then cache.data.git_root = root end
+    if root == "" then return "" end
+    if git_cache[root] then return git_cache[root] end
     if vim.system then
-      if git_job and git_job.kill then
-        git_job:kill()
-      end
-      git_job = vim.system(
-        { "git", "branch", "--show-current" },
-        { cwd = root, text = true },
-        vim.schedule_wrap(function(o)
+      if git_job and git_job.kill then git_job:kill() end
+      git_job = vim.system({ "git", "branch", "--show-current" }, { cwd = root, text = true },
+        vim.schedule_wrap(function (o)
           git_job = nil
           local res = ""
           if o.code == 0 and o.stdout ~= "" then
             local b = o.stdout:gsub("[\n\r]", "")
-            if b ~= "" then
-              res = ("%%#StatusLineGit#%s %s%%*"):format(config.icons.git, b)
-            end
+            if b ~= "" then res = hl("StatusLineGit", config.icons.git .. " " .. b) end
           end
           if git_cache[root] ~= res then
             git_cache[root] = res
             update("git_branch", res)
-            vim.schedule(function()
-              vim.cmd("redrawstatus")
-            end)
+            vim.schedule(function () vim.cmd("redrawstatus") end)
           end
-        end)
-      )
+        end))
     end
     return git_cache[root] or ""
   end)
 end)
 
-comp.diagnostics = prof("diagnostics", function()
-  return get_or_set("diagnostics", function()
-    if not has("diagnostics") then
-      return ""
-    end
-    local c = { error = 0, warn = 0, info = 0, hint = 0 }
-    local s = vim.diagnostic.severity
+comp.diagnostics = prof("diagnostics", function ()
+  return get_or_set("diagnostics", function ()
+    if not has("diagnostics") then return "" end
+    local counts, s = { error = 0, warn = 0, info = 0, hint = 0 }, vim.diagnostic.severity
     for _, d in ipairs(vim.diagnostic.get(0)) do
       if d.severity == s.ERROR then
-        c.error = c.error + 1
+        counts.error = counts.error + 1
       elseif d.severity == s.WARN then
-        c.warn = c.warn + 1
+        counts.warn = counts.warn + 1
       elseif d.severity == s.INFO then
-        c.info = c.info + 1
+        counts.info = counts.info + 1
       elseif d.severity == s.HINT then
-        c.hint = c.hint + 1
+        counts.hint = counts.hint + 1
       end
     end
     local p = {}
-    if c.error > 0 then
-      p[#p + 1] = ("%%#StatusLineDiagError#%s %d%%*"):format(config.icons.error, c.error)
-    end
-    if c.warn > 0 then
-      p[#p + 1] = ("%%#StatusLineDiagWarn#%s %d%%*"):format(config.icons.warn, c.warn)
-    end
-    if c.info > 0 then
-      p[#p + 1] = ("%%#StatusLineDiagInfo#%s %d%%*"):format(config.icons.info, c.info)
-    end
-    if c.hint > 0 then
-      p[#p + 1] = ("%%#StatusLineDiagHint#%s %d%%*"):format(config.icons.hint, c.hint)
-    end
+    if counts.error > 0 then p[#p + 1] = hl("StatusLineDiagError", config.icons.error .. " " .. counts.error) end
+    if counts.warn > 0 then p[#p + 1] = hl("StatusLineDiagWarn", config.icons.warn .. " " .. counts.warn) end
+    if counts.info > 0 then p[#p + 1] = hl("StatusLineDiagInfo", config.icons.info .. " " .. counts.info) end
+    if counts.hint > 0 then p[#p + 1] = hl("StatusLineDiagHint", config.icons.hint .. " " .. counts.hint) end
     return table.concat(p, " ")
   end)
 end)
 
-comp.lsp_status = prof("lsp_status", function()
-  return get_or_set("lsp_status", function()
-    if not has("lsp_status") then
-      return ""
-    end
+comp.lsp_status = prof("lsp_status", function ()
+  return get_or_set("lsp_status", function ()
+    if not has("lsp_status") then return "" end
     local cl = vim.lsp.get_clients({ bufnr = 0 })
-    if #cl == 0 then
-      return ""
-    end
-    local n = {}
-    for _, c in ipairs(cl) do
-      n[#n + 1] = c.name
-    end
-    return ("%%#StatusLineLSP#%s %s%%*"):format(config.icons.lsp, table.concat(n, ", "))
+    if #cl == 0 then return "" end
+    local names = {}
+    for _, c in ipairs(cl) do names[#names + 1] = c.name end
+    return hl("StatusLineLSP", config.icons.lsp .. " " .. table.concat(names, ", "))
   end)
 end)
 
-comp.encoding = prof("encoding", function()
-  return get_or_set("encoding", function()
-    if not has("encoding") then
-      return ""
-    end
-    local e = vim.bo.fileencoding
-    if e == "" then
-      e = vim.o.encoding
-    end
-    return ("%%#StatusLineInfo#%s%%*"):format(e:upper())
+comp.encoding = prof("encoding", function ()
+  return get_or_set("encoding", function ()
+    if not has("encoding") then return "" end
+    local e = vim.bo.fileencoding ~= "" and vim.bo.fileencoding or vim.o.encoding
+    return hl("StatusLineInfo", e:upper())
   end)
 end)
 
-comp.position = prof("position", function()
-  return get_or_set("position", function()
-    if not has("position") then
-      return ""
-    end
-    local pos = vim.api.nvim_win_get_cursor(0)
-    return ("%%#StatusLineInfo#Ln %d, Col %d%%*"):format(pos[1], pos[2] + 1)
+comp.position = prof("position", function ()
+  return get_or_set("position", function ()
+    if not has("position") then return "" end
+    local pos = api.nvim_win_get_cursor(0)
+    return hl("StatusLineInfo", ("Ln %d, Col %d"):format(pos[1], pos[2] + 1))
   end)
 end)
 
-comp.percentage = prof("percentage", function()
-  return get_or_set("percentage", function()
-    if not has("percentage") then
-      return ""
-    end
-    local curr = vim.api.nvim_win_get_cursor(0)[1]
-    local total = vim.api.nvim_buf_line_count(0)
+comp.percentage = prof("percentage", function ()
+  return get_or_set("percentage", function ()
+    if not has("percentage") then return "" end
+    local curr, total = api.nvim_win_get_cursor(0)[1], api.nvim_buf_line_count(0)
     local pct = total > 0 and math.floor(curr / total * 100) or 0
-    return ("%%#StatusLineInfo#%d%%%%%%*"):format(pct)
+    return hl("StatusLineInfo", pct .. "%%")
   end)
 end)
 
 -- Statusline builder
-M.statusline = function()
-  local win = vim.api.nvim_get_current_win()
-  local left = { comp.mode() }
-  local git = comp.git_branch()
-  if git ~= "" then
-    left[#left + 1] = git
-  end
-  local right, right_names = {}, {}
-  local d = comp.diagnostics()
-  if d ~= "" then
-    right[#right + 1] = d
-    right_names[#right_names + 1] = "diagnostics"
-  end
-  local l = comp.lsp_status()
-  if l ~= "" then
-    right[#right + 1] = l
-    right_names[#right_names + 1] = "lsp_status"
-  end
-  if config.components.encoding then
-    right[#right + 1] = comp.encoding()
-    right_names[#right_names + 1] = "encoding"
-  end
-  right[#right + 1] = comp.position()
-  right_names[#right_names + 1] = "position"
-  if config.components.percentage then
-    right[#right + 1] = comp.percentage()
-    right_names[#right_names + 1] = "percentage"
-  end
+M.statusline = function ()
+  local win, left, git, right, names = api.nvim_get_current_win(), { comp.mode() }, comp.git_branch(), {}, {}
+  if git ~= "" then left[#left + 1] = git end
+  local function add_right(name, val) if val ~= "" then right[#right + 1], names[#names + 1] = val, name end end
+  add_right("diagnostics", comp.diagnostics())
+  add_right("lsp_status", comp.lsp_status())
+  if config.components.encoding then add_right("encoding", comp.encoding()) end
+  add_right("position", comp.position())
+  if config.components.percentage then add_right("percentage", comp.percentage()) end
   local center = comp.file_info()
-
   if config.center_filename then
-    local lw = (cache.widths.mode or M.width(left[1])) + (git ~= "" and (cache.widths.git_branch or M.width(git)) or 0)
+    local lw = (cache.widths.mode or M.width(left[1])) + (#git > 0 and (cache.widths.git_branch or M.width(git)) or 0)
     local rw = 0
-    for i, p in ipairs(right) do
-      rw = rw + (cache.widths[right_names[i]] or M.width(p))
-    end
-    if #right > 1 then
-      rw = rw + (#right - 1) * M.width(config.separators.section)
-    end
-    local cw = cache.widths.file_info or M.width(center)
-    local ww = vim.api.nvim_win_get_width(win)
+    for i, p in ipairs(right) do rw = rw + (cache.widths[names[i]] or M.width(p)) end
+    if #right > 1 then rw = rw + (#right - 1) * M.width(config.separators.section) end
+    local cw, ww = cache.widths.file_info or M.width(center), api.nvim_win_get_width(win)
     if ww - (lw + rw) >= cw + 4 then
-      local cs = math.floor((ww - cw) / 2)
-      local pad = math.max(1, cs - lw)
-      return table.concat(left, " ")
-        .. string.rep(" ", pad)
-        .. center
-        .. "%="
-        .. table.concat(right, config.separators.section)
+      return table.concat(left, " ") .. string.rep(" ", math.max(1, math.floor((ww - cw) / 2) - lw))
+        .. center .. "%=" .. table.concat(right, config.separators.section)
     end
   end
   return table.concat(left, " ") .. " " .. center .. "%=" .. table.concat(right, config.separators.section)
 end
 
 -- Show/hide
+local function list_to_set(list)
+  local set = {}; for _, v in ipairs(list) do set[v] = true end; return set
+end
 local function show(win)
-  if not vim.api.nvim_win_is_valid(win) then
-    return false
-  end
-  if config.exclude.floating_windows and vim.api.nvim_win_get_config(win).relative ~= "" then
-    return false
-  end
-  local buf = vim.api.nvim_win_get_buf(win)
-  if config.exclude.buftypes[vim.api.nvim_get_option_value("buftype", { buf = buf })] then
-    return false
-  end
-  if config.exclude.filetypes[vim.api.nvim_get_option_value("filetype", { buf = buf })] then
-    return false
-  end
-  if config.exclude.small_windows then
-    if
-      vim.api.nvim_win_get_height(win) < config.exclude.small_windows.min_height
-      or vim.api.nvim_win_get_width(win) < config.exclude.small_windows.min_width
-    then
-      return false
-    end
-  end
-  return true
+  if not api.nvim_win_is_valid(win) then return false end
+  if config.exclude.floating_windows and api.nvim_win_get_config(win).relative ~= "" then return false end
+  local buf = api.nvim_win_get_buf(win)
+  if config.exclude.buftypes[vim.api.nvim_get_option_value("buftype", { buf = buf })] then return false end
+  if config.exclude.filetypes[vim.api.nvim_get_option_value("filetype", { buf = buf })] then return false end
+  local sz = config.exclude.small_windows
+  return not (api.nvim_win_get_height(win) < sz.min_height or api.nvim_win_get_width(win) < sz.min_width)
 end
 
 local expr = '%!v:lua.require("custom_ui.statusline").statusline()'
-local function refresh(win)
-  vim.wo[win].statusline = show(win) and expr or ""
-end
-M.refresh = function(win)
-  if win then
-    refresh(win)
-  else
-    for _, w in ipairs(vim.api.nvim_list_wins()) do
-      refresh(w)
-    end
-  end
-end
+local function refresh(win) api.nvim_win_set_option(win, "statusline", show(win) and expr or "") end
+M.refresh = function (win) if win then refresh(win) else for _, w in ipairs(api.nvim_list_wins()) do refresh(w) end end end
 
 -- Throttle
 local last = 0
 local function cursor_update()
-  local now = vim.loop.hrtime() / 1e6
+  local now = loop.hrtime() / 1e6
   if now - last > config.throttle_ms then
     last = now
     invalidate({ "position", "percentage" })
-    vim.schedule(function()
-      M.refresh(vim.api.nvim_get_current_win())
-    end)
+    vim.schedule(function () M.refresh(api.nvim_get_current_win()) end)
   end
 end
 
@@ -452,81 +313,41 @@ local function set_hl()
     StatusLineDiagHint = { fg = "#50fa7b", bg = "NONE" },
     StatusLineLSP = { fg = "#50fa7b", bg = "NONE" },
   }
-  for n, o in pairs(h) do
-    vim.api.nvim_set_hl(0, n, o)
-  end
+  for n, o in pairs(h) do api.nvim_set_hl(0, n, o) end
 end
 
 -- Setup
 function M.setup(user)
   config = vim.tbl_deep_extend("force", config, user or {})
+  config.exclude.buftypes = list_to_set(config.exclude.buftypes)
+  config.exclude.filetypes = list_to_set(config.exclude.filetypes)
   set_hl()
-  local g = vim.api.nvim_create_augroup("CustomStatusline", { clear = true })
-  vim.api.nvim_create_autocmd("ColorScheme", { group = g, callback = set_hl })
-  vim.api.nvim_create_autocmd("ModeChanged", {
-    group = g,
-    callback = function()
-      invalidate("mode")
-      vim.schedule(function()
-        M.refresh(vim.api.nvim_get_current_win())
-      end)
-    end,
-  })
-  vim.api.nvim_create_autocmd(
+  local g = api.nvim_create_augroup("CustomStatusline", { clear = true })
+  api.nvim_create_autocmd("ColorScheme", { group = g, callback = set_hl })
+  api.nvim_create_autocmd("ModeChanged",
+    { group = g, callback = function ()
+      invalidate("mode"); vim.schedule(function () M.refresh(api.nvim_get_current_win()) end)
+    end })
+  api.nvim_create_autocmd(
     { "BufEnter", "BufWritePost", "TextChanged", "TextChangedI", "BufModifiedSet", "LspAttach", "LspDetach" },
-    {
-      group = g,
-      callback = function()
-        invalidate({ "file_info", "lsp_status" })
-        vim.schedule(function()
-          M.refresh(vim.api.nvim_get_current_win())
-        end)
-      end,
-    }
-  )
-  vim.api.nvim_create_autocmd("DiagnosticChanged", {
-    group = g,
-    callback = function()
-      invalidate("diagnostics")
-      vim.schedule(function()
-        M.refresh(vim.api.nvim_get_current_win())
-      end)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
-  vim.api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" }, {
-    group = g,
-    callback = function()
-      invalidate("git_branch")
-      vim.schedule(function()
-        M.refresh(vim.api.nvim_get_current_win())
-      end)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
-    group = g,
-    callback = function()
-      vim.schedule(function()
-        vim.cmd("redrawstatus")
-      end)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "WinEnter", "BufWinEnter", "WinNew" }, {
-    group = g,
-    callback = function()
-      vim.schedule(function()
-        M.refresh(vim.api.nvim_get_current_win())
-      end)
-    end,
-  })
-  vim.api.nvim_create_autocmd({ "TabEnter", "SessionLoadPost" }, {
-    group = g,
-    callback = function()
-      vim.schedule(function()
-        M.refresh()
-      end)
-    end,
-  })
+    { group = g, callback = function ()
+      invalidate({ "file_info", "lsp_status" }); vim.schedule(function () M.refresh(api.nvim_get_current_win()) end)
+    end })
+  api.nvim_create_autocmd("DiagnosticChanged",
+    { group = g, callback = function ()
+      invalidate("diagnostics"); vim.schedule(function () M.refresh(api.nvim_get_current_win()) end)
+    end })
+  api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
+  api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" },
+    { group = g, callback = function ()
+      invalidate("git_branch"); vim.schedule(function () M.refresh(api.nvim_get_current_win()) end)
+    end })
+  api.nvim_create_autocmd({ "VimResized", "WinResized" },
+    { group = g, callback = function () vim.schedule(function () vim.cmd("redrawstatus") end) end })
+  api.nvim_create_autocmd({ "WinEnter", "BufWinEnter", "WinNew" },
+    { group = g, callback = function () vim.schedule(function () M.refresh(api.nvim_get_current_win()) end) end })
+  api.nvim_create_autocmd({ "TabEnter", "SessionLoadPost" },
+    { group = g, callback = function () vim.schedule(function () M.refresh() end) end })
 end
 
 return M
