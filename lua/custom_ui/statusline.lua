@@ -21,8 +21,22 @@ config = {
   },
 
   exclude = {
-    buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
-    filetypes = { "neo-tree", "lazy", "lspinfo", "checkhealth", "help", "man", "qf" },
+    buftypes = {
+      terminal = true,
+      quickfix = true,
+      help = true,
+      nofile = true,
+      prompt = true
+    },
+    filetypes = {
+      ["neo-tree"] = true,
+      lazy = true,
+      lspinfo = true,
+      checkhealth = true,
+      help = true,
+      man = true,
+      qf = true
+    },
     floating_windows = true,
     small_windows = { min_height = 3, min_width = 20 },
   },
@@ -80,7 +94,7 @@ local function invalidate(keys)
 end
 
 -- Helpers
-M.width = function(s)
+M.width = function (s)
   return fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
 end
 
@@ -101,15 +115,15 @@ end
 -- Components
 local comp = {}
 
-comp.mode = function()
-  return get_or_set("mode", function()
+comp.mode = function ()
+  return get_or_set("mode", function ()
     local m = modes[api.nvim_get_mode().mode] or { "UNKNOWN", "StatusLineNormal" }
     return hl(m[2], m[1])
   end)
 end
 
-comp.file_info = function()
-  return get_or_set("file_info", function()
+comp.file_info = function ()
+  return get_or_set("file_info", function ()
     local filename = fn.expand("%:t")
     if filename == "" then
       filename = "[No Name]"
@@ -118,7 +132,7 @@ comp.file_info = function()
     -- Async load file icon if not cached yet
     if cache.data.file_icon == nil then
       cache.data.file_icon = ""
-      vim.schedule(function()
+      vim.schedule(function ()
         local devicons = require_lazy("nvim-web-devicons")
         if devicons then
           local icon = devicons.get_icon(filename, fn.expand("%:e"), { default = true }) or ""
@@ -149,8 +163,8 @@ end
 local git_cache = {}
 local git_jobs = {}
 
-comp.git_branch = function()
-  return get_or_set("git_branch", function()
+comp.git_branch = function ()
+  return get_or_set("git_branch", function ()
     local root = cache.data.git_root or vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "")
     cache.data.git_root = cache.data.git_root or root
 
@@ -165,7 +179,7 @@ comp.git_branch = function()
     end
 
     git_jobs[root] = true
-    vim.schedule(function()
+    vim.schedule(function ()
       if not vim.system then
         git_jobs[root] = nil
         return
@@ -173,7 +187,7 @@ comp.git_branch = function()
       vim.system(
         { "git", "branch", "--show-current" },
         { cwd = root, text = true },
-        vim.schedule_wrap(function(o)
+        vim.schedule_wrap(function (o)
           git_jobs[root] = nil
           local res = ""
           if o.code == 0 and o.stdout ~= "" then
@@ -193,15 +207,15 @@ comp.git_branch = function()
   end)
 end
 
-comp.diagnostics = function()
-  return get_or_set("diagnostics", function()
+comp.diagnostics = function ()
+  return get_or_set("diagnostics", function ()
     local counts = vim.diagnostic.count(0)
     local s = vim.diagnostic.severity
     local sev_map = {
       { s.ERROR, "StatusLineDiagError", config.icons.error },
-      { s.WARN, "StatusLineDiagWarn", config.icons.warn },
-      { s.INFO, "StatusLineDiagInfo", config.icons.info },
-      { s.HINT, "StatusLineDiagHint", config.icons.hint },
+      { s.WARN,  "StatusLineDiagWarn",  config.icons.warn },
+      { s.INFO,  "StatusLineDiagInfo",  config.icons.info },
+      { s.HINT,  "StatusLineDiagHint",  config.icons.hint },
     }
     local p = {}
     for _, v in ipairs(sev_map) do
@@ -214,8 +228,8 @@ comp.diagnostics = function()
   end)
 end
 
-comp.lsp_status = function()
-  return get_or_set("lsp_status", function()
+comp.lsp_status = function ()
+  return get_or_set("lsp_status", function ()
     local cl = vim.lsp.get_clients({ bufnr = 0 })
     if #cl == 0 then
       return ""
@@ -228,19 +242,19 @@ comp.lsp_status = function()
   end)
 end
 
-comp.position = function()
-  return get_or_set("position", function()
+comp.position = function ()
+  return get_or_set("position", function ()
     local pos = api.nvim_win_get_cursor(0)
     local line_label = hl("StatusLineLabel", "Ln ")
     local line_value = hl("StatusLineValue", tostring(pos[1]))
-    local col_label  = hl("StatusLineLabel", ", Col ")
-    local col_value  = hl("StatusLineValue", tostring(pos[2] + 1))
+    local col_label = hl("StatusLineLabel", ", Col ")
+    local col_value = hl("StatusLineValue", tostring(pos[2] + 1))
     return line_label .. line_value .. col_label .. col_value
   end)
 end
 
-comp.percentage = function()
-  return get_or_set("percentage", function()
+comp.percentage = function ()
+  return get_or_set("percentage", function ()
     local curr, total = api.nvim_win_get_cursor(0)[1], api.nvim_buf_line_count(0)
     local pct = total > 0 and math.floor(curr / total * 100) or 0
     return hl("StatusLineValue", pct .. "%%")
@@ -248,7 +262,7 @@ comp.percentage = function()
 end
 
 -- Statusline builder
-M.statusline = function()
+M.statusline = function ()
   local win = api.nvim_get_current_win()
 
   -- Left side: mode + git branch (if any)
@@ -306,18 +320,29 @@ local function show(win)
   if not api.nvim_win_is_valid(win) then
     return false
   end
+
+  -- Check window properties first.
   if config.exclude.floating_windows and api.nvim_win_get_config(win).relative ~= "" then
     return false
   end
-  local buf = api.nvim_win_get_buf(win)
-  if config.exclude.buftypes[vim.api.nvim_get_option_value("buftype", { buf = buf })] then
-    return false
-  end
-  if config.exclude.filetypes[vim.api.nvim_get_option_value("filetype", { buf = buf })] then
-    return false
-  end
+
   local sz = config.exclude.small_windows
-  return not (api.nvim_win_get_height(win) < sz.min_height or api.nvim_win_get_width(win) < sz.min_width)
+  if api.nvim_win_get_height(win) < sz.min_height or api.nvim_win_get_width(win) < sz.min_width then
+    return false
+  end
+
+  -- Now, check buffer-related properties.
+  local buf = api.nvim_win_get_buf(win)
+  local buftype = api.nvim_get_option_value("buftype", { buf = buf })
+  local filetype = api.nvim_get_option_value("filetype", { buf = buf })
+
+  -- Exclude based on the set-like tables. This is now a correct and fast lookup.
+  if config.exclude.buftypes[buftype] or config.exclude.filetypes[filetype] then
+    return false
+  end
+
+  -- If no exclusion rules match, show the statusline.
+  return true
 end
 
 local expr = '%!v:lua.require("custom_ui.statusline").statusline()'
@@ -326,7 +351,7 @@ local function refresh(win)
   api.nvim_set_option_value("statusline", show(win) and expr or "", { win = win })
 end
 
-M.refresh = function(win)
+M.refresh = function (win)
   if win then
     refresh(win)
   else
@@ -338,47 +363,43 @@ end
 
 -- Throttle
 local last = 0
-local cursor_update = function()
+local cursor_update = function ()
   local now = loop.hrtime() / 1e6
   if now - last > config.throttle_ms then
     last = now
     invalidate({ "position", "percentage" })
-    vim.schedule(function()
+    vim.schedule(function ()
       M.refresh(api.nvim_get_current_win())
     end)
   end
 end
 
-M.init = function()
+M.init = function ()
   local g = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
   api.nvim_create_autocmd("ModeChanged", {
     group = g,
-    callback = function()
+    callback = function ()
       invalidate("mode")
-      vim.schedule(function()
-        M.refresh(api.nvim_get_current_win())
-      end)
+      M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
     group = g,
-    callback = function()
+    callback = function ()
       git_cache = {}            -- Clear the unbounded git branch cache
       cache.data.git_root = nil -- Invalidate the cached git root path
       invalidate("git_branch")
-      vim.schedule(function()
-        M.refresh(api.nvim_get_current_win())
-      end)
+      M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd("BufEnter", {
     group = g,
-    callback = function()
+    callback = function ()
       invalidate({ "git_branch", "file_info", "lsp_status", "diagnostics" })
-      vim.schedule(function()
+      vim.schedule(function ()
         M.refresh(api.nvim_get_current_win())
       end)
     end,
@@ -386,11 +407,9 @@ M.init = function()
 
   api.nvim_create_autocmd("DiagnosticChanged", {
     group = g,
-    callback = function()
+    callback = function ()
       invalidate("diagnostics")
-      vim.schedule(function()
-        M.refresh(api.nvim_get_current_win())
-      end)
+      M.refresh(api.nvim_get_current_win())
     end,
   })
 
@@ -398,18 +417,16 @@ M.init = function()
 
   api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
     group = g,
-    callback = function()
+    callback = function ()
       invalidate("lsp_status")
-      vim.schedule(function()
-        M.refresh(api.nvim_get_current_win())
-      end)
+      M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
     group = g,
-    callback = function()
-      vim.schedule(function()
+    callback = function ()
+      vim.schedule(function ()
         vim.cmd("redrawstatus")
       end)
     end,
@@ -417,7 +434,7 @@ M.init = function()
 
   api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
     group = g,
-    callback = function()
+    callback = function ()
       M.refresh()
     end,
   })
