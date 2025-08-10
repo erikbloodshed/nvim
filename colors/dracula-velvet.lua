@@ -62,6 +62,23 @@ g.terminal_color_14 = c.ansi_bright_cyan
 g.terminal_color_15 = c.ansi_bright_white
 
 local highlights = {
+  StatusLineNormal = { fg = c.purple, bold = true },
+  StatusLineInsert = { fg = c.green, bold = true },
+  StatusLineVisual = { fg = c.pink, bold = true },
+  StatusLineCommand = { fg = c.yellow, bold = true },
+  StatusLineReplace = { fg = c.orange, bold = true },
+  StatusLineTerminal = { fg = c.cyan, bold = true },
+  StatusLineFile = { fg = c.foreground },
+  StatusLineModified = { fg = c.yellow, bold = true },
+  StatusLineReadonly = { fg = c.comment },
+  StatusLineGit = { fg = c.orange },
+  StatusLineInfo = { fg = c.comment },
+  StatusLineDiagError = { fg = c.red },
+  StatusLineDiagWarn = { fg = c.yellow },
+  StatusLineDiagInfo = { fg = c.cyan },
+  StatusLineDiagHint = { fg = c.green },
+  StatusLineLSP = { fg = c.green },
+
   -- Base editor highlights
   ColorColumn = { bg = c.selection },
   Cursor = { fg = c.background, bg = c.foreground },
@@ -88,7 +105,7 @@ local highlights = {
   Question = { fg = c.green },
   SignColumn = { fg = c.comment, bg = c.none },
   SpecialKey = { fg = c.comment },
-  StatusLine = { fg = c.foreground, bg = c.selection },
+  StatusLine = { fg = c.foreground, bg = c.background },
   StatusLineNC = { fg = c.comment, bg = c.none },
   TabLine = { fg = c.comment, bg = c.background },
   TabLineFill = { bg = c.background },
