@@ -13,7 +13,9 @@ config = {
     position = true,
     percentage = true,
   },
+
   separators = { left = "", right = "", section = " | " },
+
   icons = {
     modified = "[+]",
     readonly = "",
@@ -22,34 +24,25 @@ config = {
     warn = "",
     info = "",
     hint = "",
-    lsp = "",
+    lsp = "",
   },
+
   center_filename = true,
   enable_profiling = false,
   throttle_ms = 50,
+
   async = { file_info = true, git_branch = true },
+
   exclude = {
     buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
     filetypes = {
-      "NvimTree",
       "neo-tree",
-      "aerial",
-      "Outline",
-      "packer",
-      "alpha",
-      "starter",
-      "TelescopePrompt",
-      "TelescopeResults",
-      "TelescopePreview",
       "lazy",
-      "mason",
       "lspinfo",
-      "null-ls-info",
       "checkhealth",
       "help",
       "man",
       "qf",
-      "fugitive",
     },
     floating_windows = true,
     small_windows = { min_height = 3, min_width = 20 },
