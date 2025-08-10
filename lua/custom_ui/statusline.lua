@@ -265,9 +265,9 @@ comp.git_branch = function()
           local res = ""
 
           if o and o.code == 0 and o.stdout and o.stdout ~= "" then
-            local b = o.stdout:gsub("[\n\r]", "")
-            if b ~= "" then
-              res = hl("StatusLineGit", config.icons.git .. " " .. b)
+            local branch = o.stdout:gsub("[\n\r]", "")
+            if branch ~= "" then
+              res = hl("StatusLineGit", config.icons.git .. " " .. branch)
             end
           end
 
