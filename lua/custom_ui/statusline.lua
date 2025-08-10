@@ -1,7 +1,63 @@
 local api, fn, loop = vim.api, vim.fn, vim.loop
 local M = {}
 local config = {}
-local cache = { data = {}, ts = {}, widths = {} }
+
+-- Cache class
+local Cache = {}
+Cache.__index = Cache
+
+function Cache:new(ttl_map)
+  local instance = setmetatable({}, self)
+  instance.data = {}
+  instance.ts = {}
+  instance.widths = {}
+  instance.ttl = ttl_map or {}
+  return instance
+end
+
+function Cache:valid(key)
+  return self.data[key] and self.ts[key] and (loop.hrtime() / 1e6 - self.ts[key]) < (self.ttl[key] or 1000)
+end
+
+function Cache:update(key, value)
+  self.data[key] = value
+  self.ts[key] = loop.hrtime() / 1e6
+  self.widths[key] = self:width(value)
+end
+
+function Cache:get_or_set(key, fnc)
+  if self:valid(key) then
+    return self.data[key]
+  end
+  local value = fnc()
+  self:update(key, value)
+  return value
+end
+
+function Cache:invalidate(keys)
+  keys = type(keys) == "string" and { keys } or keys
+  for _, k in ipairs(keys) do
+    self.data[k] = nil
+    self.ts[k] = nil
+    self.widths[k] = nil
+  end
+end
+
+function Cache:width(s)
+  return fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
+end
+
+local cache = Cache:new({
+  mode = 50,
+  file_info = 200,
+  position = 100,
+  percentage = 100,
+  git_branch = 60000,
+  diagnostics = 1000,
+  lsp_status = 2000,
+  encoding = 120000,
+  simple_title = 5000, -- Cache simple title for 5 seconds
+})
 
 -- Defaults
 config = {
@@ -58,45 +114,9 @@ local modes = {
   t = { "TERMINAL", "StatusLineTerminal" },
 }
 
--- Cache utils
-local ttl = {
-  mode = 50,
-  file_info = 200,
-  position = 100,
-  percentage = 100,
-  git_branch = 60000,
-  diagnostics = 1000,
-  lsp_status = 2000,
-  encoding = 120000,
-  simple_title = 5000, -- Cache simple title for 5 seconds
-}
-
-local function valid(k)
-  return cache.data[k] and cache.ts[k] and (loop.hrtime() / 1e6 - cache.ts[k]) < (ttl[k] or 1000)
-end
-
-local function update(k, v)
-  cache.data[k], cache.ts[k], cache.widths[k] = v, loop.hrtime() / 1e6, M.width(v)
-end
-
-local function get_or_set(k, fnc)
-  if valid(k) then
-    return cache.data[k]
-  end
-  local v = fnc()
-  update(k, v)
-  return v
-end
-
-local function invalidate(keys)
-  for _, k in ipairs(type(keys) == "string" and { keys } or keys) do
-    cache.data[k], cache.ts[k], cache.widths[k] = nil, nil, nil
-  end
-end
-
 -- Helpers
-M.width = function(s)
-  return fn.strdisplaywidth(s:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
+M.width = function (s)
+  return cache:width(s) -- Delegate to cache's width method for consistency
 end
 
 local function hl(name, text)
@@ -116,15 +136,15 @@ end
 -- Components
 local comp = {}
 
-comp.mode = function()
-  return get_or_set("mode", function()
+comp.mode = function ()
+  return cache:get_or_set("mode", function ()
     local m = modes[api.nvim_get_mode().mode] or { "UNKNOWN", "StatusLineNormal" }
     return hl(m[2], m[1])
   end)
 end
 
-comp.file_info = function()
-  return get_or_set("file_info", function()
+comp.file_info = function ()
+  return cache:get_or_set("file_info", function ()
     local filename = fn.expand("%:t")
     if filename == "" then
       filename = "[No Name]"
@@ -133,12 +153,12 @@ comp.file_info = function()
     -- Async load file icon if not cached yet
     if cache.data.file_icon == nil then
       cache.data.file_icon = ""
-      vim.schedule(function()
+      vim.schedule(function ()
         local devicons = require_lazy("nvim-web-devicons")
         if devicons then
           local icon = devicons.get_icon(filename, fn.expand("%:e"), { default = true }) or ""
           cache.data.file_icon = (icon ~= "" and icon .. " ") or ""
-          invalidate("file_info")
+          cache:invalidate("file_info")
           M.refresh(api.nvim_get_current_win())
         end
       end)
@@ -160,8 +180,8 @@ comp.file_info = function()
 end
 
 -- Simple title component for excluded buftypes
-comp.simple_title = function()
-  return get_or_set("simple_title", function()
+comp.simple_title = function ()
+  return cache:get_or_set("simple_title", function ()
     local buftype, filetype = vim.bo.buftype, vim.bo.filetype
     local title_map = {
       buftype = {
@@ -197,8 +217,8 @@ end
 local git_cache = {}
 local git_jobs = {}
 
-comp.git_branch = function()
-  return get_or_set("git_branch", function()
+comp.git_branch = function ()
+  return cache:get_or_set("git_branch", function ()
     local root = cache.data.git_root or vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "")
     cache.data.git_root = cache.data.git_root or root
 
@@ -213,17 +233,17 @@ comp.git_branch = function()
     end
 
     git_jobs[root] = true
-    vim.schedule(function()
+    vim.schedule(function ()
       if not vim.system then
         git_jobs[root] = nil
         return
       end
 
       -- Add timeout and better error handling
+      ---@diagnostic disable: need-check-nil
       local timer = vim.loop.new_timer()
       local completed = false
-
-      timer:start(5000, 0, function() -- 5 second timeout
+      timer:start(5000, 0, function () -- 5 second timeout
         if not completed then
           completed = true
           git_jobs[root] = nil
@@ -234,7 +254,7 @@ comp.git_branch = function()
       vim.system(
         { "git", "branch", "--show-current" },
         { cwd = root, text = true, timeout = 3000 },
-        vim.schedule_wrap(function(o)
+        vim.schedule_wrap(function (o)
           if completed then
             return
           end
@@ -252,7 +272,7 @@ comp.git_branch = function()
           end
 
           git_cache[root] = res
-          invalidate("git_branch")
+          cache:invalidate("git_branch")
 
           -- Validate window before refresh
           local current_win = api.nvim_get_current_win()
@@ -267,15 +287,15 @@ comp.git_branch = function()
   end)
 end
 
-comp.diagnostics = function()
-  return get_or_set("diagnostics", function()
+comp.diagnostics = function ()
+  return cache:get_or_set("diagnostics", function ()
     local counts = vim.diagnostic.count(0)
     local s = vim.diagnostic.severity
     local sev_map = {
       { s.ERROR, "StatusLineDiagError", config.icons.error },
-      { s.WARN, "StatusLineDiagWarn", config.icons.warn },
-      { s.INFO, "StatusLineDiagInfo", config.icons.info },
-      { s.HINT, "StatusLineDiagHint", config.icons.hint },
+      { s.WARN,  "StatusLineDiagWarn",  config.icons.warn },
+      { s.INFO,  "StatusLineDiagInfo",  config.icons.info },
+      { s.HINT,  "StatusLineDiagHint",  config.icons.hint },
     }
     local p = {}
     for _, v in ipairs(sev_map) do
@@ -288,8 +308,8 @@ comp.diagnostics = function()
   end)
 end
 
-comp.lsp_status = function()
-  return get_or_set("lsp_status", function()
+comp.lsp_status = function ()
+  return cache:get_or_set("lsp_status", function ()
     local cl = vim.lsp.get_clients({ bufnr = 0 })
     if #cl == 0 then
       return ""
@@ -302,8 +322,8 @@ comp.lsp_status = function()
   end)
 end
 
-comp.position = function()
-  return get_or_set("position", function()
+comp.position = function ()
+  return cache:get_or_set("position", function ()
     local pos = api.nvim_win_get_cursor(0)
     return table.concat({
       hl("StatusLineLabel", "Ln "),
@@ -314,8 +334,8 @@ comp.position = function()
   end)
 end
 
-comp.percentage = function()
-  return get_or_set("percentage", function()
+comp.percentage = function ()
+  return cache:get_or_set("percentage", function ()
     local curr, total = api.nvim_win_get_cursor(0)[1], api.nvim_buf_line_count(0)
     local pct = total > 0 and math.floor(curr / total * 100) or 0
     return hl("StatusLineValue", pct .. "%%")
@@ -323,7 +343,7 @@ comp.percentage = function()
 end
 
 -- Simple statusline for excluded buftypes
-M.simple_statusline = function()
+M.simple_statusline = function ()
   local win = api.nvim_get_current_win()
 
   -- Center: simple title
@@ -359,7 +379,7 @@ M.simple_statusline = function()
 end
 
 -- Main statusline builder
-M.statusline = function()
+M.statusline = function ()
   local win = api.nvim_get_current_win()
 
   -- Left side: mode + git branch (if any)
@@ -457,7 +477,7 @@ local function refresh(win)
   end
 end
 
-M.refresh = function(win)
+M.refresh = function (win)
   if win then
     refresh(win)
   else
@@ -469,50 +489,50 @@ end
 
 -- Throttle
 local last = 0
-local cursor_update = function()
+local cursor_update = function ()
   local now = loop.hrtime() / 1e6
   if now - last > config.throttle_ms then
     last = now
-    invalidate({ "position", "percentage" })
-    vim.schedule(function()
+    cache:invalidate({ "position", "percentage" })
+    vim.schedule(function ()
       M.refresh(api.nvim_get_current_win())
     end)
   end
 end
 
-M.init = function()
+M.init = function ()
   local group_id = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
   api.nvim_create_autocmd("ModeChanged", {
     group = group_id,
-    callback = function()
-      invalidate("mode")
+    callback = function ()
+      cache:invalidate("mode")
       M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
     group = group_id,
-    callback = function()
-      git_cache = {} -- Clear the unbounded git branch cache
+    callback = function ()
+      git_cache = {}            -- Clear the unbounded git branch cache
       cache.data.git_root = nil -- Invalidate the cached git root path
-      invalidate("git_branch")
+      cache:invalidate("git_branch")
       M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd("BufEnter", {
     group = group_id,
-    callback = function()
-      invalidate({ "git_branch", "file_info", "lsp_status", "diagnostics", "simple_title" })
+    callback = function ()
+      cache:invalidate({ "git_branch", "file_info", "lsp_status", "diagnostics", "simple_title" })
       M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd("DiagnosticChanged", {
     group = group_id,
-    callback = function()
-      invalidate("diagnostics")
+    callback = function ()
+      cache:invalidate("diagnostics")
       M.refresh(api.nvim_get_current_win())
     end,
   })
@@ -521,16 +541,16 @@ M.init = function()
 
   api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
     group = group_id,
-    callback = function()
-      invalidate("lsp_status")
+    callback = function ()
+      cache:invalidate("lsp_status")
       M.refresh(api.nvim_get_current_win())
     end,
   })
 
   api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
     group = group_id,
-    callback = function()
-      vim.schedule(function()
+    callback = function ()
+      vim.schedule(function ()
         vim.cmd("redrawstatus")
       end)
     end,
@@ -538,7 +558,7 @@ M.init = function()
 
   api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
     group = group_id,
-    callback = function()
+    callback = function ()
       M.refresh()
     end,
   })
