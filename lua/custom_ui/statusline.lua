@@ -20,7 +20,7 @@ config = {
 
   exclude = {
     buftypes = { "terminal", "quickfix", "help", "nofile", "prompt" },
-    filetypes = { "neo-tree", "lazy", "lspinfo", "checkhealth", "help", "man", "qf", },
+    filetypes = { "neo-tree", "lazy", "lspinfo", "checkhealth", "help", "man", "qf" },
     floating_windows = true,
     small_windows = { min_height = 3, min_width = 20 },
   },
@@ -109,7 +109,9 @@ end
 comp.file_info = function ()
   return get_or_set("file_info", function ()
     local filename = fn.expand("%:t")
-    if filename == "" then filename = "[No Name]" end
+    if filename == "" then
+      filename = "[No Name]"
+    end
 
     -- Async load file icon if not cached yet
     if cache.data.file_icon == nil then
@@ -132,8 +134,7 @@ comp.file_info = function ()
     end
     components[#components + 1] = hl(
       vim.bo.modified and "StatusLineModified" or "StatusLineFile",
-      (cache.data.file_icon or "") .. filename ..
-      (vim.bo.modified and " " .. config.icons.modified or "")
+      (cache.data.file_icon or "") .. filename .. (vim.bo.modified and " " .. config.icons.modified or "")
     )
 
     return table.concat(components, " ")
@@ -144,8 +145,7 @@ local git_cache, git_job = {}, nil
 
 comp.git_branch = function ()
   return get_or_set("git_branch", function ()
-    local root = cache.data.git_root
-      or vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "")
+    local root = cache.data.git_root or vim.fs.dirname(vim.fs.find(".git", { upward = true })[1] or "")
     cache.data.git_root = cache.data.git_root or root
 
     if root == "" then
@@ -239,40 +239,70 @@ end
 
 -- Statusline builder
 M.statusline = function ()
-  local win, left, git, right, names = api.nvim_get_current_win(), { comp.mode() }, comp.git_branch(), {}, {}
-  if git ~= "" then
-    left[#left + 1] = git
+  local win = api.nvim_get_current_win()
+
+  -- Left side: mode + git branch (if any)
+  local left_segments = { comp.mode() }
+  local git_branch = comp.git_branch()
+  if git_branch ~= "" then
+    left_segments[#left_segments + 1] = git_branch
   end
-  local function add_right(name, val)
-    if val ~= "" then
-      right[#right + 1], names[#names + 1] = val, name
+
+  -- Right side: diagnostics, lsp status, position, percentage
+  local right_segments, right_names = {}, {}
+  local function add_right(name, value)
+    if value ~= "" then
+      right_segments[#right_segments + 1] = value
+      right_names[#right_names + 1] = name
     end
   end
   add_right("diagnostics", comp.diagnostics())
   add_right("lsp_status", comp.lsp_status())
   add_right("position", comp.position())
   add_right("percentage", comp.percentage())
-  local center = comp.file_info()
-  local lw = (cache.widths.mode or M.width(left[1])) + (#git > 0 and (cache.widths.git_branch or M.width(git)) or 0)
-  local rw = 0
-  for i, p in ipairs(right) do
-    rw = rw + (cache.widths[names[i]] or M.width(p))
+
+  -- Center: file info
+  local center_segment = comp.file_info()
+
+  -- Cached widths (fallback to computed width)
+  local widths = cache.widths
+  local calc_width = M.width
+  local separator_width = calc_width(config.separators.section)
+
+  -- Calculate widths for alignment
+  local left_width = (widths.mode or calc_width(left_segments[1]))
+    + (#git_branch > 0 and (widths.git_branch or calc_width(git_branch)) or 0)
+
+  local right_width = 0
+  for i, val in ipairs(right_segments) do
+    right_width = right_width + (widths[right_names[i]] or calc_width(val))
   end
-  if #right > 1 then
-    rw = rw + (#right - 1) * M.width(config.separators.section)
+  if #right_segments > 1 then
+    right_width = right_width + (#right_segments - 1) * separator_width
   end
-  local cw, ww = cache.widths.file_info or M.width(center), api.nvim_win_get_width(win)
-  if ww - (lw + rw) >= cw + 4 then
-    return table.concat(left, " ")
-      .. string.rep(" ", math.max(1, math.floor((ww - cw) / 2) - lw))
-      .. center
+
+  local center_width = widths.file_info or calc_width(center_segment)
+  local window_width = api.nvim_win_get_width(win)
+
+  -- Build statusline
+  if window_width - (left_width + right_width) >= center_width + 4 then
+    -- Center fits
+    return table.concat(left_segments, " ")
+      .. string.rep(" ", math.max(1, math.floor((window_width - center_width) / 2) - left_width))
+      .. center_segment
       .. "%="
-      .. table.concat(right, config.separators.section)
+      .. table.concat(right_segments, config.separators.section)
+  else
+    -- Fallback: no centering
+    return table.concat(left_segments, " ")
+      .. " "
+      .. center_segment
+      .. "%="
+      .. table.concat(right_segments, config.separators.section)
   end
-  return table.concat(left, " ") .. " " .. center .. "%=" .. table.concat(right, config.separators.section)
 end
 
-local function show(win)
+local show = function (win)
   if not api.nvim_win_is_valid(win) then
     return false
   end
@@ -292,7 +322,7 @@ end
 
 local expr = '%!v:lua.require("custom_ui.statusline").statusline()'
 
-local function refresh(win)
+local refresh = function (win)
   api.nvim_set_option_value("statusline", show(win) and expr or "", { win = win })
 end
 
@@ -308,7 +338,7 @@ end
 
 -- Throttle
 local last = 0
-local function cursor_update()
+local cursor_update = function ()
   local now = loop.hrtime() / 1e6
   if now - last > config.throttle_ms then
     last = now
@@ -319,78 +349,82 @@ local function cursor_update()
   end
 end
 
-local g = api.nvim_create_augroup("CustomStatusline", { clear = true })
+M.init = function ()
+  local g = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-api.nvim_create_autocmd("ModeChanged", {
-  group = g,
-  callback = function ()
-    invalidate("mode")
-    vim.schedule(function ()
-      M.refresh(api.nvim_get_current_win())
-    end)
-  end,
-})
+  api.nvim_create_autocmd("ModeChanged", {
+    group = g,
+    callback = function ()
+      invalidate("mode")
+      vim.schedule(function ()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
 
--- On major context switches, clear the git cache to prevent memory leaks.
-api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
-  group = g,
-  callback = function ()
-    git_cache = {}              -- Clear the unbounded git branch cache
-    cache.data.git_root = nil   -- Invalidate the cached git root path
-    invalidate("git_branch")
-    vim.schedule(function ()
-      M.refresh(api.nvim_get_current_win())
-    end)
-  end,
-})
+  -- On major context switches, clear the git cache to prevent memory leaks.
+  api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
+    group = g,
+    callback = function ()
+      git_cache = {}            -- Clear the unbounded git branch cache
+      cache.data.git_root = nil -- Invalidate the cached git root path
+      invalidate("git_branch")
+      vim.schedule(function ()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
 
--- On buffer switches, just invalidate the component to allow for an update.
-api.nvim_create_autocmd({ "BufEnter" }, {
-  group = g,
-  callback = function ()
-    invalidate("git_branch")
-    vim.schedule(function ()
-      M.refresh(api.nvim_get_current_win())
-    end)
-  end,
-})
+  -- On buffer switches, just invalidate the component to allow for an update.
+  api.nvim_create_autocmd({ "BufEnter" }, {
+    group = g,
+    callback = function ()
+      invalidate("git_branch")
+      vim.schedule(function ()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
 
-api.nvim_create_autocmd("DiagnosticChanged", {
-  group = g,
-  callback = function ()
-    invalidate("diagnostics")
-    vim.schedule(function ()
-      M.refresh(api.nvim_get_current_win())
-    end)
-  end,
-})
+  api.nvim_create_autocmd("DiagnosticChanged", {
+    group = g,
+    callback = function ()
+      invalidate("diagnostics")
+      vim.schedule(function ()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
 
-api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
+  api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, { group = g, callback = cursor_update })
 
-api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" }, {
-  group = g,
-  callback = function ()
-    invalidate("git_branch")
-    vim.schedule(function ()
-      M.refresh(api.nvim_get_current_win())
-    end)
-  end,
-})
+  api.nvim_create_autocmd({ "FocusGained", "DirChanged", "BufEnter" }, {
+    group = g,
+    callback = function ()
+      invalidate("git_branch")
+      vim.schedule(function ()
+        M.refresh(api.nvim_get_current_win())
+      end)
+    end,
+  })
 
-api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
-  group = g,
-  callback = function ()
-    vim.schedule(function ()
-      vim.cmd("redrawstatus")
-    end)
-  end,
-})
+  api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
+    group = g,
+    callback = function ()
+      vim.schedule(function ()
+        vim.cmd("redrawstatus")
+      end)
+    end,
+  })
 
-api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
-  group = g,
-  callback = function ()
-    M.refresh()
-  end,
-})
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter", "WinClosed" }, {
+    group = g,
+    callback = function ()
+      M.refresh()
+    end,
+  })
+end
+
+M.init()
 
 return M
