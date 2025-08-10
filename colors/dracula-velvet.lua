@@ -73,6 +73,8 @@ local highlights = {
   StatusLineReadonly = { fg = c.comment },
   StatusLineGit = { fg = c.orange },
   StatusLineInfo = { fg = c.comment },
+  StatusLineLabel = { fg = c.comment },
+  StatusLineValue = { fg = c.purple },
   StatusLineDiagError = { fg = c.red },
   StatusLineDiagWarn = { fg = c.yellow },
   StatusLineDiagInfo = { fg = c.cyan },
