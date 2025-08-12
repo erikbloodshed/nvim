@@ -42,9 +42,4 @@ return {
             highlights["NeoTreeRootName"] = { link = "Directory" }
         end,
     },
-
-    config = function(opts)
-      require("tokyonight").setup(opts)
-      vim.cmd("colorscheme tokyonight")
-    end
 }
