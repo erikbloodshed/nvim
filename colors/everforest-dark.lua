@@ -50,7 +50,7 @@ local highlights = {
   -- Editor highlights
   ColorColumn = { bg = c.bg1 },
   Cursor = { fg = c.bg0, bg = c.fg },
-  CursorLine = { bg = c.bg1 },
+  CursorLine = { bg = c.bg3 },
   CursorLineNr = { fg = c.yellow, bold = true },
   EndOfBuffer = { fg = c.bg0 },
   ErrorMsg = { fg = c.red, bold = true },

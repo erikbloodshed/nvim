@@ -1,4 +1,4 @@
 ;; extends
 ((identifier) @constant
   (#match? @constant "^k[A-Z]+")
-  (#set! "priority" 127))
+  (#set! "priority" 130))

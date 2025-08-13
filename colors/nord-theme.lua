@@ -12,74 +12,74 @@ end
 o.termguicolors = true
 g.colors_name = "nord-theme"
 local palette = {
-  none = 'NONE',   -- Placeholder for transparency or system defaults
+  none = 'NONE', -- Placeholder for transparency or system defaults
 
   -- Blacks (New, for dark UI elements)
-  black0 = '#1A1E26',   -- Derived: Darkened Nord0 by reducing lightness to ~12%
-  black1 = '#1F242D',   -- Derived: Lightness ~15%, same hue as Nord0
-  black2 = '#232933',   -- Derived: Matches provided palette, lightness ~18%
+  black0 = '#1A1E26', -- Derived: Darkened Nord0 by reducing lightness to ~12%
+  black1 = '#1F242D', -- Derived: Lightness ~15%, same hue as Nord0
+  black2 = '#232933', -- Derived: Matches provided palette, lightness ~18%
 
   -- Grays
-  gray0 = '#242933',   -- Derived: Matches provided palette, slightly lighter than Nord0
-  gray1 = '#2E3440',   -- Original: Nord0 (Polar Night)
-  gray2 = '#3B4252',   -- Original: Nord1 (Polar Night)
-  gray3 = '#434C5E',   -- Original: Nord2 (Polar Night)
-  gray4 = '#4C566A',   -- Original: Nord3 (Polar Night)
-  gray5 = '#5A6B82',   -- Derived: Adjusted from provided #60728A, less blue, lightness ~45%
+  gray0 = '#242933', -- Derived: Matches provided palette, slightly lighter than Nord0
+  gray1 = '#2E3440', -- Original: Nord0 (Polar Night)
+  gray2 = '#3B4252', -- Original: Nord1 (Polar Night)
+  gray3 = '#434C5E', -- Original: Nord2 (Polar Night)
+  gray4 = '#4C566A', -- Original: Nord3 (Polar Night)
+  gray5 = '#5A6B82', -- Derived: Adjusted from provided #60728A, less blue, lightness ~45%
 
   -- Whites
-  white0_normal = '#B8C0D2',        -- Derived: Adjusted Nord4, reduced lightness (~78%) and blue tint
-  white0_reduce_blue = '#C0C8D6',   -- Derived: Further adjusted white0_normal, neutral hue
-  white1 = '#D8DEE9',               -- Original: Nord4 (Snow Storm)
-  white2 = '#E5E9F0',               -- Original: Nord5 (Snow Storm)
-  white3 = '#ECEFF4',               -- Original: Nord6 (Snow Storm)
+  white0_normal = '#B8C0D2',      -- Derived: Adjusted Nord4, reduced lightness (~78%) and blue tint
+  white0_reduce_blue = '#C0C8D6', -- Derived: Further adjusted white0_normal, neutral hue
+  white1 = '#D8DEE9',             -- Original: Nord4 (Snow Storm)
+  white2 = '#E5E9F0',             -- Original: Nord5 (Snow Storm)
+  white3 = '#ECEFF4',             -- Original: Nord6 (Snow Storm)
 
   -- Frost
   cyan = {
-    base = '#8FBCBB',       -- Original: Nord7 (Frost)
-    bright = '#A0C9C8',     -- Derived: Lightness increased ~10% for hover/active states
-    dim = '#7EABA9',        -- Derived: Lightness decreased ~10% for subtle accents
+    base = '#8FBCBB',   -- Original: Nord7 (Frost)
+    bright = '#A0C9C8', -- Derived: Lightness increased ~10% for hover/active states
+    dim = '#7EABA9',    -- Derived: Lightness decreased ~10% for subtle accents
   },
-  blue0 = '#5E81AC',        -- Original: Nord10 (Frost)
-  blue1 = '#81A1C1',        -- Original: Nord9 (Frost)
-  blue2 = '#88C0D0',        -- Original: Nord8 (Frost)
+  blue0 = '#5E81AC',    -- Original: Nord10 (Frost)
+  blue1 = '#81A1C1',    -- Original: Nord9 (Frost)
+  blue2 = '#88C0D0',    -- Original: Nord8 (Frost)
 
   -- Aurora
   red = {
-    base = '#BF616A',       -- Original: Nord11 (Aurora)
-    bright = '#CB727B',     -- Derived: Lightness ~62%, reduced saturation for comfort
-    dim = '#B3515B',        -- Derived: Lightness ~50% for subtle errors
+    base = '#BF616A',   -- Original: Nord11 (Aurora)
+    bright = '#CB727B', -- Derived: Lightness ~62%, reduced saturation for comfort
+    dim = '#B3515B',    -- Derived: Lightness ~50% for subtle errors
   },
   orange = {
-    base = '#D08770',       -- Original: Nord12 (Aurora)
-    bright = '#DC9885',     -- Derived: Lightness ~70%, reduced saturation for warnings
-    dim = '#C1765E',        -- Derived: Lightness ~58% for subtle warnings
+    base = '#D08770',   -- Original: Nord12 (Aurora)
+    bright = '#DC9885', -- Derived: Lightness ~70%, reduced saturation for warnings
+    dim = '#C1765E',    -- Derived: Lightness ~58% for subtle warnings
   },
   yellow = {
-    base = '#EBCB8B',       -- Original: Nord13 (Aurora)
-    bright = '#F0D6A0',     -- Derived: Lightness ~80%, reduced saturation for highlights
-    dim = '#E1BA76',        -- Derived: Lightness ~66% for subtle highlights
+    base = '#EBCB8B',   -- Original: Nord13 (Aurora)
+    bright = '#F0D6A0', -- Derived: Lightness ~80%, reduced saturation for highlights
+    dim = '#E1BA76',    -- Derived: Lightness ~66% for subtle highlights
   },
   green = {
-    base = '#A3BE8C',       -- Original: Nord14 (Aurora)
-    bright = '#B3CB9E',     -- Derived: Lightness ~72%, reduced saturation for success states
-    dim = '#92AC7C',        -- Derived: Lightness ~58% for subtle success
+    base = '#A3BE8C',   -- Original: Nord14 (Aurora)
+    bright = '#B3CB9E', -- Derived: Lightness ~72%, reduced saturation for success states
+    dim = '#92AC7C',    -- Derived: Lightness ~58% for subtle success
   },
   magenta = {
-    base = '#B48EAD',       -- Original: Nord15 (Aurora)
-    bright = '#C19FBA',     -- Derived: Lightness ~71%, reduced saturation for annotations
-    dim = '#A37D9C',        -- Derived: Lightness ~57% for subtle annotations
+    base = '#B48EAD',   -- Original: Nord15 (Aurora)
+    bright = '#C19FBA', -- Derived: Lightness ~71%, reduced saturation for annotations
+    dim = '#A37D9C',    -- Derived: Lightness ~57% for subtle annotations
   },
 }
 
 local highlights = {
-  StatusLineNormal = { fg = palette.magenta.base, bold = true },
-  StatusLineInsert = { fg = palette.green.base, bold = true },
-  StatusLineVisual = { fg = palette.blue1, bold = true },
-  StatusLineCommand = { fg = palette.yellow.base, bold = true },
-  StatusLineReplace = { fg = palette.orange.base, bold = true },
-  StatusLineTerminal = { fg = palette.blue2, bold = true },
-  StatusLineFile = { fg = palette.white0_normal },
+  StatusLineNormal = { fg = palette.magenta.bright, bold = true, reverse = true },
+  StatusLineInsert = { fg = palette.green.bright, bold = true, reverse = true },
+  StatusLineVisual = { fg = palette.blue1, bold = true, reverse = true },
+  StatusLineCommand = { fg = palette.yellow.bright, bold = true, reverse = true },
+  StatusLineReplace = { fg = palette.red.bright, bold = true, reverse = true },
+  StatusLineTerminal = { fg = palette.blue2, bold = true, reverse = true },
+  StatusLineFile = { fg = palette.white0_normal, bold = true },
   StatusLineModified = { fg = palette.yellow.base, bold = true },
   StatusLineReadonly = { fg = palette.gray5 },
   StatusLineGit = { fg = palette.orange.base },
@@ -96,27 +96,27 @@ local highlights = {
 
   -- Base editor highlights
   ColorColumn = { bg = palette.gray3 },
-  Cursor = { fg = palette.gray1, bg = palette.white0_normal },
+  Cursor = { fg = palette.blue2, bg = palette.white0_normal },
   CursorColumn = { bg = palette.gray1 },
   CursorLine = { bg = palette.gray1 },
-  CursorLineNr = { fg = palette.white0_normal, bg = palette.gray1 },
+  CursorLineNr = { fg = palette.white1, bg = palette.gray1 },
   Directory = { fg = palette.magenta.base, bold = true },
   EndOfBuffer = { fg = palette.black1 },
   ErrorMsg = { fg = palette.red.bright },
-  FloatBorder = { fg = palette.magenta.dim, bg = palette.black1 },
+  FloatBorder = { fg = palette.blue1, bg = palette.none },
   FoldColumn = { fg = palette.gray5, bg = palette.gray1 },
   Folded = { fg = palette.gray5, bg = palette.gray3 },
   IncSearch = { fg = palette.gray1, bg = palette.orange.base },
-  LineNr = { fg = palette.blue1 }, -- Changed for WCAG compliance (4.8:1)
+  LineNr = { fg = palette.gray5 }, -- Changed for WCAG compliance (4.8:1)
   MatchParen = { fg = palette.black1, bg = palette.white0_reduce_blue, bold = true },
   ModeMsg = { fg = palette.white0_normal },
   MoreMsg = { fg = palette.green.base },
   NonText = { fg = palette.gray5 },
   Normal = { fg = palette.white0_normal, bg = palette.none },
-  NormalFloat = { fg = palette.white0_normal, bg = palette.black1 }, -- Darker bg for popups
+  NormalFloat = { link = "Normal" }, -- Darker bg for popups
   Pmenu = { fg = palette.white0_normal, bg = palette.black0 },
   PmenuSbar = { bg = palette.gray3 },
-  PmenuSel = { fg = palette.gray0, bg = palette.magenta.base },
+  PmenuSel = { fg = palette.gray0, bg = palette.blue1 },
   PmenuThumb = { bg = palette.gray5 },
   Question = { fg = palette.green.base },
   QuickFixLine = { fg = palette.gray1, bg = palette.yellow.base },
@@ -126,7 +126,7 @@ local highlights = {
   TabLine = { fg = palette.gray5, bg = palette.gray1 },
   TabLineFill = { bg = palette.gray1 },
   TabLineSel = { fg = palette.white0_normal, bg = palette.gray3 },
-  Title = { fg = palette.magenta.base, bold = true },
+  Title = { fg = palette.blue1, bold = true },
   VertSplit = { fg = palette.gray3 },
   Visual = { bg = palette.gray3 },
   VisualNOS = { bg = palette.gray3 },
@@ -134,35 +134,6 @@ local highlights = {
   Whitespace = { fg = palette.gray5 },
   WildMenu = { fg = palette.gray1, bg = palette.magenta.base },
   WinSeparator = { fg = palette.gray3 },
-
-  -- Syntax highlighting (following Nord spec)
-  Constant = { fg = palette.magenta.base },
-  Character = { fg = palette.green.base },
-  Comment = { fg = palette.gray5, italic = true }, -- Used cyan.dim for WCAG compliance (5.75:1)
-  Debug = { fg = palette.yellow.base },
-  Define = { fg = palette.blue1 },
-  Delimiter = { fg = palette.white0_normal },
-  Error = { fg = palette.red.bright },
-  Exception = { fg = palette.blue1 },
-  Function = { fg = palette.blue2 },
-  Identifier = { fg = palette.white0_normal },
-  Ignore = { fg = palette.gray5 }, Include = { fg = palette.blue1 },
-  Macro = { fg = palette.blue2 },
-  Operator = { fg = palette.blue1 },
-  PreCondit = { fg = palette.blue1 },
-  PreProc = { fg = palette.blue1 }, -- Changed for better contrast (6.1:1)
-  Special = { fg = palette.blue2 },
-  SpecialChar = { fg = palette.blue1 },
-  SpecialComment = { fg = palette.cyan.base },
-  Statement = { fg = palette.blue1 },
-  StorageClass = { fg = palette.blue1 },
-  String = { fg = palette.green.base },
-  Structure = { fg = palette.cyan.base },
-  Tag = { fg = palette.blue1 },
-  Todo = { fg = palette.cyan.base, bold = true },
-  Type = { fg = palette.cyan.base },
-  Typedef = { fg = palette.cyan.base },
-  Underlined = { fg = palette.cyan.base, underline = true },
 
   -- Diagnostic highlights
   DiagnosticError = { fg = palette.red.bright },
@@ -183,6 +154,36 @@ local highlights = {
   GitSignsChange = { fg = palette.yellow.base },
   GitSignsDelete = { fg = palette.red.bright },
 
+  -- Syntax highlighting (following Nord spec)
+  Constant = { fg = palette.magenta.base },
+  Character = { fg = palette.green.base },
+  Comment = { fg = palette.gray5, italic = true }, -- Used cyan.dim for WCAG compliance (5.75:1)
+  Debug = { fg = palette.yellow.base },
+  Define = { fg = palette.blue1 },
+  Delimiter = { fg = palette.white0_normal },
+  Error = { fg = palette.red.bright },
+  Exception = { fg = palette.blue1 },
+  Function = { fg = palette.cyan.base },
+  Identifier = { fg = palette.white0_normal },
+  Ignore = { fg = palette.gray5 },
+  Include = { fg = palette.blue1 },
+  Macro = { fg = palette.blue2 },
+  Operator = { fg = palette.white0_normal },
+  PreCondit = { fg = palette.blue1 },
+  PreProc = { fg = palette.blue1 }, -- Changed for better contrast (6.1:1)
+  Special = { fg = palette.blue2 },
+  SpecialChar = { fg = palette.blue1 },
+  SpecialComment = { fg = palette.cyan.base },
+  Statement = { fg = palette.blue1 },
+  StorageClass = { fg = palette.blue1 },
+  String = { fg = palette.green.base },
+  Structure = { fg = palette.cyan.base },
+  Tag = { fg = palette.blue1 },
+  Todo = { fg = palette.cyan.base, bold = true },
+  Type = { fg = palette.cyan.base },
+  Typedef = { fg = palette.cyan.base },
+  Underlined = { fg = palette.cyan.base, underline = true },
+
   -- Treesitter highlights (following Nord spec)
   ["@annotation"] = { fg = palette.yellow.base },
   ["@attribute"] = { fg = palette.blue2 },
@@ -195,24 +196,24 @@ local highlights = {
   ["@comment.todo"] = { fg = palette.gray5, bold = true, italic = true },
   ["@comment.warning"] = { fg = palette.yellow.base, italic = true },
   ["@conditional"] = { fg = palette.blue1 },
-  ["@constant"] = { fg = palette.magenta.base },
-  ["@constant.builtin"] = { fg = palette.magenta.base },
-  ["@constant.macro"] = { fg = palette.magenta.base },
+  ["@constant"] = { link = "Constant" },
+  ["@constant.builtin"] = { link = "Constant" },
+  ["@constant.macro"] = { link = "Constant" },
   ["@constructor"] = { fg = palette.cyan.base },
   ["@debug"] = { fg = palette.yellow.base },
   ["@define"] = { fg = palette.blue1 },
   ["@exception"] = { fg = palette.blue1 },
   ["@field"] = { fg = palette.orange.base },
   ["@float"] = { fg = palette.magenta.base },
-  ["@function"] = { fg = palette.blue2 },
-  ["@function.builtin"] = { fg = palette.blue2 },
+  ["@function"] = { link = "Function" },
+  ["@function.builtin"] = { fg = palette.cyan.bright },
   ["@function.call"] = { fg = palette.blue2 },
   ["@function.macro"] = { fg = palette.blue2 },
   ["@include"] = { fg = palette.blue1 },
-  ["@keyword"] = { fg = palette.blue1 },
-  ["@keyword.function"] = { fg = palette.blue1 },
-  ["@keyword.operator"] = { fg = palette.blue1 },
-  ["@keyword.return"] = { fg = palette.blue1 },
+  ["@keyword"] = { fg = palette.blue2 },
+  ["@keyword.function"] = { fg = palette.blue2 },
+  ["@keyword.operator"] = { fg = palette.blue2 },
+  ["@keyword.return"] = { fg = palette.blue2 },
   ["@label"] = { fg = palette.blue1 },
   ["@markup.link"] = { fg = palette.cyan.base, underline = true },
   ["@markup.link.url"] = { fg = palette.cyan.base, underline = true },
@@ -220,15 +221,16 @@ local highlights = {
   ["@markup.italic"] = { fg = palette.yellow.base, italic = true },
   ["@markup.strong"] = { fg = palette.orange.base, bold = true },
   ["@markup.quote"] = { fg = palette.yellow.base, italic = true },
-  ["@method"] = { fg = palette.blue2 },
-  ["@method.call"] = { fg = palette.blue2 },
-  ["@namespace"] = { fg = palette.cyan.base },
+  ["@method"] = { link = "Function" },
+  ["@method.call"] = { link = "Function" },
+  ["@module"] = { fg = palette.cyan.dim },
+  ["@namespace"] = { fg = palette.cyan.dim },
   ["@none"] = { fg = palette.white0_normal },
-  ["@operator"] = { fg = palette.blue1 },
+  ["@operator"] = { link = "Operator" },
   ["@parameter"] = { fg = palette.orange.base },
-  ["@parameter.reference"] = { fg = palette.orange.base },
+  ["@parameter.reference"] = { link = "@parameter" },
   ["@preproc"] = { fg = palette.blue1 },
-  ["@property"] = { fg = palette.orange.base },
+  ["@property"] = { fg = palette.white0_normal },
   ["@punctuation.bracket"] = { fg = palette.white0_normal },
   ["@punctuation.delimiter"] = { fg = palette.white0_normal },
   ["@punctuation.special"] = { fg = palette.blue1 },
@@ -259,13 +261,13 @@ local highlights = {
   ["@text.underline"] = { fg = palette.cyan.base, underline = true },
   ["@text.uri"] = { fg = palette.cyan.base, underline = true },
   ["@text.warning"] = { fg = palette.yellow.base, bold = true },
-  ["@type"] = { fg = palette.cyan.base },
-  ["@type.builtin"] = { fg = palette.cyan.base },
-  ["@type.definition"] = { fg = palette.cyan.base },
-  ["@type.qualifier"] = { fg = palette.blue1 },
-  ["@variable"] = { fg = palette.white0_normal },
+  ["@type"] = { fg = palette.yellow.base },
+  ["@type.builtin"] = { fg = palette.yellow.base },
+  ["@type.definition"] = { fg = palette.yellow.base },
+  ["@type.qualifier"] = { fg = palette.yellow.base },
+  ["@variable"] = { fg = palette.white0_reduce_blue },
   ["@variable.builtin"] = { fg = palette.magenta.base },
-  ["@variable.parameter"] = { fg = palette.orange.base },
+  ["@variable.parameter"] = { link = "@parameter" },
 
   -- LSP Semantic Token highlights
   ["@lsp.type.boolean"] = { link = "@boolean" },
@@ -283,6 +285,7 @@ local highlights = {
   ["@lsp.type.lifetime"] = { fg = palette.orange.base },
   ["@lsp.type.namespace"] = { link = "@namespace" },
   ["@lsp.type.number"] = { link = "@number" },
+  ["@lsp.type.macro"] = {},
   ["@lsp.type.operator"] = { link = "@operator" },
   ["@lsp.type.parameter"] = { link = "@parameter" },
   ["@lsp.type.property"] = { link = "@property" },
@@ -293,26 +296,27 @@ local highlights = {
   ["@lsp.type.typeAlias"] = { link = "@type.definition" },
   ["@lsp.type.unresolvedReference"] = { fg = palette.red.bright, undercurl = true },
   ["@lsp.type.variable"] = { link = "@variable" },
-  ["@lsp.typemod.class.defaultLibrary"] = { fg = palette.cyan.base },
-  ["@lsp.typemod.enum.defaultLibrary"] = { fg = palette.cyan.base },
-  ["@lsp.typemod.enumMember.defaultLibrary"] = { fg = palette.magenta.base },
-  ["@lsp.typemod.function.defaultLibrary"] = { fg = palette.blue2 },
-  ["@lsp.typemod.keyword.async"] = { fg = palette.blue1, bold = true },
-  ["@lsp.typemod.keyword.injected"] = { link = "@keyword" },
-  ["@lsp.typemod.macro.defaultLibrary"] = { link = "@function.macro" },
-  ["@lsp.typemod.method.defaultLibrary"] = { link = "@method" },
-  ["@lsp.typemod.operator.injected"] = { link = "@operator" },
-  ["@lsp.typemod.string.injected"] = { link = "@string" },
-  ["@lsp.typemod.struct.defaultLibrary"] = { link = "@type.builtin" },
-  ["@lsp.typemod.type.defaultLibrary"] = { link = "@type.builtin" },
-  ["@lsp.typemod.typeAlias.defaultLibrary"] = { link = "@type.definition" },
-  ["@lsp.typemod.variable.callable"] = { link = "@function" },
-  ["@lsp.typemod.variable.defaultLibrary"] = { link = "@variable.builtin" },
-  ["@lsp.typemod.variable.injected"] = { link = "@variable" },
-  ["@lsp.typemod.variable.static"] = { link = "@constant" },
+  ["@lsp.typemod.class.defaultLibrary"] = {},
+  ["@lsp.typemod.enum.defaultLibrary"] = {},
+  ["@lsp.typemod.enumMember.defaultLibrary"] = {},
+  ["@lsp.typemod.function.defaultLibrary"] = {},
+  ["@lsp.typemod.keyword.async"] = {},
+  ["@lsp.typemod.keyword.injected"] = {},
+  ["@lsp.typemod.macro.defaultLibrary"] = {},
+  ["@lsp.typemod.method.defaultLibrary"] = {},
+  ["@lsp.typemod.operator.injected"] = {},
+  ["@lsp.typemod.string.injected"] = {},
+  ["@lsp.typemod.struct.defaultLibrary"] = {},
+  ["@lsp.typemod.type.defaultLibrary"] = {},
+  ["@lsp.typemod.typeAlias.defaultLibrary"] = {},
+  ["@lsp.typemod.variable.callable"] = {},
+  ["@lsp.typemod.variable.defaultLibrary"] = {},
+  ["@lsp.typemod.variable.injected"] = {},
+  ["@lsp.typemod.variable.static"] = {},
+  ["@lsp.typemod.variable.readonly"] = {},
 
-  BlinkCmpMenuBorder = { fg = palette.magenta.dim, bg = palette.black0 },
-  BlinkCmpLabelMatch = { fg = palette.orange.dim, bold = true },
+  BlinkCmpMenuBorder = { link = "FloatBorder" },
+  BlinkCmpLabelMatch = { fg = palette.cyan.dim, bold = true },
   BlinkCmpLabelDescription = { fg = palette.gray5 },
   BlinkCmpLabelDetail = { fg = palette.cyan.base },
   BlinkCmpKind = { fg = palette.magenta.base },
@@ -352,9 +356,9 @@ local highlights = {
   NeoTreeFileName = { fg = palette.white0_normal },
   NeoTreeFileNameOpened = { fg = palette.green.base },
   NeoTreeFilterTerm = { fg = palette.green.base, bold = true },
-  NeoTreeFloatBorder = { fg = palette.magenta.dim },
-  NeoTreeFloatTitle = { fg = palette.cyan.base, bold = true },
-  NeoTreeTitleBar = { fg = palette.gray1, bg = palette.magenta.base },
+  NeoTreeFloatBorder = { link = "FloatBorder" },
+  NeoTreeFloatTitle = { link = "Title" },
+  NeoTreeTitleBar = { link = "Title" },
   NeoTreeGitAdded = { fg = palette.green.base },
   NeoTreeGitConflict = { fg = palette.red.bright },
   NeoTreeGitDeleted = { fg = palette.red.bright },
@@ -364,10 +368,10 @@ local highlights = {
   NeoTreeGitUntracked = { fg = palette.cyan.base },
   NeoTreeGitStaged = { fg = palette.green.base },
   NeoTreeHiddenByName = { fg = palette.gray5 },
-  NeoTreeIndentMarker = { fg = palette.gray5 },
+  NeoTreeIndentMarker = { fg = palette.blue1 },
   NeoTreeExpander = { fg = palette.gray5 },
-  NeoTreeNormal = { fg = palette.white0_normal, bg = palette.none },
-  NeoTreeNormalNC = { fg = palette.white0_normal, bg = palette.none },
+  NeoTreeNormal = { link = "Normal" },
+  NeoTreeNormalNC = { link = "NormalNC" },
   NeoTreeSignColumn = { fg = palette.gray5, bg = palette.gray1 },
   NeoTreeStats = { fg = palette.gray5 },
   NeoTreeStatsHeader = { fg = palette.cyan.base, bold = true },
@@ -375,7 +379,7 @@ local highlights = {
   NeoTreeStatusLineNC = { fg = palette.gray5, bg = palette.gray1 },
   NeoTreeVertSplit = { fg = palette.gray3 },
   NeoTreeWinSeparator = { fg = palette.gray3 },
-  NeoTreeRootName = { fg = palette.magenta.base, bold = true },
+  NeoTreeRootName = { fg = palette.blue1, bold = true },
   NeoTreeSymbolicLinkTarget = { fg = palette.cyan.base },
   NeoTreeWindowsHidden = { fg = palette.gray5 },
 }
@@ -388,6 +392,7 @@ end
 
 -- LSP semantic token priority handling
 local key_priorities = {
+  ["constant"] = 127,
   ["constant.builtin"] = 127,
   ["variable.builtin"] = 127
 }

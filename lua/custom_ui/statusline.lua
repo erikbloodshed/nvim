@@ -83,18 +83,18 @@ local config = {
 }
 
 local modes = {
-  n = { "NORMAL", "StatusLineNormal" },
-  i = { "INSERT", "StatusLineInsert" },
-  v = { "VISUAL", "StatusLineVisual" },
-  V = { "V-LINE", "StatusLineVisual" },
-  ["\22"] = { "V-BLOCK", "StatusLineVisual" },
-  c = { "COMMAND", "StatusLineCommand" },
-  R = { "REPLACE", "StatusLineReplace" },
-  r = { "REPLACE", "StatusLineReplace" },
-  s = { "SELECT", "StatusLineVisual" },
-  S = { "S-LINE", "StatusLineVisual" },
-  ["\19"] = { "S-BLOCK", "StatusLineVisual" },
-  t = { "TERMINAL", "StatusLineTerminal" },
+  n = { " NORMAL ", "StatusLineNormal" },
+  i = { " INSERT ", "StatusLineInsert" },
+  v = { " VISUAL ", "StatusLineVisual" },
+  V = { " V-LINE ", "StatusLineVisual" },
+  ["\22"] = { " V-BLOCK ", "StatusLineVisual" },
+  c = { " COMMAND ", "StatusLineCommand" },
+  R = { " REPLACE ", "StatusLineReplace" },
+  r = { " REPLACE ", "StatusLineReplace" },
+  s = { " SELECT ", "StatusLineVisual" },
+  S = { " S-LINE ", "StatusLineVisual" },
+  ["\19"] = { " S-BLOCK ", "StatusLineVisual" },
+  t = { " TERMINAL ", "StatusLineTerminal" },
 }
 
 local function hl(name, text)
@@ -338,27 +338,8 @@ end
 
 -- build simple statusline
 M.simple_statusline = function()
-  local win = api.nvim_get_current_win()
   local center = C.simple_title()
-  local pos = C.position()
-  local pct = C.percentage()
-
-  local right = table.concat((function()
-    local t = {}
-    if pos ~= "" then t[#t + 1] = pos end
-    if pct ~= "" then t[#t + 1] = pct end
-    return t
-  end)(), config.separators.section)
-
-  local cw = width_for(center)
-  local rw = width_for(right)
-  local ww = api.nvim_win_get_width(win)
-
-  if ww >= cw + rw + 4 then
-    local left_pad = math.max(1, math.floor((ww - cw) / 2))
-    return string.rep(" ", left_pad) .. center .. "%=" .. right
-  end
-  return center .. "%=" .. right
+  return "%=" .. center .. "%="
 end
 
 -- main statusline
