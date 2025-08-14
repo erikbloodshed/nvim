@@ -1,7 +1,7 @@
 -- LSP semantic token highlights for Ayu Mirage theme
 local M = {}
 
-function M.get_highlights(palette)
+function M.get_highlights(p)
   return {
     -- Basic semantic tokens
     ["@lsp.type.boolean"] = { link = "@boolean" },
@@ -23,15 +23,15 @@ function M.get_highlights(palette)
     ["@lsp.type.variable"] = { link = "@variable" },
 
     -- Language-specific tokens
-    ["@lsp.type.decorator"] = { fg = palette.syntax.special },
+    ["@lsp.type.decorator"] = { fg = p.syntax.special },
     ["@lsp.type.deriveHelper"] = { link = "@attribute" },
-    ["@lsp.type.generic"] = { fg = palette.syntax.operator },
-    ["@lsp.type.lifetime"] = { fg = palette.syntax.operator },
+    ["@lsp.type.generic"] = { fg = p.syntax.operator },
+    ["@lsp.type.lifetime"] = { fg = p.syntax.operator },
     ["@lsp.type.macro"] = {},
-    ["@lsp.type.selfKeyword"] = { fg = palette.syntax.keyword },
-    ["@lsp.type.selfTypeKeyword"] = { fg = palette.syntax.keyword },
-    ["@lsp.type.selfTypeParameter"] = { fg = palette.syntax.keyword },
-    ["@lsp.type.unresolvedReference"] = { fg = palette.common.error, undercurl = true },
+    ["@lsp.type.selfKeyword"] = { fg = p.syntax.keyword },
+    ["@lsp.type.selfTypeKeyword"] = { fg = p.syntax.keyword },
+    ["@lsp.type.selfTypeParameter"] = { fg = p.syntax.keyword },
+    ["@lsp.type.unresolvedReference"] = { fg = p.common.error, undercurl = true },
 
     -- Type modifiers (empty tables indicate using default highlighting)
     ["@lsp.typemod.class.defaultLibrary"] = {},

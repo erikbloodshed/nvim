@@ -10,15 +10,15 @@ if vim.fn.exists("syntax_on") then
 end
 
 o.termguicolors = true
-g.colors_name = "ayu-theme"
+g.colors_name = "ayu-mirage"
 
 -- Import palette and highlights
-local palette = require("ayu-theme.palette")
-local highlights = require("ayu-theme.highlights")
+local p = require("themes.ayu-mirage.palette")
+local h = require("themes.ayu-mirage.highlights")
 
 -- Set highlights
-local hl = vim.api.nvim_set_hl
-for group, opts in pairs(highlights.get_highlights(palette)) do
+local hl = api.nvim_set_hl
+for group, opts in pairs(h.get_highlights(p)) do
   hl(0, group, opts)
 end
 

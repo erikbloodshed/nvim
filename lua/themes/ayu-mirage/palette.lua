@@ -1,4 +1,4 @@
-local utils = require("ayu-theme.utils")
+local utils = require("themes.ayu-mirage.utils")
 
 local u = "#1F2430"
 local e = "#242936"
