@@ -19,6 +19,8 @@ for group, opts in pairs(h.get_highlights(p)) do
   hl(0, group, opts)
 end
 
+g.matchparen_disable_cursor_hl = 1
+
 -- Set terminal colors for :terminal
 g.terminal_color_0 = p.terminal.black
 g.terminal_color_1 = p.terminal.red

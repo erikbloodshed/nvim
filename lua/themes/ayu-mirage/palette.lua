@@ -86,7 +86,8 @@ local terminal = {
 
 -- New colors derived from Ayu Mirage JSON but not in original palette
 local extra = {
-  match_paren_bg = "#695380",
+  -- match_paren_bg = "#695380",
+  match_paren_bg = terminal.white,
   match_paren_border = "#5C4672",
   line_number_fg = "#8A9199",
   fold_fg = "#707A8C",
