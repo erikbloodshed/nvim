@@ -73,7 +73,7 @@ function M.get_highlights(p)
     NeoTreeStatusLineNC = { link = "StatusLine" },
     NeoTreeVertSplit = { fg = p.ui.line },
     NeoTreeWinSeparator = { fg = p.ui.line },
-    NeoTreeRootName = { fg = p.syntax.entity, bold = true },
+    NeoTreeRootName = { fg = p.syntax.keyword, bold = true },
     NeoTreeSymbolicLinkTarget = { fg = p.syntax.tag },
     NeoTreeWindowsHidden = { fg = p.syntax.comment },
   }

@@ -19,7 +19,7 @@ local syntax = {
 
 local vcs = {
   added = "#87D96C",
-  modified = "#80BFFF",
+  modified = "#FFCC66",
   removed = "#F27983",
 }
 
@@ -86,18 +86,13 @@ local terminal = {
 
 -- New colors derived from Ayu Mirage JSON but not in original palette
 local extra = {
-  -- match_paren_bg = "#695380",
-  match_paren_bg = terminal.white,
-  match_paren_border = "#5C4672",
   line_number_fg = "#8A9199",
   fold_fg = "#707A8C",
   fold_bg = "#1C212B",
   float_title_fg = "#FFD173",
   pmenu_thumb_bg = "#707A8C",
   pmenu_sbar_bg = "#242936",
-  -- visual_bg = "#409FFF", -- resolved from alpha blend
   visual_bg = ui.selection.active, -- resolved from alpha blend
-  status = utils.with_alpha_blend("#409FFF", 0.15, "#1F2430"),
 }
 
 return {
