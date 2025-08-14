@@ -12,7 +12,7 @@ function M.get_highlights(palette)
     Delimiter = { fg = palette.white0_normal },
     Error = { fg = palette.red.bright },
     Exception = { fg = palette.blue1 },
-    Function = { fg = palette.blue0.base },
+    Function = { fg = palette.blue1, bold = true },
     Identifier = { fg = palette.white0_normal },
     Ignore = { fg = palette.gray5 },
     Include = { fg = palette.blue1 },

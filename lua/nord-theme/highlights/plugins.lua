@@ -4,7 +4,7 @@ local M = {}
 function M.get_highlights(palette)
   return {
     -- Blink.cmp (completion plugin)
-    BlinkCmpMenuBorder = { link = "FloatBorder" },
+    -- BlinkCmpMenuBorder = { link = "FloatBorder" },
     BlinkCmpLabelMatch = { fg = palette.cyan.dim, bold = true },
     BlinkCmpLabelDescription = { fg = palette.gray5 },
     BlinkCmpLabelDetail = { fg = palette.cyan.base },
