@@ -38,7 +38,7 @@ function M.get_highlights(p)
     ["@variable"] = { fg = p.editor.fg },
     ["@variable.builtin"] = { fg = p.syntax.keyword },
     ["@variable.parameter"] = { link = "@parameter" },
-    ["@parameter"] = { fg = p.syntax.operator },
+    ["@parameter"] = { fg = p.syntax.constant },
     ["@parameter.reference"] = { link = "@parameter" },
     ["@field"] = { fg = p.syntax.operator },
     ["@property"] = { fg = p.editor.fg },

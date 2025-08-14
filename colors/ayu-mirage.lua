@@ -3,7 +3,6 @@ local o = vim.o
 local cmd = vim.cmd
 local api = vim.api
 
--- Clear existing highlights and reset syntax
 cmd.highlight("clear")
 if vim.fn.exists("syntax_on") then
   cmd.syntax("reset")
@@ -12,15 +11,31 @@ end
 o.termguicolors = true
 g.colors_name = "ayu-mirage"
 
--- Import palette and highlights
 local p = require("themes.ayu-mirage.palette")
 local h = require("themes.ayu-mirage.highlights")
 
--- Set highlights
 local hl = api.nvim_set_hl
 for group, opts in pairs(h.get_highlights(p)) do
   hl(0, group, opts)
 end
+
+-- Set terminal colors for :terminal
+g.terminal_color_0 = p.terminal.black
+g.terminal_color_1 = p.terminal.red
+g.terminal_color_2 = p.terminal.green
+g.terminal_color_3 = p.terminal.yellow
+g.terminal_color_4 = p.terminal.blue
+g.terminal_color_5 = p.terminal.magenta
+g.terminal_color_6 = p.terminal.cyan
+g.terminal_color_7 = p.terminal.white
+g.terminal_color_8 = p.terminal.bright_black
+g.terminal_color_9 = p.terminal.bright_red
+g.terminal_color_10 = p.terminal.bright_green
+g.terminal_color_11 = p.terminal.bright_yellow
+g.terminal_color_12 = p.terminal.bright_blue
+g.terminal_color_13 = p.terminal.bright_magenta
+g.terminal_color_14 = p.terminal.bright_cyan
+g.terminal_color_15 = p.terminal.bright_white
 
 -- LSP semantic token priority handling
 local key_priorities = {
@@ -44,3 +59,4 @@ api.nvim_create_autocmd("LspTokenUpdate", {
     end
   end,
 })
+
