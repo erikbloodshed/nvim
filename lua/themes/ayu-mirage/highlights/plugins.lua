@@ -62,7 +62,7 @@ function M.get_highlights(p)
 
     -- Neo-tree UI elements
     NeoTreeHiddenByName = { fg = p.syntax.comment },
-    NeoTreeIndentMarker = { fg = p.syntax.entity },
+    NeoTreeIndentMarker = { fg = p.extra.indent_marker },
     NeoTreeExpander = { fg = p.syntax.comment },
     NeoTreeNormal = { link = "Normal" },
     NeoTreeNormalNC = { link = "NormalNC" },

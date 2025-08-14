@@ -29,7 +29,7 @@ local editor = {
   line = "#1A1F29",
   selection = {
     active = utils.with_alpha_blend("#409FFF", 0.25, "#242936"),
-    inactive = utils.with_alpha_blend("#409FFF", 0.13, "#242936"),
+    inactive = utils.with_alpha_blend("#409FFF", 0.05, "#242936"),
   },
   find_match = {
     active = "#695380",
@@ -86,6 +86,7 @@ local terminal = {
 
 -- New colors derived from Ayu Mirage JSON but not in original palette
 local extra = {
+  indent_marker = utils.with_alpha_blend("#409FFF", 0.4, "#242936"),
   line_number_fg = "#8A9199",
   fold_fg = "#707A8C",
   fold_bg = "#1C212B",

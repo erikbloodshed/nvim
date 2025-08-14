@@ -37,7 +37,7 @@ function M.get_highlights(p)
     ["@lsp.typemod.class.defaultLibrary"] = {},
     ["@lsp.typemod.enum.defaultLibrary"] = {},
     ["@lsp.typemod.enumMember.defaultLibrary"] = {},
-    ["@lsp.typemod.function.defaultLibrary"] = {},
+    ["@lsp.typemod.function.defaultLibrary"] = { fg = p.syntax.markup },
     ["@lsp.typemod.keyword.async"] = {},
     ["@lsp.typemod.keyword.injected"] = {},
     ["@lsp.typemod.macro.defaultLibrary"] = {},
