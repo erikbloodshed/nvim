@@ -4,8 +4,7 @@ local autocmd = api.nvim_create_autocmd
 
 autocmd({ "Filetype" }, {
   pattern = { "c", "cpp", "asm", "python", "lua" },
-
-  callback = function (args)
+  callback = function(args)
     local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
 
     if ft == "cpp" or ft == "c" then
@@ -31,20 +30,20 @@ autocmd({ "Filetype" }, {
 
 autocmd({ "Filetype" }, {
   pattern = { "help", "qf" },
-  callback = function (args)
-    keyset("n", "q", function () vim.cmd.bdelete() end, { buffer = args.buf, silent = true, noremap = true })
+  callback = function(args)
+    keyset("n", "q", function() vim.cmd.bdelete() end, { buffer = args.buf, silent = true, noremap = true })
   end,
 })
 
 autocmd({ "VimEnter" }, {
-  callback = function ()
+  callback = function()
     require("custom_ui.statusline")
     require("custom_ui.input")
     require("custom_ui.select")
 
-    keyset('n', "<Right>", function () require("bufferswitch").goto_next_buffer() end,
+    keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
       { noremap = true, silent = true })
-    keyset('n', "<Left>", function () require("bufferswitch").goto_prev_buffer() end,
+    keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
 
     require('termswitch').setup({
@@ -87,7 +86,7 @@ autocmd({ "VimEnter" }, {
 
 autocmd({ "TermOpen" }, {
   pattern = { "*" },
-  callback = function ()
+  callback = function()
     vim.cmd.startinsert()
   end,
 })
