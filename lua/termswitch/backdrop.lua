@@ -31,7 +31,7 @@ function Backdrop:new(id, opts)
     buf = nil,
     win = nil,
     opts = vim.tbl_extend('force', {
-      opacity = 100,
+      opacity = 50,
       zindex = 45,
       color = "#000000"
     }, opts)

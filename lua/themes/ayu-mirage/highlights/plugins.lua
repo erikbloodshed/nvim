@@ -4,7 +4,7 @@ local M = {}
 function M.get_highlights(p)
   return {
     -- Blink.cmp (completion plugin)
-    -- BlinkCmpMenuBorder = { link = "FloatBorder" },
+    BlinkCmpMenuBorder = { link = "FloatBorder" },
     BlinkCmpLabelMatch = { fg = p.syntax.tag, bold = true },
     BlinkCmpLabelDescription = { fg = p.syntax.comment },
     BlinkCmpLabelDetail = { fg = p.syntax.entity },
