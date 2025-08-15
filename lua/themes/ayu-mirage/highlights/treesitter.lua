@@ -27,7 +27,7 @@ function M.get_highlights(p)
 
     -- Functions and methods
     ["@function"] = { link = "Function" },
-    ["@function.builtin"] = { fg = p.syntax.func },
+    ["@function.builtin"] = { fg = p.syntax.markup },
     ["@function.call"] = { fg = p.syntax.func },
     ["@function.macro"] = { fg = p.syntax.func },
     ["@method"] = { link = "Function" },

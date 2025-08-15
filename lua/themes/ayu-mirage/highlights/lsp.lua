@@ -52,6 +52,8 @@ function M.get_highlights(p)
     ["@lsp.typemod.variable.injected"] = {},
     ["@lsp.typemod.variable.static"] = {},
     ["@lsp.typemod.variable.readonly"] = {},
+
+    ["@lsp.mod.builtin"] = { link = "@function.builtin" }
   }
 end
 
