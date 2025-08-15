@@ -2,27 +2,11 @@
 local api = vim.api
 
 local M = {}
-
--- Track backdrop windows globally to avoid conflicts
 local backdrop_instances = {}
 
----@class BackdropOptions
----@field opacity? number Backdrop opacity (0-100, default: 60)
----@field zindex? number Z-index for backdrop (default: 45)
----@field color? string Background color (default: "#000000")
-
----@class Backdrop
----@field buf number Backdrop buffer
----@field win number Backdrop window
----@field opts BackdropOptions
----@field id string Unique identifier
 local Backdrop = {}
 Backdrop.__index = Backdrop
 
---- Creates a new backdrop instance
----@param id string Unique identifier for this backdrop
----@param opts? BackdropOptions Options for backdrop configuration
----@return Backdrop
 function Backdrop:new(id, opts)
   opts = opts or {}
 
@@ -44,23 +28,13 @@ end
 --- Checks if backdrop should be created based on environment
 ---@return boolean
 function Backdrop:should_create()
-  -- Only create backdrop if termguicolors is enabled
-  if not vim.o.termguicolors then
-    return false
-  end
-
   -- Check if Normal highlight has background color
   local normal, has_bg
-  if vim.fn.has("nvim-0.9.0") == 0 then
-    normal = api.nvim_get_hl_by_name("Normal", true)
-    has_bg = normal and normal.background ~= nil
-  else
-    normal = api.nvim_get_hl(0, { name = "Normal" })
-    has_bg = normal and normal.bg ~= nil
-  end
+  normal = api.nvim_get_hl(0, { name = "Normal" })
+  has_bg = normal.bg ~= nil
 
   -- Only create if we have a background and opacity is less than 100
-  return has_bg and self.opts.opacity and self.opts.opacity < 100
+  return has_bg and self.opts.opacity < 100
 end
 
 --- Creates the backdrop window
@@ -137,8 +111,6 @@ function Backdrop:setup_resize_handler()
           height = vim.o.lines,
         })
       else
-        -- Clean up invalid backdrop
-        self:destroy()
         return true -- Remove this autocmd
       end
     end,
@@ -177,12 +149,7 @@ function Backdrop:destroy()
   backdrop_instances[self.id] = nil
 end
 
---- Module functions
-
 --- Creates a backdrop for a terminal
----@param terminal_name string Name of the terminal
----@param opts? BackdropOptions Backdrop options
----@return Backdrop
 function M.create_backdrop(terminal_name, opts)
   local backdrop = Backdrop:new(terminal_name, opts)
   return backdrop
@@ -196,9 +163,6 @@ function M.cleanup_all()
   backdrop_instances = {}
 end
 
---- Gets backdrop instance by terminal name
----@param terminal_name string
----@return Backdrop|nil
 function M.get_backdrop(terminal_name)
   return backdrop_instances[terminal_name]
 end
