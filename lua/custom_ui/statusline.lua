@@ -98,18 +98,18 @@ local config = {
 }
 
 local modes = {
-  n = { " 󰫻 ", "StatusLineNormal" },
-  i = { " 󰫶 ", "StatusLineInsert" },
-  v = { " 󰬃 ", "StatusLineVisual" },
-  V = { " 󰬃 ", "StatusLineVisual" },
-  ["\22"] = { "󰬃 ", "StatusLineVisual" },
-  c = { " 󰫰 ", "StatusLineCommand" },
-  R = { " 󰫿 ", "StatusLineReplace" },
-  r = { " 󰫿 ", "StatusLineReplace" },
-  s = { " 󰬀 ", "StatusLineVisual" },
-  S = { " 󰬀 ", "StatusLineVisual" },
-  ["\19"] = { " 󰬀 ", "StatusLineVisual" },
-  t = { " 󰬁 ", "StatusLineTerminal" },
+  n = { "N", "StatusLineNormal" },
+  i = { "I", "StatusLineInsert" },
+  v = { "V", "StatusLineVisual" },
+  V = { "V", "StatusLineVisual" },
+  ["\22"] = { "V", "StatusLineVisual" },
+  c = { "C", "StatusLineCommand" },
+  R = { "R", "StatusLineReplace" },
+  r = { "R", "StatusLineReplace" },
+  s = { "S", "StatusLineVisual" },
+  S = { "S", "StatusLineVisual" },
+  ["\19"] = { "S", "StatusLineVisual" },
+  t = { "T", "StatusLineTerminal" },
 }
 
 local function hl(name, text)
@@ -217,31 +217,20 @@ C.simple_title = function()
     local bt, ft = vim.bo.buftype, vim.bo.filetype
     local title_map = {
       buftype = {
-        terminal = "terminal",
+        terminal = " terminal",
       },
       filetype = {
-        lazy = "lazy",
-        ["neo-tree"] = "neo-tree",
-        ["neo-tree-popup"] = "Neo-tree",
-        lspinfo = "lsp info",
-        checkhealth = "checkhealth",
-        man = "manual",
-        qf = "quickfix",
-        help = "help",
+        lazy = "󰒲 lazy",
+        ["neo-tree"] = " neo-tree",
+        ["neo-tree-popup"] = " neo-tree",
+        lspinfo = " lsp info",
+        checkhealth = " checkhealth",
+        man = " manual",
+        qf = "󰁨 quickfix",
+        help = "󰞋 help",
       },
     }
 
-    -- Prefer explicit buftype mapping, else filetype mapping
-    -- local title = title_map.buftype[bt]
-    -- if not title or title == "No File" then
-    --   title = title_map.filetype[ft] or title
-    -- end
-    --
-    -- if not title or title == "No File" then
-    --   local name = fn.expand("%:t")
-    --   title = (name ~= "" and name:upper()) or
-    --     string.format("[%s]", (bt ~= "" and bt:upper() or "Buffer"))
-    -- end
     local title = "no file"
 
     if title_map.buftype[bt] then
