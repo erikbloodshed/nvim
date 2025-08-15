@@ -68,7 +68,7 @@ local cache = Cache:new({
 })
 
 local config = {
-  separators = { left = "", right = "", section = "  " },
+  separators = { left = "", right = "", section = "  " },
   throttle_ms = 50,
   icons = {
     modified = "[+]",
@@ -89,18 +89,18 @@ local config = {
 }
 
 local modes = {
-  n = { " NOR ", "StatusLineNormal" },
-  i = { " INS ", "StatusLineInsert" },
-  v = { " VIS ", "StatusLineVisual" },
-  V = { " VLN ", "StatusLineVisual" },
-  ["\22"] = { " VBL ", "StatusLineVisual" },
-  c = { " COM ", "StatusLineCommand" },
-  R = { " REP ", "StatusLineReplace" },
-  r = { " REP ", "StatusLineReplace" },
-  s = { " SEL ", "StatusLineVisual" },
-  S = { " SLN ", "StatusLineVisual" },
-  ["\19"] = { " SBL ", "StatusLineVisual" },
-  t = { " TER ", "StatusLineTerminal" },
+  n = { " 󰫻 ", "StatusLineNormal" },
+  i = { " 󰫶 ", "StatusLineInsert" },
+  v = { " 󰬃 ", "StatusLineVisual" },
+  V = { " 󰬃 ", "StatusLineVisual" },
+  ["\22"] = { "󰬃 ", "StatusLineVisual" },
+  c = { " 󰫰 ", "StatusLineCommand" },
+  R = { " 󰫿 ", "StatusLineReplace" },
+  r = { " 󰫿 ", "StatusLineReplace" },
+  s = { " 󰬀 ", "StatusLineVisual" },
+  S = { " 󰬀 ", "StatusLineVisual" },
+  ["\19"] = { " 󰬀 ", "StatusLineVisual" },
+  t = { " 󰬁 ", "StatusLineTerminal" },
 }
 
 local function hl(name, text)
@@ -179,7 +179,7 @@ local C = {}
 
 C.mode = function()
   return cache:get_or_set("mode", function()
-    local m = modes[(api.nvim_get_mode() or {}).mode] or { "UNKNOWN", "StatusLineNormal" }
+    local m = modes[(api.nvim_get_mode() or {}).mode] or { "  ", "StatusLineNormal" }
     return hl(m[2], m[1])
   end)
 end
@@ -208,36 +208,36 @@ C.simple_title = function()
     local bt, ft = vim.bo.buftype, vim.bo.filetype
     local title_map = {
       buftype = {
-        terminal = "TERMINAL",
-        quickfix = "QUICKFIX",
-        help = "HELP",
-        prompt = "PROMPT",
-        nofile = "NO FILE",
+        terminal = "Terminal",
+        quickfix = "Quickfix",
+        help = "Help",
+        prompt = "Prompt",
+        nofile = "No File",
       },
       filetype = {
         lazy = "LAZY",
-        ["neo-tree"] = "NEO-TREE",
-        lspinfo = "LSP INFO",
-        checkhealth = "HEALTH CHECK",
-        man = "MANUAL",
-        qf = "QUICKFIX",
-        help = "HELP",
+        ["neo-tree"] = "Neo-tree",
+        lspinfo = "LSP Info",
+        checkhealth = "Checkhealth",
+        man = "Manual",
+        qf = "Quickfix",
+        help = "Help",
       },
     }
 
     -- Prefer explicit buftype mapping, else filetype mapping
     local title = title_map.buftype[bt]
-    if not title or title == "NO FILE" then
+    if not title or title == "No File" then
       title = title_map.filetype[ft] or title
     end
 
-    if not title or title == "NO FILE" then
+    if not title or title == "No File" then
       local name = fn.expand("%:t")
       title = (name ~= "" and name:upper()) or
-        string.format("[%s]", (bt ~= "" and bt:upper() or "BUFFER"))
+        string.format("[%s]", (bt ~= "" and bt:upper() or "Buffer"))
     end
 
-    return hl("StatusLineFile", title)
+    return hl("String", title)
   end)
 end
 
@@ -337,10 +337,30 @@ C.percentage = function()
   return cache:get_or_set("percentage", function()
     local cur = api.nvim_win_get_cursor(0)[1]
     local total = api.nvim_buf_line_count(0)
-    local pct = total > 0 and math.floor(cur / total * 100) or 0
-    return hl("StatusLineValue", tostring(pct) .. "%%")
+
+    -- Handle edge cases
+    if total <= 1 then
+      return hl("StatusLineValue", "All")
+    end
+
+    local pct = math.floor((cur - 1) / (total - 1) * 100)
+
+    -- Determine display value
+    local display
+    if pct <= 5 then
+      display = "Top"
+    elseif pct >= 95 then
+      display = "Bot"
+    elseif pct >= 45 and pct <= 55 then
+      display = "Mid"
+    else
+      display = pct .. "%%"
+    end
+
+    return hl("StatusLineValue", display)
   end)
 end
+
 
 local width_for = function(key_or_str)
   if cache.widths[key_or_str] then return cache.widths[key_or_str] end
