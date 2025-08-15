@@ -1,15 +1,15 @@
-local global = vim.g
+local g = vim.g
 local set = vim.o
 local setw = vim.wo
 local opt = vim.opt
 
-global.loaded_node_provider = 0
-global.loaded_perl_provider = 0
-global.loaded_python3_provider = 0
-global.loaded_ruby_provider = 0
+g.loaded_node_provider = 0
+g.loaded_perl_provider = 0
+g.loaded_python3_provider = 0
+g.loaded_ruby_provider = 0
 
 if vim.fn.has("wsl") == 1 then
-  global.clipboard = {
+  g.clipboard = {
     name = "WslClipboard",
     copy = {
       ["+"] = "clip.exe",
@@ -54,5 +54,3 @@ opt.viewoptions:append({ options = true })
 opt.shortmess:append("cC")
 opt.formatoptions:remove({ "c", "r", "o" })
 opt.fillchars:remove("eob:~")
-
--- vim.cmd.colorscheme("ayu-mirage")

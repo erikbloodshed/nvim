@@ -41,7 +41,7 @@ function M.get_highlights(p)
     ["@parameter"] = { fg = p.syntax.constant },
     ["@parameter.reference"] = { link = "@parameter" },
     ["@field"] = { fg = p.syntax.operator },
-    ["@property"] = { fg = p.editor.fg },
+    ["@property"] = { fg = p.syntax.regexp },
 
     -- Keywords and control flow
     ["@keyword"] = { link = "Keyword" },
