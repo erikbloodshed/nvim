@@ -66,7 +66,7 @@ function M.get_highlights(p)
     SpellRare = { fg = p.syntax.entity, undercurl = true, sp = p.syntax.entity },
 
     -- Tabs
-    TabLine = { fg = p.syntax.keyword, bg = p.ui.bg },
+    TabLine = { fg = p.ui.fg, bg = p.editor.bg },
     TabLineFill = { bg = p.ui.bg },
     TabLineSel = { fg = p.ui.bg, bg = p.syntax.keyword},
 

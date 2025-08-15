@@ -5,7 +5,7 @@ local M = {}
 function M.create(user_config)
   -- Default configuration
   local default_config = {
-    hide_timeout = 1500,
+    hide_timeout = 800,
     show_tabline = true,
     next_key = '<Right>',
     prev_key = '<Left>',
