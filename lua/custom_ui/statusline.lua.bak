@@ -68,17 +68,11 @@ local cache = Cache:new({
 })
 
 local config = {
-  separators = { left = "", right = "", section = "  " },
+  separators = { left = "", right = "", section = "  " },
   throttle_ms = 50,
   icons = {
-    modified = "[+]",
-    readonly = "",
-    git = "",
-    lsp = "",
-    error = "",
-    warn = "󱈸",
-    info = "",
-    hint = "",
+    modified = "[+]", readonly = "", git = "", lsp = "",
+    error = "", warn = "󱈸", info = "", hint = "",
   },
   exclude = {
     buftypes = { terminal = true, quickfix = true, help = true, nofile = true, prompt = true, },
@@ -117,64 +111,6 @@ local require_safe = function(mod)
   return loaded[mod]
 end
 
--- File icon cache - keyed by filename to handle different files properly
-local file_icon_cache = {}
-local file_icon_jobs = {}
-
-local function get_file_icon(filename, extension)
-  local cache_key = filename .. "." .. (extension or "")
-
-  -- Return cached icon if available
-  if file_icon_cache[cache_key] then
-    return file_icon_cache[cache_key]
-  end
-
-  -- Prevent duplicate requests
-  if file_icon_jobs[cache_key] then
-    return ""
-  end
-
-  file_icon_jobs[cache_key] = true
-
-  -- Load icon asynchronously
-  vim.defer_fn(function()
-    local devicons = require_safe("nvim-web-devicons")
-    if devicons then
-      -- Ensure setup is called if not already done
-      if not devicons.has_loaded() then
-        devicons.setup {}
-      end
-
-      local icon, hl_group = devicons.get_icon(filename, extension)
-      if icon and icon ~= "" then
-        local colored_icon = icon .. " "
-
-        -- Use the highlight group provided by devicons
-        if hl_group and hl_group ~= "" then
-          colored_icon = hl(hl_group, icon) .. " "
-        end
-
-        file_icon_cache[cache_key] = colored_icon
-      else
-        file_icon_cache[cache_key] = ""
-      end
-      file_icon_jobs[cache_key] = nil
-
-      -- Invalidate file_info cache to trigger refresh
-      cache:invalidate("file_info")
-      local w = api.nvim_get_current_win()
-      if api.nvim_win_is_valid(w) then
-        M.refresh(w)
-      end
-    else
-      file_icon_jobs[cache_key] = nil
-      file_icon_cache[cache_key] = ""
-    end
-  end, 10)
-
-  return ""
-end
-
 local C = {}
 
 C.mode = function()
@@ -189,15 +125,28 @@ C.file_info = function()
     local name = fn.expand("%:t")
     if name == "" then name = "[No Name]" end
 
-    local extension = fn.expand("%:e")
-    local icon = get_file_icon(name, extension)
+    -- start icon loading async if needed
+    if cache.data.file_icon == nil then
+      cache.data.file_icon = ""
+      -- defer to allow initial render
+      vim.defer_fn(function()
+        local devicons = require_safe("nvim-web-devicons")
+        if devicons then
+          local icon = devicons.get_icon(name, fn.expand("%:e"), { default = true }) or ""
+          cache.data.file_icon = (icon ~= "" and (icon .. " ")) or ""
+          cache:invalidate("file_info")
+          local w = api.nvim_get_current_win()
+          if api.nvim_win_is_valid(w) then M.refresh(w) end
+        end
+      end, 10)
+    end
 
     local comps = {}
     if vim.bo.readonly then
       comps[#comps + 1] = hl("StatusLineReadonly", config.icons.readonly .. " ")
     end
     comps[#comps + 1] = hl(vim.bo.modified and "StatusLineModified" or "StatusLineFile",
-      icon .. name)
+      (cache.data.file_icon or "") .. name)
     if vim.bo.modified then comps[#comps + 1] = hl("StatusLineModified", " " .. config.icons.modified) end
     return table.concat(comps, "")
   end)
@@ -371,10 +320,7 @@ local main_expr = '%!v:lua.require("custom_ui.statusline").statusline()'
 local simple_expr = '%!v:lua.require("custom_ui.statusline").simple_statusline()'
 
 local set_statusline_for_win = function(win)
-  if should_hide_completely(win) then
-    api.nvim_set_option_value("statusline", "", { win = win })
-    return
-  end
+  if should_hide_completely(win) then api.nvim_set_option_value("statusline", "", { win = win }) return end
   if is_excluded_buftype(win) then
     api.nvim_set_option_value("statusline", simple_expr, { win = win })
   else
