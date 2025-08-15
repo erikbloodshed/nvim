@@ -1,6 +1,7 @@
 local api = vim.api
 local config = require('termswitch.config')
 local utils = require('termswitch.utils')
+local backdrop = require('termswitch.backdrop')
 
 local Terminal = {}
 Terminal.__index = Terminal
@@ -18,10 +19,11 @@ function Terminal:new(name, user_config)
     config = merged_config,
     buf = nil,
     win = nil,
-    _autocmd_group = nil,     -- Single group instead of multiple
-    _buf_valid = false,       -- Cache buffer validity
-    _is_terminal = false,     -- Cache terminal state
-    _job_id = nil,            -- Cache job ID
+    backdrop_instance = nil, -- Backdrop instance for this terminal
+    _autocmd_group = nil,    -- Single group instead of multiple
+    _buf_valid = false,      -- Cache buffer validity
+    _is_terminal = false,    -- Cache terminal state
+    _job_id = nil,           -- Cache job ID
   }
   setmetatable(obj, self)
   return obj
@@ -42,13 +44,14 @@ function Terminal:get_float_config()
     border = self.config.border,
     title = self.config.title,
     title_pos = 'center',
+    zindex = self.config.backdrop.enabled and 50 or nil, -- Higher z-index when backdrop is enabled
   }
 end
 
 function Terminal:ensure_buffer()
   -- Use cached state first, but also verify the buffer still exists
   if self._buf_valid and self.buf and api.nvim_buf_is_valid(self.buf) then
-    return     -- Buffer exists and is valid
+    return -- Buffer exists and is valid
   end
 
   -- Buffer is invalid or doesn't exist, create new one
@@ -58,8 +61,8 @@ function Terminal:ensure_buffer()
   end
 
   self._buf_valid = true
-  self._is_terminal = false   -- Reset terminal state for new buffer
-  self._job_id = nil          -- Reset job ID for new buffer
+  self._is_terminal = false -- Reset terminal state for new buffer
+  self._job_id = nil        -- Reset job ID for new buffer
 
   utils.set_buf_options(self.buf, {
     buflisted = false,
@@ -80,6 +83,31 @@ function Terminal:setup_window_options()
   })
 end
 
+function Terminal:create_backdrop()
+  if not self.config.backdrop.enabled then
+    return
+  end
+
+  -- Create backdrop instance if it doesn't exist
+  if not self.backdrop_instance then
+    self.backdrop_instance = backdrop.create_backdrop(self.name, {
+      opacity = self.config.backdrop.opacity,
+      color = self.config.backdrop.color,
+      zindex = 45, -- Lower than terminal window
+    })
+  end
+
+  -- Create the backdrop
+  self.backdrop_instance:create()
+end
+
+function Terminal:destroy_backdrop()
+  if self.backdrop_instance then
+    self.backdrop_instance:destroy()
+    self.backdrop_instance = nil
+  end
+end
+
 function Terminal:start_process()
   -- Check if terminal process is already running
   if self:is_terminal_buffer() then return end
@@ -88,14 +116,14 @@ function Terminal:start_process()
   api.nvim_set_current_buf(self.buf)
 
   local cmd = self.config.shell and
-      string.format("terminal %s", vim.fn.shellescape(self.config.shell)) or
-      'terminal'
+    string.format("terminal %s", vim.fn.shellescape(self.config.shell)) or
+    'terminal'
 
   vim.cmd(cmd)
   self.buf = api.nvim_get_current_buf()
-  self._is_terminal = true   -- Mark as terminal buffer
+  self._is_terminal = true -- Mark as terminal buffer
   self._buf_valid = true
-  self._job_id = nil         -- Reset job ID cache
+  self._job_id = nil       -- Reset job ID cache
 
   -- Set buffer options after terminal creation
   utils.set_buf_options(self.buf, {
@@ -149,6 +177,8 @@ function Terminal:setup_window_close_handler()
     pattern = tostring(self.win),
     callback = function()
       self.win = nil
+      -- Destroy backdrop when window closes
+      self:destroy_backdrop()
     end,
     once = true,
   })
@@ -192,6 +222,9 @@ function Terminal:open()
     -- Window exists, just focus it
     api.nvim_set_current_win(self.win)
   else
+    -- Create backdrop first (if enabled)
+    self:create_backdrop()
+
     -- Create new window
     self.win = api.nvim_open_win(self.buf, true, self:get_float_config())
     self:setup_window_options()
@@ -210,6 +243,9 @@ function Terminal:hide()
 
   api.nvim_win_close(self.win, false)
   self.win = nil
+
+  -- Destroy backdrop when hiding
+  self:destroy_backdrop()
 end
 
 function Terminal:focus()
@@ -276,6 +312,9 @@ end
 
 function Terminal:cleanup()
   self:hide()
+
+  -- Clean up backdrop
+  self:destroy_backdrop()
 
   -- Single autocmd group cleanup
   if self._autocmd_group then

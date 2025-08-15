@@ -16,6 +16,12 @@ M.DEFAULT_CONFIG = {
   shell = nil,
   filetype = 'terminal',
   auto_delete_on_close = false,
+  -- Backdrop configuration
+  backdrop = {
+    enabled = true,   -- Enable/disable backdrop
+    opacity = 60,      -- Backdrop opacity (0-100)
+    color = "#000000", -- Backdrop color
+  }
 }
 
 function M.validate_config(cfg)
@@ -35,6 +41,24 @@ function M.validate_config(cfg)
     vim.notify(string.format("TermSwitch: Invalid 'border' style '%s'. Using 'rounded'.", validated.border),
       vim.log.levels.WARN)
     validated.border = M.DEFAULT_CONFIG.border
+  end
+
+  -- Validate backdrop configuration
+  if validated.backdrop then
+    if validated.backdrop.opacity and
+      (type(validated.backdrop.opacity) ~= 'number' or
+        validated.backdrop.opacity < 0 or validated.backdrop.opacity > 100) then
+      vim.notify("TermSwitch: 'backdrop.opacity' must be between 0 and 100. Using default.", vim.log.levels.WARN)
+      validated.backdrop.opacity = M.DEFAULT_CONFIG.backdrop.opacity
+    end
+
+    if validated.backdrop.color and type(validated.backdrop.color) ~= 'string' then
+      vim.notify("TermSwitch: 'backdrop.color' must be a string. Using default.", vim.log.levels.WARN)
+      validated.backdrop.color = M.DEFAULT_CONFIG.backdrop.color
+    end
+  else
+    -- Ensure backdrop config exists
+    validated.backdrop = vim.deepcopy(M.DEFAULT_CONFIG.backdrop)
   end
 
   return validated
