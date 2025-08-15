@@ -24,6 +24,7 @@ function Terminal:new(name, user_config)
     _buf_valid = false,      -- Cache buffer validity
     _is_terminal = false,    -- Cache terminal state
     _job_id = nil,           -- Cache job ID
+    _resize_autocmd = nil,   -- Track resize autocmd
   }
   setmetatable(obj, self)
   return obj
@@ -46,6 +47,62 @@ function Terminal:get_float_config()
     title_pos = 'center',
     zindex = self.config.backdrop.enabled and 50 or nil, -- Higher z-index when backdrop is enabled
   }
+end
+
+function Terminal:setup_auto_resize()
+  if not self:is_valid_window() then
+    return
+  end
+
+  -- Clear any existing resize handler
+  self:clear_auto_resize()
+
+  -- Create autocmd for window resizing
+  self._resize_autocmd = api.nvim_create_autocmd("VimResized", {
+    callback = function()
+      if not self:is_valid_window() then
+        -- Window is no longer valid, clean up this autocmd
+        self:clear_auto_resize()
+        return true -- Remove this autocmd
+      end
+
+      -- Get new float config with updated dimensions
+      local new_config = self:get_float_config()
+
+      -- Update window configuration
+      local config_to_set = {
+        relative = new_config.relative,
+        width = new_config.width,
+        height = new_config.height,
+        col = new_config.col,
+        row = new_config.row,
+      }
+
+      -- Only include style if it's not empty (to avoid clearing existing style)
+      if new_config.style and new_config.style ~= "" then
+        config_to_set.style = new_config.style
+      end
+
+      -- Set the new window configuration
+      pcall(api.nvim_win_set_config, self.win, config_to_set)
+
+      -- Trigger a user event that other plugins can listen to
+      vim.api.nvim_exec_autocmds("User", {
+        pattern = "TermSwitchResized",
+        modeline = false,
+        data = { terminal_name = self.name, win = self.win }
+      })
+    end,
+    desc = "Auto-resize TermSwitch terminal " .. self.name,
+    group = self:_ensure_autocmd_group()
+  })
+end
+
+function Terminal:clear_auto_resize()
+  if self._resize_autocmd then
+    pcall(api.nvim_del_autocmd, self._resize_autocmd)
+    self._resize_autocmd = nil
+  end
 end
 
 function Terminal:ensure_buffer()
@@ -177,6 +234,8 @@ function Terminal:setup_window_close_handler()
     pattern = tostring(self.win),
     callback = function()
       self.win = nil
+      -- Clear auto-resize when window closes
+      self:clear_auto_resize()
       -- Destroy backdrop when window closes
       self:destroy_backdrop()
     end,
@@ -229,6 +288,9 @@ function Terminal:open()
     self.win = api.nvim_open_win(self.buf, true, self:get_float_config())
     self:setup_window_options()
     self:setup_window_close_handler()
+
+    -- Setup auto-resize after window is created
+    self:setup_auto_resize()
   end
 
   -- Start terminal process if needed
@@ -240,6 +302,9 @@ end
 
 function Terminal:hide()
   if not self:is_valid_window() then return end
+
+  -- Clear auto-resize before closing window
+  self:clear_auto_resize()
 
   api.nvim_win_close(self.win, false)
   self.win = nil
@@ -312,6 +377,9 @@ end
 
 function Terminal:cleanup()
   self:hide()
+
+  -- Clear auto-resize
+  self:clear_auto_resize()
 
   -- Clean up backdrop
   self:destroy_backdrop()
