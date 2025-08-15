@@ -19,7 +19,7 @@ M.DEFAULT_CONFIG = {
   -- Backdrop configuration
   backdrop = {
     enabled = true,   -- Enable/disable backdrop
-    opacity = 65,      -- Backdrop opacity (0-100)
+    opacity = 80,      -- Backdrop opacity (0-100)
     color = "#000000", -- Backdrop color
   }
 }

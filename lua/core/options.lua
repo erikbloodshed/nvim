@@ -47,7 +47,7 @@ set.smarttab = false
 set.softtabstop = 4
 set.tabstop = 4
 set.wrap = false
-set.laststatus = 3
+set.laststatus = 2
 set.showmode = false
 
 opt.viewoptions:append({ options = true })

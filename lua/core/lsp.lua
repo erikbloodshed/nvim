@@ -4,8 +4,7 @@ local diagnostic = vim.diagnostic
 local keyset = vim.keymap.set
 local autocmd = api.nvim_create_autocmd
 
--- lsp.enable({ "basedpyright", "clangd", "luals", "ruff" })
-lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
+lsp.enable({ "basedpyright", "clangd", "luals", "ruff" })
 
 autocmd("LspAttach", {
   callback = function(args)
