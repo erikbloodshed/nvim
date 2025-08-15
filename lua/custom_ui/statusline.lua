@@ -2,56 +2,73 @@ local api, fn, loop = vim.api, vim.fn, vim.loop
 local M = {}
 
 local Cache = {}
-Cache.__index = Cache
 
-function Cache:new(ttl_map)
-  return setmetatable({ data = {}, ts = {}, widths = {}, ttl = ttl_map or {}, }, self)
+-- Create a new cache table with the given TTL map
+function Cache.new(ttl_map)
+  return {
+    data = {},
+    ts = {},
+    widths = {},
+    ttl = ttl_map or {},
+  }
 end
 
-function Cache:now_ms()
+-- Get current time in milliseconds
+function Cache.now_ms()
   return loop.hrtime() / 1e6
 end
 
-function Cache:valid(key)
-  local v = self.data[key]
+-- Check if a cache entry is valid
+function Cache.valid(cache, key)
+  local v = cache.data[key]
   if v == nil then
     return false
   end
-  local created = self.ts[key]
+  local created = cache.ts[key]
   if not created then
     return false
   end
-  local ttl = self.ttl[key] or 1000
-  return (self:now_ms() - created) < ttl
+  local ttl = cache.ttl[key] or 1000
+  return (Cache.now_ms() - created) < ttl
 end
 
-function Cache:update(key, value)
-  self.data[key] = value
-  self.ts[key] = self:now_ms()
-
+-- Update a cache entry
+function Cache.update(cache, key, value)
+  cache.data[key] = value
+  cache.ts[key] = Cache.now_ms()
   if type(value) == "string" then
     local plain = value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
-    self.widths[key] = fn.strdisplaywidth(plain)
+    cache.widths[key] = fn.strdisplaywidth(plain)
   else
-    self.widths[key] = nil
+    cache.widths[key] = nil
   end
 end
 
-function Cache:get_or_set(key, fnc)
-  if self:valid(key) then return self.data[key] end
+-- Get or set a cache entry
+function Cache.get_or_set(cache, key, fnc)
+  if Cache.valid(cache, key) then
+    return cache.data[key]
+  end
   local ok, v = pcall(fnc)
-  if not ok then v = "" end
-  self:update(key, v)
+  if not ok then
+    v = ""
+  end
+  Cache.update(cache, key, v)
   return v
 end
 
-function Cache:invalidate(keys)
-  if not keys then return end
-  if type(keys) == "string" then keys = { keys } end
+-- Invalidate cache entries
+function Cache.invalidate(cache, keys)
+  if not keys then
+    return
+  end
+  if type(keys) == "string" then
+    keys = { keys }
+  end
   for _, k in ipairs(keys) do
-    self.data[k] = nil
-    self.ts[k] = nil
-    self.widths[k] = nil
+    cache.data[k] = nil
+    cache.ts[k] = nil
+    cache.widths[k] = nil
   end
 end
 
@@ -65,17 +82,27 @@ local window_file_icon_jobs = {}
 -- Get or create cache for a specific window
 local function get_window_cache(winid)
   if not window_caches[winid] then
-    window_caches[winid] = Cache:new({
-      mode = 50,
-      file_info = 200,
-      position = 100,
-      percentage = 100,
-      git_branch = 60000,
-      diagnostics = 500,
-      lsp_status = 2000,
-      encoding = 120000,
-      simple_title = 3000,
-    })
+    local bt = api.nvim_get_option_value("buftype", { buf = api.nvim_win_get_buf(winid) })
+    if bt == "popup" then
+      -- Lightweight cache for transient windows (e.g., popups)
+      window_caches[winid] = Cache.new({
+        mode = 50,
+        simple_title = 3000,
+      })
+    else
+      -- Full cache for regular windows
+      window_caches[winid] = Cache.new({
+        mode = 50,
+        file_info = 200,
+        position = 100,
+        percentage = 100,
+        git_branch = 60000,
+        diagnostics = 500,
+        lsp_status = 2000,
+        encoding = 120000,
+        simple_title = 3000,
+      })
+    end
   end
   return window_caches[winid]
 end
@@ -139,7 +166,7 @@ local function hl(name, text)
 end
 
 local loaded = {}
-local require_safe = function(mod)
+local function require_safe(mod)
   if loaded[mod] ~= nil then
     return loaded[mod]
   end
@@ -159,23 +186,19 @@ local function get_file_icon(winid, filename, extension)
 
   local cache_key = filename .. "." .. (extension or "")
 
-  -- Return cached icon if available
   if window_file_icon_cache[winid][cache_key] then
     return window_file_icon_cache[winid][cache_key]
   end
 
-  -- Prevent duplicate requests
   if window_file_icon_jobs[winid][cache_key] then
     return ""
   end
 
   window_file_icon_jobs[winid][cache_key] = true
 
-  -- Load icon asynchronously
   vim.defer_fn(function()
     local devicons = require_safe("nvim-web-devicons")
     if devicons then
-      -- Ensure setup is called if not already done
       if not devicons.has_loaded() then
         devicons.setup {}
       end
@@ -183,21 +206,17 @@ local function get_file_icon(winid, filename, extension)
       local icon, hl_group = devicons.get_icon(filename, extension)
       if icon and icon ~= "" then
         local colored_icon = icon .. " "
-
-        -- Use the highlight group provided by devicons
         if hl_group and hl_group ~= "" then
           colored_icon = hl(hl_group, icon) .. " "
         end
-
         window_file_icon_cache[winid][cache_key] = colored_icon
       else
         window_file_icon_cache[winid][cache_key] = ""
       end
       window_file_icon_jobs[winid][cache_key] = nil
 
-      -- Invalidate file_info cache for this window only
       local cache = get_window_cache(winid)
-      cache:invalidate("file_info")
+      Cache.invalidate(cache, "file_info")
       if api.nvim_win_is_valid(winid) then
         M.refresh_window(winid)
       end
@@ -237,7 +256,7 @@ local function fetch_git_branch(winid, root)
     window_git_cache[winid][root] = branch ~= "" and hl("StatusLineGit", config.icons.git .. " " .. branch) or ""
 
     local cache = get_window_cache(winid)
-    cache:invalidate("git_branch")
+    Cache.invalidate(cache, "git_branch")
     if api.nvim_win_is_valid(winid) then
       M.refresh_window(winid)
     end
@@ -256,14 +275,14 @@ local function create_components(winid, bufnr)
   local C = {}
 
   C.mode = function()
-    return cache:get_or_set("mode", function()
+    return Cache.get_or_set(cache, "mode", function()
       local m = modes[(api.nvim_get_mode() or {}).mode] or { " ? ", "StatusLineNormal" }
       return hl(m[2], m[1])
     end)
   end
 
   C.file_info = function()
-    return cache:get_or_set("file_info", function()
+    return Cache.get_or_set(cache, "file_info", function()
       local name = api.nvim_buf_get_name(bufnr)
       name = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
 
@@ -287,12 +306,13 @@ local function create_components(winid, bufnr)
   end
 
   C.simple_title = function()
-    return cache:get_or_set("simple_title", function()
+    return Cache.get_or_set(cache, "simple_title", function()
       local bt = api.nvim_get_option_value("buftype", { buf = bufnr })
       local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
       local title_map = {
         buftype = {
           terminal = "🖥 terminal",
+          popup = "📜 popup", -- Added for popup windows
         },
         filetype = {
           lazy = "💤 lazy",
@@ -319,7 +339,7 @@ local function create_components(winid, bufnr)
   end
 
   C.git_branch = function()
-    return cache:get_or_set("git_branch", function()
+    return Cache.get_or_set(cache, "git_branch", function()
       local buf_name = api.nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
@@ -343,7 +363,6 @@ local function create_components(winid, bufnr)
       end
 
       if not window_git_jobs[winid][root] then
-        -- schedule fetch (non-blocking)
         vim.defer_fn(function() fetch_git_branch(winid, root) end, 20)
       end
       return ""
@@ -351,7 +370,7 @@ local function create_components(winid, bufnr)
   end
 
   C.diagnostics = function()
-    return cache:get_or_set("diagnostics", function()
+    return Cache.get_or_set(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
       local s = vim.diagnostic.severity
       local sev_map = {
@@ -370,7 +389,7 @@ local function create_components(winid, bufnr)
   end
 
   C.lsp_status = function()
-    return cache:get_or_set("lsp_status", function()
+    return Cache.get_or_set(cache, "lsp_status", function()
       local clients = vim.lsp.get_clients({ bufnr = bufnr })
       if not clients or #clients == 0 then return "" end
       local names = {}
@@ -380,7 +399,7 @@ local function create_components(winid, bufnr)
   end
 
   C.position = function()
-    return cache:get_or_set("position", function()
+    return Cache.get_or_set(cache, "position", function()
       if not api.nvim_win_is_valid(winid) then return "" end
       local pos = api.nvim_win_get_cursor(winid)
       return table.concat({
@@ -393,19 +412,17 @@ local function create_components(winid, bufnr)
   end
 
   C.percentage = function()
-    return cache:get_or_set("percentage", function()
+    return Cache.get_or_set(cache, "percentage", function()
       if not api.nvim_win_is_valid(winid) then return "" end
       local cur = api.nvim_win_get_cursor(winid)[1]
       local total = api.nvim_buf_line_count(bufnr)
 
-      -- Handle edge cases
       if total <= 1 then
         return hl("StatusLineValue", "All")
       end
 
       local pct = math.floor((cur - 1) / (total - 1) * 100)
 
-      -- Determine display value
       local display
       if pct <= 5 then
         display = "Top"
@@ -424,7 +441,7 @@ local function create_components(winid, bufnr)
   return C
 end
 
-local width_for = function(cache, key_or_str)
+local function width_for(cache, key_or_str)
   if cache.widths[key_or_str] then return cache.widths[key_or_str] end
   if type(key_or_str) == "string" then
     local plain = key_or_str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
@@ -433,7 +450,7 @@ local width_for = function(cache, key_or_str)
   return 0
 end
 
-local is_excluded_buftype = function(win)
+local function is_excluded_buftype(win)
   if not api.nvim_win_is_valid(win) then return false end
   local buf = api.nvim_win_get_buf(win)
   local bt = api.nvim_get_option_value("buftype", { buf = buf })
@@ -441,7 +458,6 @@ local is_excluded_buftype = function(win)
   return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
 end
 
--- Window-specific refresh function
 M.refresh_window = function(winid)
   if not api.nvim_win_is_valid(winid) then
     cleanup_window_cache(winid)
@@ -464,7 +480,6 @@ M.refresh_window = function(winid)
   end
 end
 
--- Refresh all windows (fallback)
 M.refresh = function(win)
   if win then
     M.refresh_window(win)
@@ -475,7 +490,6 @@ M.refresh = function(win)
   end
 end
 
--- Window-specific statusline builders
 M.simple_statusline_for_window = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
   local bufnr = api.nvim_win_get_buf(winid)
@@ -491,13 +505,11 @@ M.statusline_for_window = function(winid)
   local cache = get_window_cache(winid)
   local C = create_components(winid, bufnr)
 
-  -- left: mode + git
   local left_segments = { C.mode() }
   local git_branch = C.git_branch()
   if git_branch ~= "" then left_segments[#left_segments + 1] = git_branch end
   local left = table.concat(left_segments, " ")
 
-  -- right components
   local right_list = {}
   local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
   push(C.diagnostics())
@@ -520,7 +532,6 @@ M.statusline_for_window = function(winid)
   return left .. " " .. center .. "%=" .. right
 end
 
--- Legacy functions for compatibility
 M.simple_statusline = function()
   local winid = api.nvim_get_current_win()
   return M.simple_statusline_for_window(winid)
@@ -531,7 +542,6 @@ M.statusline = function()
   return M.statusline_for_window(winid)
 end
 
--- Throttled cursor update per window
 local last_cursor_update = {}
 local function cursor_update()
   local winid = api.nvim_get_current_win()
@@ -541,7 +551,7 @@ local function cursor_update()
   if now - last > config.throttle_ms then
     last_cursor_update[winid] = now
     local cache = get_window_cache(winid)
-    cache:invalidate({ "position", "percentage" })
+    Cache.invalidate(cache, { "position", "percentage" })
     vim.schedule(function()
       if api.nvim_win_is_valid(winid) then
         M.refresh_window(winid)
@@ -558,7 +568,7 @@ M.init = function()
     callback = function()
       local winid = api.nvim_get_current_win()
       local cache = get_window_cache(winid)
-      cache:invalidate("mode")
+      Cache.invalidate(cache, "mode")
       M.refresh_window(winid)
     end
   })
@@ -566,10 +576,9 @@ M.init = function()
   api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
     group = group,
     callback = function()
-      -- Clear git cache for all windows
       window_git_cache = {}
       for winid, cache in pairs(window_caches) do
-        cache:invalidate("git_branch")
+        Cache.invalidate(cache, "git_branch")
         if api.nvim_win_is_valid(winid) then
           M.refresh_window(winid)
         end
@@ -582,7 +591,7 @@ M.init = function()
     callback = function()
       local winid = api.nvim_get_current_win()
       local cache = get_window_cache(winid)
-      cache:invalidate({ "git_branch", "file_info", "lsp_status", "diagnostics", "simple_title" })
+      Cache.invalidate(cache, { "git_branch", "file_info", "lsp_status", "diagnostics", "simple_title" })
       M.refresh_window(winid)
     end
   })
@@ -590,12 +599,11 @@ M.init = function()
   api.nvim_create_autocmd("DiagnosticChanged", {
     group = group,
     callback = function(ev)
-      -- Find windows displaying this buffer and update only those
       local buf = ev.buf
       for _, winid in ipairs(api.nvim_list_wins()) do
         if api.nvim_win_get_buf(winid) == buf then
           local cache = get_window_cache(winid)
-          cache:invalidate("diagnostics")
+          Cache.invalidate(cache, "diagnostics")
           M.refresh_window(winid)
         end
       end
@@ -611,11 +619,10 @@ M.init = function()
     group = group,
     callback = function(ev)
       local buf = ev.buf
-      -- Update all windows showing this buffer
       for _, winid in ipairs(api.nvim_list_wins()) do
         if api.nvim_win_get_buf(winid) == buf then
           local cache = get_window_cache(winid)
-          cache:invalidate("lsp_status")
+          Cache.invalidate(cache, "lsp_status")
           M.refresh_window(winid)
         end
       end
@@ -643,7 +650,6 @@ M.init = function()
       local winid = tonumber(ev.match)
       if winid then
         cleanup_window_cache(winid)
-        -- Clean up cursor update tracking
         last_cursor_update[winid] = nil
       end
     end
