@@ -85,7 +85,8 @@ local terminal = {
 
 -- New colors derived from Ayu Mirage JSON but not in original palette
 local extra = {
-  border = utils.with_alpha_blend("#409FFF", 0.6, "#242936"),
+  border1 = utils.with_alpha_blend("#409FFF", 0.6, "#242936"),
+  border2 = utils.with_alpha_blend("#FFAD66", 0.8, "#242936"),
   line_number_fg = "#8A9199",
   fold_fg = "#707A8C",
   fold_bg = "#1C212B",

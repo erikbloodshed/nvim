@@ -34,7 +34,7 @@ function M.get_highlights(p)
     Directory = { fg = p.syntax.entity, bold = true },
     EndOfBuffer = { fg = p.editor.bg },
     ErrorMsg = { fg = p.common.error },
-    FloatBorder = { fg = p.extra.border, bg = p.ui.bg },
+    FloatBorder = { fg = p.extra.border2, bg = p.ui.bg },
     FloatTitle = { fg = p.syntax.keyword, bg = p.ui.bg, bold = true },
     FoldColumn = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
     Folded = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
@@ -66,9 +66,9 @@ function M.get_highlights(p)
     SpellRare = { fg = p.syntax.entity, undercurl = true, sp = p.syntax.entity },
 
     -- Tabs
-    TabLine = { fg = p.ui.fg, bg = p.ui.bg },
+    TabLine = { fg = p.syntax.keyword, bg = p.ui.bg },
     TabLineFill = { bg = p.ui.bg },
-    TabLineSel = { fg = p.editor.fg, bg = p.ui.panel.bg },
+    TabLineSel = { fg = p.ui.bg, bg = p.syntax.keyword},
 
     -- Miscellaneous
     Title = { fg = p.syntax.keyword, bold = true },
