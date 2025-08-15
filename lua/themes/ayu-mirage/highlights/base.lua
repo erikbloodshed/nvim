@@ -34,8 +34,8 @@ function M.get_highlights(p)
     Directory = { fg = p.syntax.entity, bold = true },
     EndOfBuffer = { fg = p.editor.bg },
     ErrorMsg = { fg = p.common.error },
-    FloatBorder = { fg = p.syntax.entity, bg = p.ui.panel.bg },
-    FloatTitle = { fg = p.extra.float_title_fg, bold = true },
+    FloatBorder = { fg = p.extra.border, bg = p.ui.bg },
+    FloatTitle = { fg = p.syntax.keyword, bg = p.ui.bg, bold = true },
     FoldColumn = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
     Folded = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
     IncSearch = { fg = p.editor.bg, bg = p.syntax.operator },
@@ -45,7 +45,7 @@ function M.get_highlights(p)
     MoreMsg = { fg = p.syntax.string },
     NonText = { fg = p.syntax.comment },
     Normal = { fg = p.editor.fg, bg = p.editor.bg },
-    NormalFloat = { fg = p.editor.fg, bg = p.ui.panel.bg },
+    NormalFloat = { fg = p.editor.fg, bg = p.ui.bg },
     NormalNC = { link = "Normal" },
 
     -- Popup menu
@@ -71,7 +71,7 @@ function M.get_highlights(p)
     TabLineSel = { fg = p.editor.fg, bg = p.ui.panel.bg },
 
     -- Miscellaneous
-    Title = { fg = p.extra.float_title_fg, bold = true },
+    Title = { fg = p.syntax.keyword, bold = true },
     VertSplit = { fg = p.ui.line },
     Visual = { bg = p.editor.selection.active },
     VisualNOS = { bg = p.editor.selection.inactive },
@@ -129,22 +129,22 @@ function M.get_highlights(p)
     GitSignsDelete = { fg = p.vcs.removed },
 
     -- Terminal colors (for :terminal)
-    -- Terminal0 = { fg = p.terminal.black },
-    -- Terminal1 = { fg = p.terminal.red },
-    -- Terminal2 = { fg = p.terminal.green },
-    -- Terminal3 = { fg = p.terminal.yellow },
-    -- Terminal4 = { fg = p.terminal.blue },
-    -- Terminal5 = { fg = p.terminal.magenta },
-    -- Terminal6 = { fg = p.terminal.cyan },
-    -- Terminal7 = { fg = p.terminal.white },
-    -- Terminal8 = { fg = p.terminal.bright_black },
-    -- Terminal9 = { fg = p.terminal.bright_red },
-    -- Terminal10 = { fg = p.terminal.bright_green },
-    -- Terminal11 = { fg = p.terminal.bright_yellow },
-    -- Terminal12 = { fg = p.terminal.bright_blue },
-    -- Terminal13 = { fg = p.terminal.bright_magenta },
-    -- Terminal14 = { fg = p.terminal.bright_cyan },
-    -- Terminal15 = { fg = p.terminal.bright_white },
+    Terminal0 = { fg = p.terminal.black },
+    Terminal1 = { fg = p.terminal.red },
+    Terminal2 = { fg = p.terminal.green },
+    Terminal3 = { fg = p.terminal.yellow },
+    Terminal4 = { fg = p.terminal.blue },
+    Terminal5 = { fg = p.terminal.magenta },
+    Terminal6 = { fg = p.terminal.cyan },
+    Terminal7 = { fg = p.terminal.white },
+    Terminal8 = { fg = p.terminal.bright_black },
+    Terminal9 = { fg = p.terminal.bright_red },
+    Terminal10 = { fg = p.terminal.bright_green },
+    Terminal11 = { fg = p.terminal.bright_yellow },
+    Terminal12 = { fg = p.terminal.bright_blue },
+    Terminal13 = { fg = p.terminal.bright_magenta },
+    Terminal14 = { fg = p.terminal.bright_cyan },
+    Terminal15 = { fg = p.terminal.bright_white },
   }
 end
 

@@ -64,29 +64,28 @@ local common = {
   error = "#FF6666",
 }
 
--- Terminal colors for :terminal
 local terminal = {
-  black = "#212733",
-  red = "#FF3333",
-  green = "#B8CC52",
-  yellow = "#FFCC66",
-  blue = "#8FCDF1",
-  magenta = "#D484FF",
-  cyan = "#90E0FF",
-  white = "#D0D0D0",        -- Default text - made brighter
-  bright_black = "#5C6370", -- Made brighter than comment color
-  bright_red = "#FF6666",
-  bright_green = "#CCFF66",
-  bright_yellow = "#FFDD66",
-  bright_blue = "#409FFF", -- Made brighter for directories
-  bright_magenta = "#E066FF",
-  bright_cyan = "#66FFFF",
-  bright_white = "#FFFFFF", -- Made very bright for high contrast
+  black = "#171B24",
+  red = "#ED8274",
+  green = "#87D96C",
+  yellow = "#FACC6E",
+  blue = "#6DCBFA",
+  magenta = "#DABAFA",
+  cyan = "#90E1C6",
+  white = "#C7C7C7",
+  bright_black = "#686868",
+  bright_red = "#F28779",
+  bright_green = "#D5FF80",
+  bright_yellow = "#FFD173",
+  bright_blue = "#73D0FF",
+  bright_magenta = "#DFBFFF",
+  bright_cyan = "#95E6CB",
+  bright_white = "#FFFFFF",
 }
 
 -- New colors derived from Ayu Mirage JSON but not in original palette
 local extra = {
-  indent_marker = utils.with_alpha_blend("#409FFF", 0.4, "#242936"),
+  border = utils.with_alpha_blend("#409FFF", 0.5, "#242936"),
   line_number_fg = "#8A9199",
   fold_fg = "#707A8C",
   fold_bg = "#1C212B",
