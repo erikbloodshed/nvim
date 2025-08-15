@@ -81,10 +81,19 @@ local config = {
     hint = "",
   },
   exclude = {
-    buftypes = { terminal = true, quickfix = true, help = true, nofile = true, prompt = true, },
-    filetypes = { ["neo-tree"] = true, lazy = true, lspinfo = true, checkhealth = true, help = true, man = true, qf = true, },
-    floating_windows = false,
-    small_windows = { min_height = 3, min_width = 20 },
+    buftypes = {
+      terminal = true,
+      prompt = true
+    },
+    filetypes = {
+      ["neo-tree"] = true,
+      lazy = true,
+      lspinfo = true,
+      checkhealth = true,
+      help = true,
+      man = true,
+      qf = true,
+    },
   },
 }
 
@@ -208,33 +217,37 @@ C.simple_title = function()
     local bt, ft = vim.bo.buftype, vim.bo.filetype
     local title_map = {
       buftype = {
-        terminal = "Terminal",
-        quickfix = "Quickfix",
-        help = "Help",
-        prompt = "Prompt",
-        nofile = "No File",
+        terminal = "terminal",
       },
       filetype = {
-        lazy = "LAZY",
-        ["neo-tree"] = "Neo-tree",
-        lspinfo = "LSP Info",
-        checkhealth = "Checkhealth",
-        man = "Manual",
-        qf = "Quickfix",
-        help = "Help",
+        lazy = "lazy",
+        ["neo-tree"] = "neo-tree",
+        ["neo-tree-popup"] = "Neo-tree",
+        lspinfo = "lsp info",
+        checkhealth = "checkhealth",
+        man = "manual",
+        qf = "quickfix",
+        help = "help",
       },
     }
 
     -- Prefer explicit buftype mapping, else filetype mapping
-    local title = title_map.buftype[bt]
-    if not title or title == "No File" then
-      title = title_map.filetype[ft] or title
-    end
+    -- local title = title_map.buftype[bt]
+    -- if not title or title == "No File" then
+    --   title = title_map.filetype[ft] or title
+    -- end
+    --
+    -- if not title or title == "No File" then
+    --   local name = fn.expand("%:t")
+    --   title = (name ~= "" and name:upper()) or
+    --     string.format("[%s]", (bt ~= "" and bt:upper() or "Buffer"))
+    -- end
+    local title = "no file"
 
-    if not title or title == "No File" then
-      local name = fn.expand("%:t")
-      title = (name ~= "" and name:upper()) or
-        string.format("[%s]", (bt ~= "" and bt:upper() or "Buffer"))
+    if title_map.buftype[bt] then
+      title = title_map.buftype[bt]
+    elseif title_map.filetype[ft] then
+      title = title_map.filetype[ft]
     end
 
     return hl("String", title)
@@ -371,14 +384,6 @@ local width_for = function(key_or_str)
   return 0
 end
 
-local should_hide_completely = function(win)
-  if not api.nvim_win_is_valid(win) then return true end
-  if config.exclude.floating_windows and api.nvim_win_get_config(win).relative ~= "" then return true end
-  local size = config.exclude.small_windows
-  if api.nvim_win_get_height(win) < size.min_height or api.nvim_win_get_width(win) < size.min_width then return true end
-  return false
-end
-
 local is_excluded_buftype = function(win)
   if not api.nvim_win_is_valid(win) then return false end
   local buf = api.nvim_win_get_buf(win)
@@ -391,10 +396,6 @@ local main_expr = '%!v:lua.require("custom_ui.statusline").statusline()'
 local simple_expr = '%!v:lua.require("custom_ui.statusline").simple_statusline()'
 
 local set_statusline_for_win = function(win)
-  if should_hide_completely(win) then
-    api.nvim_set_option_value("statusline", "", { win = win })
-    return
-  end
   if is_excluded_buftype(win) then
     api.nvim_set_option_value("statusline", simple_expr, { win = win })
   else
