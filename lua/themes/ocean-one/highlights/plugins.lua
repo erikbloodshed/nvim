@@ -1,11 +1,9 @@
--- Plugin-specific highlights for Ayu Mirage theme
 local M = {}
 
 function M.get_highlights(p)
   return {
-
     -- Blink.cmp (completion plugin)
-    BlinkCmpMenuBorder = { fg = p.extra.border2, bg = p.ui.bg },
+    BlinkCmpMenuBorder = { fg = p.ui.line, bg = p.ui.bg },
     BlinkCmpLabelMatch = { fg = p.syntax.tag, bold = true },
     BlinkCmpLabelDescription = { fg = p.syntax.comment },
     BlinkCmpLabelDetail = { fg = p.syntax.entity },
@@ -63,7 +61,7 @@ function M.get_highlights(p)
 
     -- Neo-tree UI elements
     NeoTreeHiddenByName = { fg = p.syntax.comment },
-    NeoTreeIndentMarker = { fg = p.extra.border1 },
+    NeoTreeIndentMarker = { fg = p.ui.line },
     NeoTreeExpander = { fg = p.syntax.comment },
     NeoTreeNormal = { link = "Normal" },
     NeoTreeNormalNC = { link = "NormalNC" },

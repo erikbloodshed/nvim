@@ -1,18 +1,15 @@
 local g = vim.g
 local o = vim.o
-local cmd = vim.cmd
 local api = vim.api
 
-cmd.highlight("clear")
-if vim.fn.exists("syntax_on") then
-  cmd.syntax("reset")
-end
+vim.cmd.highlight("clear")
+vim.cmd.syntax("reset")
 
 o.termguicolors = true
-g.colors_name = "oneocean"
+g.colors_name = "ocean-one"
 
-local p = require("themes.oneocean.palette")
-local h = require("themes.oneocean.highlights")
+local p = require("themes.ocean-one.palette")
+local h = require("themes.ocean-one.highlights")
 
 local hl = api.nvim_set_hl
 for group, opts in pairs(h.get_highlights(p)) do
@@ -50,9 +47,9 @@ local key_priorities = {
 api.nvim_create_autocmd("LspTokenUpdate", {
   callback = function(args)
     local t = args.data.token
-    local cap = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
+    local c = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
 
-    for _, x in ipairs(cap) do
+    for _, x in ipairs(c) do
       local priority = key_priorities[x.capture]
       if priority then
         vim.lsp.semantic_tokens.highlight_token(t, args.buf, args.data.client_id, "@" .. x.capture,
@@ -62,4 +59,3 @@ api.nvim_create_autocmd("LspTokenUpdate", {
     end
   end,
 })
-

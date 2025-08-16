@@ -1,4 +1,3 @@
--- Ayu Mirage syntax highlighting
 local M = {}
 
 function M.get_highlights(p)

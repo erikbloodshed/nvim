@@ -1,4 +1,3 @@
--- LSP semantic token highlights for Ayu Mirage theme
 local M = {}
 
 function M.get_highlights(p)

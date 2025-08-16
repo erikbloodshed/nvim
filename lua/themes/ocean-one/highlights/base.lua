@@ -1,4 +1,3 @@
--- Base editor highlights for Ayu Mirage theme
 local M = {}
 
 function M.get_highlights(p)
@@ -30,16 +29,16 @@ function M.get_highlights(p)
     Cursor = { fg = p.editor.bg, bg = p.editor.fg },
     CursorColumn = { bg = p.editor.line },
     CursorLine = { bg = p.editor.line },
-    CursorLineNr = { fg = p.editor.fg, bg = p.editor.line },
-    Directory = { fg = p.syntax.entity, bold = true },
+    CursorLineNr = { link = "CursorLine"},
+    Directory = { fg = p.syntax.func, bold = true },
     EndOfBuffer = { fg = p.editor.bg },
     ErrorMsg = { fg = p.common.error },
-    FloatBorder = { fg = p.extra.border2, bg = p.ui.bg },
+    FloatBorder = { fg = p.ui.line, bg = p.ui.bg },
     FloatTitle = { fg = p.syntax.keyword, bg = p.ui.bg, bold = true },
-    FoldColumn = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
-    Folded = { fg = p.extra.fold_fg, bg = p.extra.fold_bg },
+    FoldColumn = { fg = p.ui.fg, bg = p.ui.bg },
+    Folded = { fg = p.ui.fg, bg = p.ui.bg },
     IncSearch = { fg = p.editor.bg, bg = p.syntax.operator },
-    LineNr = { fg = p.extra.line_number_fg },
+    LineNr = { fg = p.ui.line },
     MatchParen = { fg = p.editor.line, bg = p.syntax.comment, bold = true },
     ModeMsg = { fg = p.editor.fg },
     MoreMsg = { fg = p.syntax.string },
@@ -50,9 +49,9 @@ function M.get_highlights(p)
 
     -- Popup menu
     Pmenu = { fg = p.ui.fg, bg = p.ui.bg },
-    PmenuSbar = { bg = p.extra.pmenu_sbar_bg },
+    PmenuSbar = { bg = p.ui.bg },
     PmenuSel = { fg = p.editor.bg, bg = p.syntax.entity },
-    PmenuThumb = { bg = p.extra.pmenu_thumb_bg },
+    PmenuThumb = { bg = p.ui.line },
 
     -- Search and selection
     Question = { fg = p.syntax.string },
@@ -119,7 +118,6 @@ function M.get_highlights(p)
     DiagnosticSignHint = { fg = p.syntax.tag, bg = p.editor.bg },
     DiagnosticSignOk = { fg = p.vcs.added, bg = p.editor.bg },
 
-    -- Git/Diff highlights
     DiffAdd = { fg = p.vcs.added },
     DiffChange = { fg = p.vcs.modified },
     DiffDelete = { fg = p.vcs.removed },
@@ -128,7 +126,6 @@ function M.get_highlights(p)
     GitSignsChange = { fg = p.vcs.modified },
     GitSignsDelete = { fg = p.vcs.removed },
 
-    -- Terminal colors (for :terminal)
     Terminal0 = { fg = p.terminal.black },
     Terminal1 = { fg = p.terminal.red },
     Terminal2 = { fg = p.terminal.green },
