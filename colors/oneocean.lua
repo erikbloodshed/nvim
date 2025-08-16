@@ -9,10 +9,10 @@ if vim.fn.exists("syntax_on") then
 end
 
 o.termguicolors = true
-g.colors_name = "ayu-mirage"
+g.colors_name = "oneocean"
 
-local p = require("themes.ayu-mirage.palette")
-local h = require("themes.ayu-mirage.highlights")
+local p = require("themes.oneocean.palette")
+local h = require("themes.oneocean.highlights")
 
 local hl = api.nvim_set_hl
 for group, opts in pairs(h.get_highlights(p)) do

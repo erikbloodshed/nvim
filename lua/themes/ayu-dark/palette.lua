@@ -25,7 +25,7 @@ local vcs = {
 
 local editor = {
   fg = "#BFBDB6",
-  bg = "#0D1017",
+  bg = "#1b2b34",
   line = "#131721",
   selection = {
     active = utils.with_alpha_blend("#6C5980", 0.25, "#0D1017"),
