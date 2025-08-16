@@ -45,11 +45,11 @@ function M.get_highlights(p)
     MoreMsg = { fg = p.syntax.string },
     NonText = { fg = p.syntax.comment },
     Normal = { fg = p.editor.fg, bg = p.editor.bg },
-    NormalFloat = { fg = p.editor.fg, bg = p.ui.bg },
+    NormalFloat = { fg = p.ui.fg, bg = p.ui.bg },
     NormalNC = { link = "Normal" },
 
     -- Popup menu
-    Pmenu = { fg = p.ui.fg, bg = p.ui.panel.bg },
+    Pmenu = { fg = p.ui.fg, bg = p.ui.bg },
     PmenuSbar = { bg = p.extra.pmenu_sbar_bg },
     PmenuSel = { fg = p.editor.bg, bg = p.syntax.entity },
     PmenuThumb = { bg = p.extra.pmenu_thumb_bg },

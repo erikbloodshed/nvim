@@ -3,6 +3,7 @@ local M = {}
 
 function M.get_highlights(p)
   return {
+
     -- Blink.cmp (completion plugin)
     BlinkCmpMenuBorder = { fg = p.extra.border2, bg = p.ui.bg },
     BlinkCmpLabelMatch = { fg = p.syntax.tag, bold = true },
