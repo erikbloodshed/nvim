@@ -1,4 +1,4 @@
-local p = require("themes.auren.palette")
+local p = require("themes.auren.scheme")
 
 return {
   -- Blink.cmp (completion plugin)
