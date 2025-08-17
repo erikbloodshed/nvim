@@ -6,17 +6,6 @@ local plugins = require("themes.ocean-one.highlights.plugins")
 
 local M = {}
 
--- Utility function to merge tables
--- local function merge_tables(...)
---   local result = {}
---   for _, tbl in ipairs({...}) do
---     for k, v in pairs(tbl) do
---       result[k] = v
---     end
---   end
---   return result
--- end
-
 local function merge_tables(...)
   local result = {}
   local n = select("#", ...)
