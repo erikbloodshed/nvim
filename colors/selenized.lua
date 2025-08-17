@@ -7,15 +7,15 @@ cmd.highlight("clear")
 cmd.syntax("reset")
 
 o.termguicolors = true
-g.colors_name = "auren"
+g.colors_name = "selenized"
 g.matchparen_disable_cursor_hl = 1
 
-local scheme = require("themes.auren.scheme")
-local base = require("themes.auren.spec.base")
-local syntax = require("themes.auren.spec.syntax")
-local treesitter = require("themes.auren.spec.treesitter")
-local lsp = require("themes.auren.spec.lsp")
-local plugins = require("themes.auren.spec.plugins")
+local scheme = require("themes.selenized.scheme")
+local base = require("themes.selenized.spec.base")
+local syntax = require("themes.selenized.spec.syntax")
+local treesitter = require("themes.selenized.spec.treesitter")
+local lsp = require("themes.selenized.spec.lsp")
+local plugins = require("themes.selenized.spec.plugins")
 
 local function merge_tables(...)
   local result = {}
@@ -35,22 +35,22 @@ for group, opts in pairs(h) do
   hl(0, group, opts)
 end
 
-g.terminal_color_0 = scheme.terminal.black
-g.terminal_color_1 = scheme.terminal.red
-g.terminal_color_2 = scheme.terminal.green
-g.terminal_color_3 = scheme.terminal.yellow
-g.terminal_color_4 = scheme.terminal.blue
-g.terminal_color_5 = scheme.terminal.magenta
-g.terminal_color_6 = scheme.terminal.cyan
-g.terminal_color_7 = scheme.terminal.white
-g.terminal_color_8 = scheme.terminal.bright_black
-g.terminal_color_9 = scheme.terminal.bright_red
-g.terminal_color_10 = scheme.terminal.bright_green
-g.terminal_color_11 = scheme.terminal.bright_yellow
-g.terminal_color_12 = scheme.terminal.bright_blue
-g.terminal_color_13 = scheme.terminal.bright_magenta
-g.terminal_color_14 = scheme.terminal.bright_cyan
-g.terminal_color_15 = scheme.terminal.bright_white
+-- g.terminal_color_0 = scheme.terminal.black
+-- g.terminal_color_1 = scheme.terminal.red
+-- g.terminal_color_2 = scheme.terminal.green
+-- g.terminal_color_3 = scheme.terminal.yellow
+-- g.terminal_color_4 = scheme.terminal.blue
+-- g.terminal_color_5 = scheme.terminal.magenta
+-- g.terminal_color_6 = scheme.terminal.cyan
+-- g.terminal_color_7 = scheme.terminal.white
+-- g.terminal_color_8 = scheme.terminal.bright_black
+-- g.terminal_color_9 = scheme.terminal.bright_red
+-- g.terminal_color_10 = scheme.terminal.bright_green
+-- g.terminal_color_11 = scheme.terminal.bright_yellow
+-- g.terminal_color_12 = scheme.terminal.bright_blue
+-- g.terminal_color_13 = scheme.terminal.bright_magenta
+-- g.terminal_color_14 = scheme.terminal.bright_cyan
+-- g.terminal_color_15 = scheme.terminal.bright_white
 
 -- LSP semantic token priority handling
 local key_priorities = {
