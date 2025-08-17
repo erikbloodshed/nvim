@@ -1,24 +1,41 @@
 local g = vim.g
 local o = vim.o
+local cmd = vim.cmd
 local api = vim.api
 
-vim.cmd.highlight("clear")
-vim.cmd.syntax("reset")
+cmd.highlight("clear")
+cmd.syntax("reset")
 
 o.termguicolors = true
-g.colors_name = "ocean-one"
+g.colors_name = "auren"
+g.matchparen_disable_cursor_hl = 1
 
-local p = require("themes.ocean-one.palette")
-local h = require("themes.ocean-one.highlights")
+local p = require("themes.auren.palette")
+local base = require("themes.auren.spec.base")
+local syntax = require("themes.auren.spec.syntax")
+local treesitter = require("themes.auren.spec.treesitter")
+local lsp = require("themes.auren.spec.lsp")
+local plugins = require("themes.auren.spec.plugins")
 
+
+local function merge_tables(...)
+  local result = {}
+  local n = select("#", ...)
+  for i = 1, n do
+    local tbl = select(i, ...)
+    for k, v in next, tbl do
+      result[k] = v
+    end
+  end
+  return result
+end
+
+local h = merge_tables(base, syntax, treesitter, lsp, plugins)
 local hl = api.nvim_set_hl
-for group, opts in pairs(h.get_highlights(p)) do
+for group, opts in pairs(h) do
   hl(0, group, opts)
 end
 
-g.matchparen_disable_cursor_hl = 1
-
--- Set terminal colors for :terminal
 g.terminal_color_0 = p.terminal.black
 g.terminal_color_1 = p.terminal.red
 g.terminal_color_2 = p.terminal.green

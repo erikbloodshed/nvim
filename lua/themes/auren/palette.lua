@@ -1,4 +1,4 @@
-local utils = require("themes.ocean-one.utils") -- Adjust path as needed
+local utils = require("themes.auren.utils") -- Adjust path as needed
 
 -- Base palette (Oceanic Next foundation)
 local base = {
