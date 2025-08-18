@@ -4,7 +4,7 @@ local blend_fg = require("themes.util").blend_fg
 local M = {}
 
 M.get = function(c)
-  local s = {
+  local g = {
     ["@annotation"]                   = { link = "PreProc" },
     ["@attribute"]                    = { link = "PreProc" },
     ["@boolean"]                      = { link = "Boolean" },
@@ -101,7 +101,7 @@ M.get = function(c)
 
   ---@format disable-next
   local hl = api.nvim_set_hl
-  for key, val in pairs(s) do hl(0, key, val) end
+  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

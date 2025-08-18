@@ -4,7 +4,7 @@ local blend_fg = require("themes.util").blend_fg
 local M = {}
 
 M.get = function(c, t)
-  local s = {
+  local g = {
     Comment                     = { fg = c.comment, italic = true },
     ColorColumn                 = { bg = c.black },
     Conceal                     = { fg = c.dark5 },
@@ -111,7 +111,7 @@ M.get = function(c, t)
   }
 
   local hl = api.nvim_set_hl
-  for key, val in pairs(s) do hl(0, key, val) end
+  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

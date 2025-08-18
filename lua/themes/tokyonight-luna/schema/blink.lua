@@ -2,7 +2,7 @@ local api = vim.api
 local M = {}
 
 M.get = function(c)
-  local s = {
+  local g = {
     BlinkCmpDoc                 = { fg = c.fg, bg = c.bg_dark },
     BlinkCmpDocBorder           = { fg = c.border_highlight, bg = c.bg_dark },
     BlinkCmpGhostText           = { fg = c.bg_dark3 },
@@ -57,7 +57,7 @@ M.get = function(c)
 
   ---@format disable-next
   local hl = api.nvim_set_hl
-  for key, val in pairs(s) do hl(0, key, val) end
+  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

@@ -2,7 +2,7 @@ local api = vim.api
 local M = {}
 
 M.get = function(c)
-  local s = {
+  local g = {
     NeoTreeDimText              = { fg = c.fg_gutter },
     NeoTreeFileName             = { fg = c.fg_dark },
     NeoTreeGitModified          = { fg = c.orange },
@@ -19,7 +19,7 @@ M.get = function(c)
 
   ---@format disable-next
   local hl = api.nvim_set_hl
-  for key, val in pairs(s) do hl(0, key, val) end
+  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

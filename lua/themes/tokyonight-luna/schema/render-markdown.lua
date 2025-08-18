@@ -3,7 +3,7 @@ local blend_bg = require("themes.util").blend_bg
 local M = {}
 
 M.get = function(c)
-  local s = {
+  local g = {
     RenderMarkdownBullet     = { fg = c.orange },
     RenderMarkdownCode       = { bg = c.bg_dark },
     RenderMarkdownDash       = { link = "RenderMarkdownBullet" },
@@ -13,10 +13,10 @@ M.get = function(c)
   }
   ---@format disable-next
   local hl = api.nvim_set_hl
-  for key, val in pairs(s) do hl(0, key, val) end
-  for i, color in ipairs(c.rainbow) do
-    hl(0, "RenderMarkdownH" .. i .. "Bg", { bg = blend_bg(color, 0.1, c.bg) })
-    hl(0, "RenderMarkdownH" .. i .. "Fg", { fg = color, bold = true })
+  for key, val in pairs(g) do hl(0, key, val) end
+  for i, v in ipairs(c.rainbow) do
+    hl(0, "RenderMarkdownH" .. i .. "Bg", { bg = blend_bg(v, 0.1, c.bg) })
+    hl(0, "RenderMarkdownH" .. i .. "Fg", { fg = v, bold = true })
   end
 end
 
