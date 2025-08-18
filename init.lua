@@ -16,4 +16,4 @@ require("core.lazy")
 require("core.lsp")
 require("core.autocmds")
 
-vim.cmd.colorscheme("auren")
+vim.cmd.colorscheme("tokyonight-luna")

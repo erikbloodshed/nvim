@@ -95,7 +95,7 @@ local c = {
   dark = Util.blend(tmp.bg_dark, 0.8, "#000000"),
   bg_sidebar = tmp.bg_dark,
   bg_float = tmp.bg_dark,
-  bg_visual = Util.blend_bg(tmp.blue0, 0.4),
+  bg_visual = Util.blend_bg(tmp.blue0, 0.4, tmp.bg),
   bg_search = tmp.blue0,
   fg_sidebar = tmp.fg_dark,
   fg_float = tmp.fg,
@@ -111,9 +111,9 @@ local c = {
   bg_statusline = tmp.bg_dark,
 
   diff = {
-    add = Util.blend_bg(tmp.green2, 0.15),
-    delete = Util.blend_bg(tmp.red1, 0.15),
-    change = Util.blend_bg(tmp.blue7, 0.15),
+    add = Util.blend_bg(tmp.green2, 0.15, tmp.bg),
+    delete = Util.blend_bg(tmp.red1, 0.15, tmp.bg),
+    change = Util.blend_bg(tmp.blue7, 0.15, tmp.bg),
     text = tmp.blue7,
   }
 }
@@ -135,7 +135,8 @@ local s = {
   EndOfBuffer = { fg = c.bg },                                            -- filler lines (~) after the end of the buffer.  By default, this is highlighted like |hl-NonText|.
   ErrorMsg = { fg = c.error },                                            -- error messages on the command line
   VertSplit = { fg = c.border },                                          -- the column separating vertically split windows
-  WinSeparator = { fg = c.border, bold = true },                          -- the column separating vertically split windows
+  -- WinSeparator = { fg = c.border, bold = false },                          -- the column separating vertically split windows
+  WinSeparator = { fg = c.border_highlight, bold = true },
   Folded = { fg = c.blue, bg = c.fg_gutter },                             -- line used for closed folds
   FoldColumn = { bg = transparent and c.none or c.bg, fg = c.comment },   -- 'foldcolumn'
   SignColumn = { bg = transparent and c.none or c.bg, fg = c.fg_gutter }, -- column where |signs| are displayed
@@ -158,9 +159,9 @@ local s = {
   FloatTitle = { fg = c.border_highlight, bg = c.bg_float },
   Pmenu = { bg = c.bg_popup, fg = c.fg },                                 -- Popup menu: normal item.
   PmenuMatch = { bg = c.bg_popup, fg = c.blue1 },                         -- Popup menu: Matched text in normal item.
-  PmenuSel = { bg = Util.blend_bg(c.fg_gutter, 0.8) },                    -- Popup menu: selected item.
+  PmenuSel = { bg = Util.blend_bg(c.fg_gutter, 0.8, tmp.bg) },                    -- Popup menu: selected item.
   PmenuMatchSel = { bg = Util.blend_bg(c.fg_gutter, 0.8), fg = c.blue1 }, -- Popup menu: Matched text in selected item.
-  PmenuSbar = { bg = Util.blend_fg(c.bg_popup, 0.95) },                   -- Popup menu: scrollbar.
+  PmenuSbar = { bg = Util.blend_fg(c.bg_popup, 0.95, tmp.fg) },                   -- Popup menu: scrollbar.
   PmenuThumb = { bg = c.fg_gutter },                                      -- Popup menu: Thumb of the scrollbar.
   Question = { fg = c.blue },                                             -- |hit-enter| prompt and yes/no questions
   QuickFixLine = { bg = c.bg_visual, bold = true },                       -- Current |quickfix| item in the quickfix window. Combined with |hl-CursorLine| when the cursor is there.
@@ -204,7 +205,7 @@ local s = {
   Todo = { bg = c.yellow, fg = c.bg },                                    -- (preferred) anything that needs extra attention; mostly the keywords TODO FIXME and XXX
   Type = { fg = c.blue1 },                                                -- (preferred) int, long, char, etc.
   Underlined = { underline = true },                                      -- (preferred) text that stands out, HTML links
-  debugBreakpoint = { bg = Util.blend_bg(c.info, 0.1), fg = c.info },     -- used for breakpoint colors in terminal-debug
+  debugBreakpoint = { bg = Util.blend_bg(c.info, 0.1, tmp.bg), fg = c.info },     -- used for breakpoint colors in terminal-debug
   debugPC = { bg = c.bg_sidebar },                                        -- used for highlighting the current line in terminal-debug
   dosIniLabel = { link = "@property" },
   helpCommand = { bg = c.terminal_black, fg = c.blue },
@@ -218,25 +219,25 @@ local s = {
   LspReferenceText = { bg = c.fg_gutter },  -- used for highlighting "text" references
   LspReferenceRead = { bg = c.fg_gutter },  -- used for highlighting "read" references
   LspReferenceWrite = { bg = c.fg_gutter }, -- used for highlighting "write" references
-  LspSignatureActiveParameter = { bg = Util.blend_bg(c.bg_visual, 0.4), bold = true },
+  LspSignatureActiveParameter = { bg = Util.blend_bg(c.bg_visual, 0.4, tmp.bg), bold = true },
   LspCodeLens = { fg = c.comment },
-  LspInlayHint = { bg = Util.blend_bg(c.blue7, 0.1), fg = c.dark3 },
+  LspInlayHint = { bg = Util.blend_bg(c.blue7, 0.1, tmp.bg), fg = c.dark3 },
   LspInfoBorder = { fg = c.border_highlight, bg = c.bg_float },
 
   -- diagnostics
-  DiagnosticError = { fg = c.error },                -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticWarn = { fg = c.warning },               -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticInfo = { fg = c.info },                  -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticHint = { fg = c.hint },                  -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticUnnecessary = { fg = c.terminal_black }, -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticVirtualTextError = { bg = Util.blend_bg(c.error, 0.1), fg = c.error },    -- Used for "Error" diagnostic virtual text
-  DiagnosticVirtualTextWarn = { bg = Util.blend_bg(c.warning, 0.1), fg = c.warning }, -- Used for "Warning" diagnostic virtual text
-  DiagnosticVirtualTextInfo = { bg = Util.blend_bg(c.info, 0.1), fg = c.info },       -- Used for "Information" diagnostic virtual text
-  DiagnosticVirtualTextHint = { bg = Util.blend_bg(c.hint, 0.1), fg = c.hint },       -- Used for "Hint" diagnostic virtual text
+  DiagnosticError = { fg = c.error },                                                 -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticWarn = { fg = c.warning },                                                -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticInfo = { fg = c.info },                                                   -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticHint = { fg = c.hint },                                                   -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticUnnecessary = { fg = c.terminal_black },                                  -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticVirtualTextError = { bg = Util.blend_bg(c.error, 0.1, tmp.bg), fg = c.error },    -- Used for "Error" diagnostic virtual text
+  DiagnosticVirtualTextWarn = { bg = Util.blend_bg(c.warning, 0.1, tmp.bg), fg = c.warning }, -- Used for "Warning" diagnostic virtual text
+  DiagnosticVirtualTextInfo = { bg = Util.blend_bg(c.info, 0.1, tmp.bg), fg = c.info },       -- Used for "Information" diagnostic virtual text
+  DiagnosticVirtualTextHint = { bg = Util.blend_bg(c.hint, 0.1, tmp.bg), fg = c.hint },       -- Used for "Hint" diagnostic virtual text
   DiagnosticUnderlineError = { undercurl = true, sp = c.error },                      -- Used to underline "Error" diagnostics
-  DiagnosticUnderlineWarn = { undercurl = true, sp = c.warning }, -- Used to underline "Warning" diagnostics
-  DiagnosticUnderlineInfo = { undercurl = true, sp = c.info },    -- Used to underline "Information" diagnostics
-  DiagnosticUnderlineHint = { undercurl = true, sp = c.hint },    -- Used to underline "Hint" diagnostics
+  DiagnosticUnderlineWarn = { undercurl = true, sp = c.warning },                     -- Used to underline "Warning" diagnostics
+  DiagnosticUnderlineInfo = { undercurl = true, sp = c.info },                        -- Used to underline "Information" diagnostics
+  DiagnosticUnderlineHint = { undercurl = true, sp = c.hint },                        -- Used to underline "Hint" diagnostics
 
   -- Health
   healthError = { fg = c.error },
@@ -334,74 +335,131 @@ local s = {
   ["@tag"] = { link = "Label" },
   ["@tag.attribute"] = { link = "@property" },
   ["@tag.delimiter"] = { link = "Delimiter" },
-  ["@tag.delimiter.tsx"] = { fg = Util.blend_bg(c.blue, 0.7) },
+  ["@tag.delimiter.tsx"] = { fg = Util.blend_bg(c.blue, 0.7, tmp.bg) },
   ["@tag.tsx"] = { fg = c.red },
   ["@tag.javascript"] = { fg = c.red },
   ["@type"] = { link = "Type" },
-  ["@type.builtin"] = { fg = Util.blend_bg(c.blue1, 0.8) },
+  ["@type.builtin"] = { fg = Util.blend_bg(c.blue1, 0.8, tmp.bg) },
   ["@type.definition"] = { link = "Typedef" },
   ["@type.qualifier"] = { link = "@keyword" },
   ["@variable"] = { fg = c.fg },                                           -- Any variable name that does not have another highlight.
   ["@variable.builtin"] = { fg = c.red },                                  -- Variable names that are defined by the languages, like `this` or `self`.
   ["@variable.member"] = { fg = c.green1 },                                -- For fields.
   ["@variable.parameter"] = { fg = c.yellow },                             -- For parameters of a function.
-  ["@variable.parameter.builtin"] = { fg = Util.blend_fg(c.yellow, 0.8) }, -- For builtin parameters of a function, e.g. "..." or Smali's p[1-99]
+  ["@variable.parameter.builtin"] = { fg = Util.blend_fg(c.yellow, 0.8, tmp.fg) }, -- For builtin parameters of a function, e.g. "..." or Smali's p[1-99]
 
   -- stylua: ignore
-  ["@lsp.type.boolean"]                      = { link = "@boolean"},
-  ["@lsp.type.builtinType"]                  = { link = "@type.builtin"},
-  ["@lsp.type.comment"]                      = {link = "@comment"},
-  ["@lsp.type.decorator"]                    = {link = "@attribute"},
-  ["@lsp.type.deriveHelper"]                 = {link = "@attribute"},
-  ["@lsp.type.enum"]                         = {link = "@type"},
-  ["@lsp.type.enumMember"]                   = {link = "@constant"},
-  ["@lsp.type.escapeSequence"]               = {link = "@string.escape"},
-  ["@lsp.type.formatSpecifier"]              = {link ="@markup.list"},
-  ["@lsp.type.generic"]                      = {link = "@variable"},
-  ["@lsp.type.interface"]                    = { fg = Util.blend_fg(c.blue1, 0.7) },
-  ["@lsp.type.keyword"]                      = {link = "@keyword"},
-  ["@lsp.type.lifetime"]                     = {link = "@keyword.storage"},
-  ["@lsp.type.namespace"]                    = {link = "@module"},
-  ["@lsp.type.namespace.python"]             = {link = "@variable"},
-  ["@lsp.type.number"]                       = {link = "@number"},
-  ["@lsp.type.operator"]                     = {link = "@operator"},
-  ["@lsp.type.parameter"]                    = {link = "@variable.parameter"},
-  ["@lsp.type.property"]                     = {link = "@property"},
-  ["@lsp.type.selfKeyword"]                  = {link = "@variable.builtin"},
-  ["@lsp.type.selfTypeKeyword"]              = {link = "@variable.builtin"},
-  ["@lsp.type.string"]                       = {link = "@string"},
-  ["@lsp.type.typeAlias"]                    = {link = "@type.definition"},
-  ["@lsp.type.unresolvedReference"]          = { undercurl = true, sp = c.error },
-  ["@lsp.type.variable"]                     = {}, -- use treesitter styles for regular variables
-  ["@lsp.typemod.class.defaultLibrary"]      = {link = "@type.builtin"},
-  ["@lsp.typemod.enum.defaultLibrary"]       = {link = "@type.builtin"},
-  ["@lsp.typemod.enumMember.defaultLibrary"] = {link = "@constant.builtin"},
-  ["@lsp.typemod.function.defaultLibrary"]   = {link = "@function.builtin"},
-  ["@lsp.typemod.keyword.async"]             = {link = "@keyword.coroutine"},
-  ["@lsp.typemod.keyword.injected"]          = {link = "@keyword"},
-  ["@lsp.typemod.macro.defaultLibrary"]      = {link = "@function.builtin"},
-  ["@lsp.typemod.method.defaultLibrary"]     = {link = "@function.builtin"},
-  ["@lsp.typemod.operator.injected"]         = {link = "@operator"},
-  ["@lsp.typemod.string.injected"]           = {link = "@string"},
-  ["@lsp.typemod.struct.defaultLibrary"]     = {link = "@type.builtin"},
-  ["@lsp.typemod.type.defaultLibrary"]       = { fg = Util.blend_bg(c.blue1, 0.8) },
-  ["@lsp.typemod.typeAlias.defaultLibrary"]  = { fg = Util.blend_bg(c.blue1, 0.8) },
-  ["@lsp.typemod.variable.callable"]         = {link = "@function"},
-  ["@lsp.typemod.variable.defaultLibrary"]   = {link = "@variable.builtin"},
-  ["@lsp.typemod.variable.injected"]         = {link = "@variable"},
-  ["@lsp.typemod.variable.static"]           = {link = "@constant"},
+  ["@lsp.type.boolean"] = { link = "@boolean" },
+  ["@lsp.type.builtinType"] = { link = "@type.builtin" },
+  ["@lsp.type.comment"] = { link = "@comment" },
+  ["@lsp.type.decorator"] = { link = "@attribute" },
+  ["@lsp.type.deriveHelper"] = { link = "@attribute" },
+  ["@lsp.type.enum"] = { link = "@type" },
+  ["@lsp.type.enumMember"] = { link = "@constant" },
+  ["@lsp.type.escapeSequence"] = { link = "@string.escape" },
+  ["@lsp.type.formatSpecifier"] = { link = "@markup.list" },
+  ["@lsp.type.generic"] = { link = "@variable" },
+  ["@lsp.type.interface"] = { fg = Util.blend_fg(c.blue1, 0.7, tmp.fg) },
+  ["@lsp.type.keyword"] = { link = "@keyword" },
+  ["@lsp.type.lifetime"] = { link = "@keyword.storage" },
+  ["@lsp.type.namespace"] = { link = "@module" },
+  ["@lsp.type.namespace.python"] = { link = "@variable" },
+  ["@lsp.type.number"] = { link = "@number" },
+  ["@lsp.type.operator"] = { link = "@operator" },
+  ["@lsp.type.parameter"] = { link = "@variable.parameter" },
+  ["@lsp.type.property"] = { link = "@property" },
+  ["@lsp.type.selfKeyword"] = { link = "@variable.builtin" },
+  ["@lsp.type.selfTypeKeyword"] = { link = "@variable.builtin" },
+  ["@lsp.type.string"] = { link = "@string" },
+  ["@lsp.type.typeAlias"] = { link = "@type.definition" },
+  ["@lsp.type.unresolvedReference"] = { undercurl = true, sp = c.error },
+  ["@lsp.type.variable"] = {}, -- use treesitter styles for regular variables
+  ["@lsp.typemod.class.defaultLibrary"] = { link = "@type.builtin" },
+  ["@lsp.typemod.enum.defaultLibrary"] = { link = "@type.builtin" },
+  ["@lsp.typemod.enumMember.defaultLibrary"] = { link = "@constant.builtin" },
+  ["@lsp.typemod.function.defaultLibrary"] = { link = "@function.builtin" },
+  ["@lsp.typemod.keyword.async"] = { link = "@keyword.coroutine" },
+  ["@lsp.typemod.keyword.injected"] = { link = "@keyword" },
+  ["@lsp.typemod.macro.defaultLibrary"] = { link = "@function.builtin" },
+  ["@lsp.typemod.method.defaultLibrary"] = { link = "@function.builtin" },
+  ["@lsp.typemod.operator.injected"] = { link = "@operator" },
+  ["@lsp.typemod.string.injected"] = { link = "@string" },
+  ["@lsp.typemod.struct.defaultLibrary"] = { link = "@type.builtin" },
+  ["@lsp.typemod.type.defaultLibrary"] = { fg = Util.blend_bg(c.blue1, 0.8, tmp.bg) },
+  ["@lsp.typemod.typeAlias.defaultLibrary"] = { fg = Util.blend_bg(c.blue1, 0.8, tmp.bg) },
+  ["@lsp.typemod.variable.callable"] = { link = "@function" },
+  ["@lsp.typemod.variable.defaultLibrary"] = { link = "@variable.builtin" },
+  ["@lsp.typemod.variable.injected"] = { link = "@variable" },
+  ["@lsp.typemod.variable.static"] = { link = "@constant" },
 
-  NeoTreeDimText             = { fg = c.fg_gutter },
-    NeoTreeFileName            = { fg = c.fg_sidebar },
-    NeoTreeGitModified         = { fg = c.orange },
-    NeoTreeGitStaged           = { fg = c.green1 },
-    NeoTreeGitUntracked        = { fg = c.magenta },
-    NeoTreeNormal              = { fg = c.fg_sidebar, bg = c.bg_sidebar },
-    NeoTreeNormalNC            = { fg = c.fg_sidebar, bg = c.bg_sidebar },
-    NeoTreeTabActive           = { fg = c.blue, bg = c.bg_dark, bold = true },
-    NeoTreeTabInactive         = { fg = c.dark3, bg = dark },
-    NeoTreeTabSeparatorActive  = { fg = c.blue, bg = c.bg_dark },
-    NeoTreeTabSeparatorInactive= { fg = c.bg, bg = dark },
+  NeoTreeDimText = { fg = c.fg_gutter },
+  NeoTreeFileName = { fg = c.fg_sidebar },
+  NeoTreeGitModified = { fg = c.orange },
+  NeoTreeGitStaged = { fg = c.green1 },
+  NeoTreeGitUntracked = { fg = c.magenta },
+  NeoTreeNormal = { fg = c.fg_sidebar, bg = c.bg_sidebar },
+  NeoTreeNormalNC = { fg = c.fg_sidebar, bg = c.bg_sidebar },
+  NeoTreeTabActive = { fg = c.blue, bg = c.bg_dark, bold = true },
+  NeoTreeTabInactive = { fg = c.dark3, bg = c.dark },
+  NeoTreeTabSeparatorActive = { fg = c.blue, bg = c.bg_dark },
+  NeoTreeTabSeparatorInactive = { fg = c.bg, bg = c.dark },
+
+  BlinkCmpDoc = { fg = c.fg, bg = c.bg_float },
+  BlinkCmpDocBorder = { fg = c.border_highlight, bg = c.bg_float },
+  BlinkCmpGhostText = { fg = c.terminal_black },
+  BlinkCmpKindCodeium = { fg = c.teal, bg = c.none },
+  BlinkCmpKindCopilot = { fg = c.teal, bg = c.none },
+  BlinkCmpKindDefault = { fg = c.fg_dark, bg = c.none },
+  BlinkCmpKindSupermaven = { fg = c.teal, bg = c.none },
+  BlinkCmpKindTabNine = { fg = c.teal, bg = c.none },
+  BlinkCmpLabel = { fg = c.fg, bg = c.none },
+  BlinkCmpLabelDeprecated = { fg = c.fg_gutter, bg = c.none, strikethrough = true },
+  BlinkCmpLabelMatch = { fg = c.blue1, bg = c.none },
+  BlinkCmpMenu = { fg = c.fg, bg = c.bg_float },
+  BlinkCmpMenuBorder = { fg = c.border_highlight, bg = c.bg_float },
+  BlinkCmpSignatureHelp = { fg = c.fg, bg = c.bg_float },
+  BlinkCmpSignatureHelpBorder = { fg = c.border_highlight, bg = c.bg_float },
+  BlinkCmpKindArray = { link = "@punctuation.bracket" },
+  BlinkCmpKindBoolean = { link = "@boolean" },
+  BlinkCmpKindClass = { link = "@type" },
+  BlinkCmpKindColor = { link = "Special" },
+  BlinkCmpKindConstant = { link = "@constant" },
+  BlinkCmpKindConstructor = { link = "@constructor" },
+  BlinkCmpKindEnum = { link = "@lsp.type.enum" },
+  BlinkCmpKindEnumMember = { link = "@lsp.type.enumMember" },
+  BlinkCmpKindEvent = { link = "Special" },
+  BlinkCmpKindField = { link = "@variable.member" },
+  BlinkCmpKindFile = { link = "Normal" },
+  BlinkCmpKindFolder = { link = "Directory" },
+  BlinkCmpKindFunction = { link = "@function" },
+  BlinkCmpKindInterface = { link = "@lsp.type.interface" },
+  BlinkCmpKindKey = { link = "@variable.member" },
+  BlinkCmpKindKeyword = { link = "@lsp.type.keyword" },
+  BlinkCmpKindMethod = { link = "@function.method" },
+  BlinkCmpKindModule = { link = "@module" },
+  BlinkCmpKindNamespace = { link = "@module" },
+  BlinkCmpKindNull = { link = "@constant.builtin" },
+  BlinkCmpKindNumber = { link = "@number" },
+  BlinkCmpKindObject = { link = "@constant" },
+  BlinkCmpKindOperator = { link = "@operator" },
+  BlinkCmpKindPackage = { link = "@module" },
+  BlinkCmpKindProperty = { link = "@property" },
+  BlinkCmpKindReference = { link = "@markup.link" },
+  BlinkCmpKindSnippet = { link = "Conceal" },
+  BlinkCmpKindString = { link = "@string" },
+  BlinkCmpKindStruct = { link = "@lsp.type.struct" },
+  BlinkCmpKindUnit = { link = "@lsp.type.struct" },
+  BlinkCmpKindText = { link = "@markup" },
+  BlinkCmpKindTypeParameter = { link = "@lsp.type.typeParameter" },
+  BlinkCmpKindVariable = { link = "@variable" },
+  BlinkCmpKindValue = { link = "@string" },
+
+  RenderMarkdownBullet = { fg = c.orange },    -- horizontal rule
+  RenderMarkdownCode = { bg = c.bg_dark },
+  RenderMarkdownDash = { fg = c.orange },      -- horizontal rule
+  RenderMarkdownTableHead = { fg = c.red },
+  RenderMarkdownTableRow = { fg = c.orange },
+  RenderMarkdownCodeInline = {link = "@markup.raw.markdown_inline"}
 }
 
 local hl = api.nvim_set_hl
