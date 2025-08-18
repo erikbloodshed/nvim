@@ -1,3 +1,15 @@
+--- This colorscheme is a derivative work based on tokyonight-moon, a theme
+--- created by Folke Lemaitre as part of the tokyonight.nvim suite. While some
+--- colors have been modified to suit the specific goals of this project, the
+--- core palette and design philosophy originate from his work.
+---
+--- The original tokyonight.nvim project is licensed under the Apache 2.0 License.
+--- In accordance with its terms, this derivative work gives full credit to the
+--- original author. Please find the original source and its license here:
+--- @link: https://github.com/folke/tokyonight.nvim
+--- @author: Folke Lemaitre
+--- All credit for the foundational design and color theory belongs to him
+
 local g = vim.g
 local o = vim.o
 local cmd = vim.cmd
@@ -11,8 +23,8 @@ o.termguicolors = true
 g.colors_name = "tokyonight-luna"
 g.matchparen_disable_cursor_hl = 1
 
-local transparent = false
-local dim_inactive = false
+local transparent = true
+local dim_inactive = true
 
 local tmp = {
   bg = "#222436",
@@ -423,8 +435,8 @@ local s = {
   NeoTreeGitModified                         = { fg = c.orange },
   NeoTreeGitStaged                           = { fg = c.green1 },
   NeoTreeGitUntracked                        = { fg = c.magenta },
-  NeoTreeNormal                              = { fg = c.fg_sidebar, bg = c.bg_sidebar },
-  NeoTreeNormalNC                            = { fg = c.fg_sidebar, bg = c.bg_sidebar },
+  NeoTreeNormal                              = { fg = c.fg_sidebar, bg = transparent and c.none or c.bg_sidebar },
+  NeoTreeNormalNC                            = { link = "NeoTreeNormalNC" },
   NeoTreeTabActive                           = { fg = c.blue, bg = c.bg_dark, bold = true },
   NeoTreeTabInactive                         = { fg = c.dark3, bg = c.dark },
   NeoTreeTabSeparatorActive                  = { fg = c.blue, bg = c.bg_dark },
@@ -489,6 +501,4 @@ local s = {
 }
 
 local hl = api.nvim_set_hl
-for key, val in pairs(s) do
-  hl(0, key, val)
-end
+for key, val in pairs(s) do hl(0, key, val) end
