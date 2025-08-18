@@ -53,6 +53,7 @@ local tmp = {
 }
 
 local c = {
+  none = "NONE",
   bg = "#222436",
   bg_dark = "#1e2030",
   bg_dark1 = "#191B29",
@@ -115,26 +116,45 @@ local c = {
     delete = Util.blend_bg(tmp.red1, 0.15, tmp.bg),
     change = Util.blend_bg(tmp.blue7, 0.15, tmp.bg),
     text = tmp.blue7,
+  },
+
+  terminal = {
+    black = tmp.black,
+    black_bright = tmp.terminal_black,
+    red = tmp.red,
+    red_bright = Util.brighten(tmp.red),
+    green = tmp.green,
+    green_bright = Util.brighten(tmp.green),
+    yellow = tmp.yellow,
+    yellow_bright = Util.brighten(tmp.yellow),
+    blue = tmp.blue,
+    blue_bright = Util.brighten(tmp.blue),
+    magenta = tmp.magenta,
+    magenta_bright = Util.brighten(tmp.magenta),
+    cyan = tmp.cyan,
+    cyan_bright = Util.brighten(tmp.cyan),
+    white = tmp.fg_dark,
+    white_bright = tmp.fg,
   }
 }
 
 local s = {
-  Comment = { fg = c.comment },                                           -- any comment
-  ColorColumn = { bg = c.black },                                         -- used for the columns set with 'colorcolumn'
-  Conceal = { fg = c.dark5 },                                             -- placeholder characters substituted for concealed text (see 'conceallevel')
-  Cursor = { fg = c.bg, bg = c.fg },                                      -- character under the cursor
-  lCursor = { fg = c.bg, bg = c.fg },                                     -- the character under the cursor when |language-mapping| is used (see 'guicursor')
-  CursorIM = { fg = c.bg, bg = c.fg },                                    -- like Cursor, but used when in IME mode |CursorIM|
-  CursorColumn = { bg = c.bg_highlight },                                 -- Screen-column at the cursor, when 'cursorcolumn' is set.
-  CursorLine = { bg = c.bg_highlight },                                   -- Screen-line at the cursor, when 'cursorline' is set.  Low-priority if foreground (ctermfg OR guifg) is not set.
-  Directory = { fg = c.blue },                                            -- directory names (and other special names in listings)
-  DiffAdd = { bg = c.diff.add },                                          -- diff mode: Added line |diff.txt|
-  DiffChange = { bg = c.diff.change },                                    -- diff mode: Changed line |diff.txt|
-  DiffDelete = { bg = c.diff.delete },                                    -- diff mode: Deleted line |diff.txt|
-  DiffText = { bg = c.diff.text },                                        -- diff mode: Changed text within a changed line |diff.txt|
-  EndOfBuffer = { fg = c.bg },                                            -- filler lines (~) after the end of the buffer.  By default, this is highlighted like |hl-NonText|.
-  ErrorMsg = { fg = c.error },                                            -- error messages on the command line
-  VertSplit = { fg = c.border },                                          -- the column separating vertically split windows
+  Comment = { fg = c.comment },           -- any comment
+  ColorColumn = { bg = c.black },         -- used for the columns set with 'colorcolumn'
+  Conceal = { fg = c.dark5 },             -- placeholder characters substituted for concealed text (see 'conceallevel')
+  Cursor = { fg = c.bg, bg = c.fg },      -- character under the cursor
+  lCursor = { fg = c.bg, bg = c.fg },     -- the character under the cursor when |language-mapping| is used (see 'guicursor')
+  CursorIM = { fg = c.bg, bg = c.fg },    -- like Cursor, but used when in IME mode |CursorIM|
+  CursorColumn = { bg = c.bg_highlight }, -- Screen-column at the cursor, when 'cursorcolumn' is set.
+  CursorLine = { bg = c.bg_highlight },   -- Screen-line at the cursor, when 'cursorline' is set.  Low-priority if foreground (ctermfg OR guifg) is not set.
+  Directory = { fg = c.blue },            -- directory names (and other special names in listings)
+  DiffAdd = { bg = c.diff.add },          -- diff mode: Added line |diff.txt|
+  DiffChange = { bg = c.diff.change },    -- diff mode: Changed line |diff.txt|
+  DiffDelete = { bg = c.diff.delete },    -- diff mode: Deleted line |diff.txt|
+  DiffText = { bg = c.diff.text },        -- diff mode: Changed text within a changed line |diff.txt|
+  EndOfBuffer = { fg = c.bg },            -- filler lines (~) after the end of the buffer.  By default, this is highlighted like |hl-NonText|.
+  ErrorMsg = { fg = c.error },            -- error messages on the command line
+  VertSplit = { fg = c.border },          -- the column separating vertically split windows
   -- WinSeparator = { fg = c.border, bold = false },                          -- the column separating vertically split windows
   WinSeparator = { fg = c.border_highlight, bold = true },
   Folded = { fg = c.blue, bg = c.fg_gutter },                             -- line used for closed folds
@@ -157,56 +177,56 @@ local s = {
   NormalFloat = { fg = c.fg_float, bg = c.bg_float },                                          -- Normal text in floating windows.
   FloatBorder = { fg = c.border_highlight, bg = c.bg_float },
   FloatTitle = { fg = c.border_highlight, bg = c.bg_float },
-  Pmenu = { bg = c.bg_popup, fg = c.fg },                                 -- Popup menu: normal item.
-  PmenuMatch = { bg = c.bg_popup, fg = c.blue1 },                         -- Popup menu: Matched text in normal item.
-  PmenuSel = { bg = Util.blend_bg(c.fg_gutter, 0.8, tmp.bg) },                    -- Popup menu: selected item.
-  PmenuMatchSel = { bg = Util.blend_bg(c.fg_gutter, 0.8), fg = c.blue1 }, -- Popup menu: Matched text in selected item.
-  PmenuSbar = { bg = Util.blend_fg(c.bg_popup, 0.95, tmp.fg) },                   -- Popup menu: scrollbar.
-  PmenuThumb = { bg = c.fg_gutter },                                      -- Popup menu: Thumb of the scrollbar.
-  Question = { fg = c.blue },                                             -- |hit-enter| prompt and yes/no questions
-  QuickFixLine = { bg = c.bg_visual, bold = true },                       -- Current |quickfix| item in the quickfix window. Combined with |hl-CursorLine| when the cursor is there.
-  Search = { bg = c.bg_search, fg = c.fg },                               -- Last search pattern highlighting (see 'hlsearch').  Also used for similar items that need to stand out.
-  IncSearch = { bg = c.orange, fg = c.black },                            -- 'incsearch' highlighting; also used for the text replaced with ":s///c"
+  Pmenu = { bg = c.bg_popup, fg = c.fg },                                     -- Popup menu: normal item.
+  PmenuMatch = { bg = c.bg_popup, fg = c.blue1 },                             -- Popup menu: Matched text in normal item.
+  PmenuSel = { bg = Util.blend_bg(c.fg_gutter, 0.8, tmp.bg) },                -- Popup menu: selected item.
+  PmenuMatchSel = { bg = Util.blend_bg(c.fg_gutter, 0.8), fg = c.blue1 },     -- Popup menu: Matched text in selected item.
+  PmenuSbar = { bg = Util.blend_fg(c.bg_popup, 0.95, tmp.fg) },               -- Popup menu: scrollbar.
+  PmenuThumb = { bg = c.fg_gutter },                                          -- Popup menu: Thumb of the scrollbar.
+  Question = { fg = c.blue },                                                 -- |hit-enter| prompt and yes/no questions
+  QuickFixLine = { bg = c.bg_visual, bold = true },                           -- Current |quickfix| item in the quickfix window. Combined with |hl-CursorLine| when the cursor is there.
+  Search = { bg = c.bg_search, fg = c.fg },                                   -- Last search pattern highlighting (see 'hlsearch').  Also used for similar items that need to stand out.
+  IncSearch = { bg = c.orange, fg = c.black },                                -- 'incsearch' highlighting; also used for the text replaced with ":s///c"
   CurSearch = { link = "IncSearch" },
-  SpecialKey = { fg = c.dark3 },                                          -- Unprintable characters: text displayed differently from what it really is.  But not 'listchars' whitespace. |hl-Whitespace|
-  SpellBad = { sp = c.error, undercurl = true },                          -- Word that is not recognized by the spellchecker. |spell| Combined with the highlighting used otherwise.
-  SpellCap = { sp = c.warning, undercurl = true },                        -- Word that should start with a capital. |spell| Combined with the highlighting used otherwise.
-  SpellLocal = { sp = c.info, undercurl = true },                         -- Word that is recognized by the spellchecker as one that is used in another region. |spell| Combined with the highlighting used otherwise.
-  SpellRare = { sp = c.hint, undercurl = true },                          -- Word that is recognized by the spellchecker as one that is hardly ever used.  |spell| Combined with the highlighting used otherwise.
-  StatusLine = { fg = c.fg_sidebar, bg = c.bg_statusline },               -- status line of current window
-  StatusLineNC = { fg = c.fg_gutter, bg = c.bg_statusline },              -- status lines of not-current windows Note: if this is equal to "StatusLine" Vim will use "^^^" in the status line of the current window.
-  TabLine = { bg = c.bg_statusline, fg = c.fg_gutter },                   -- tab pages line, not active tab page label
-  TabLineFill = { bg = c.black },                                         -- tab pages line, where there are no labels
-  TabLineSel = { fg = c.black, bg = c.blue },                             -- tab pages line, active tab page label
-  Title = { fg = c.blue, bold = true },                                   -- titles for output from ":set all", ":autocmd" etc.
-  Visual = { bg = c.bg_visual },                                          -- Visual mode selection
-  VisualNOS = { bg = c.bg_visual },                                       -- Visual mode selection when vim is "Not Owning the Selection".
-  WarningMsg = { fg = c.warning },                                        -- warning messages
-  Whitespace = { fg = c.fg_gutter },                                      -- "nbsp", "space", "tab" and "trail" in 'listchars'
-  WildMenu = { bg = c.bg_visual },                                        -- current match in 'wildmenu' completion
-  WinBar = { link = "StatusLine" },                                       -- window bar
-  WinBarNC = { link = "StatusLineNC" },                                   -- window bar in inactive windows
+  SpecialKey = { fg = c.dark3 },                                              -- Unprintable characters: text displayed differently from what it really is.  But not 'listchars' whitespace. |hl-Whitespace|
+  SpellBad = { sp = c.error, undercurl = true },                              -- Word that is not recognized by the spellchecker. |spell| Combined with the highlighting used otherwise.
+  SpellCap = { sp = c.warning, undercurl = true },                            -- Word that should start with a capital. |spell| Combined with the highlighting used otherwise.
+  SpellLocal = { sp = c.info, undercurl = true },                             -- Word that is recognized by the spellchecker as one that is used in another region. |spell| Combined with the highlighting used otherwise.
+  SpellRare = { sp = c.hint, undercurl = true },                              -- Word that is recognized by the spellchecker as one that is hardly ever used.  |spell| Combined with the highlighting used otherwise.
+  StatusLine = { fg = c.fg_sidebar, bg = c.bg_statusline },                   -- status line of current window
+  StatusLineNC = { fg = c.fg_gutter, bg = c.bg_statusline },                  -- status lines of not-current windows Note: if this is equal to "StatusLine" Vim will use "^^^" in the status line of the current window.
+  TabLine = { bg = c.bg_statusline, fg = c.fg_gutter },                       -- tab pages line, not active tab page label
+  TabLineFill = { bg = c.black },                                             -- tab pages line, where there are no labels
+  TabLineSel = { fg = c.black, bg = c.blue },                                 -- tab pages line, active tab page label
+  Title = { fg = c.blue, bold = true },                                       -- titles for output from ":set all", ":autocmd" etc.
+  Visual = { bg = c.bg_visual },                                              -- Visual mode selection
+  VisualNOS = { bg = c.bg_visual },                                           -- Visual mode selection when vim is "Not Owning the Selection".
+  WarningMsg = { fg = c.warning },                                            -- warning messages
+  Whitespace = { fg = c.fg_gutter },                                          -- "nbsp", "space", "tab" and "trail" in 'listchars'
+  WildMenu = { bg = c.bg_visual },                                            -- current match in 'wildmenu' completion
+  WinBar = { link = "StatusLine" },                                           -- window bar
+  WinBarNC = { link = "StatusLineNC" },                                       -- window bar in inactive windows
 
-  Bold = { bold = true, fg = c.fg },                                      -- (preferred) any bold text
-  Character = { fg = c.green },                                           --  a character constant: 'c', '\n'
-  Constant = { fg = c.orange },                                           -- (preferred) any constant
-  Debug = { fg = c.orange },                                              --    debugging statements
-  Delimiter = { link = "Special" },                                       --  character that needs attention
-  Error = { fg = c.error },                                               -- (preferred) any erroneous construct
-  Function = { fg = c.blue },                                             -- function name (also: methods for classes)
-  Identifier = { fg = c.magenta },                                        -- (preferred) any variable name
-  Italic = { italic = true, fg = c.fg },                                  -- (preferred) any italic text
-  Keyword = { fg = c.cyan },                                              --  any other keyword
-  Operator = { fg = c.blue5 },                                            -- "sizeof", "+", "*", etc.
-  PreProc = { fg = c.cyan },                                              -- (preferred) generic Preprocessor
-  Special = { fg = c.blue1 },                                             -- (preferred) any special symbol
-  Statement = { fg = c.magenta },                                         -- (preferred) any statement
-  String = { fg = c.green },                                              --   a string constant: "this is a string"
-  Todo = { bg = c.yellow, fg = c.bg },                                    -- (preferred) anything that needs extra attention; mostly the keywords TODO FIXME and XXX
-  Type = { fg = c.blue1 },                                                -- (preferred) int, long, char, etc.
-  Underlined = { underline = true },                                      -- (preferred) text that stands out, HTML links
-  debugBreakpoint = { bg = Util.blend_bg(c.info, 0.1, tmp.bg), fg = c.info },     -- used for breakpoint colors in terminal-debug
-  debugPC = { bg = c.bg_sidebar },                                        -- used for highlighting the current line in terminal-debug
+  Bold = { bold = true, fg = c.fg },                                          -- (preferred) any bold text
+  Character = { fg = c.green },                                               --  a character constant: 'c', '\n'
+  Constant = { fg = c.orange },                                               -- (preferred) any constant
+  Debug = { fg = c.orange },                                                  --    debugging statements
+  Delimiter = { link = "Special" },                                           --  character that needs attention
+  Error = { fg = c.error },                                                   -- (preferred) any erroneous construct
+  Function = { fg = c.blue },                                                 -- function name (also: methods for classes)
+  Identifier = { fg = c.magenta },                                            -- (preferred) any variable name
+  Italic = { italic = true, fg = c.fg },                                      -- (preferred) any italic text
+  Keyword = { fg = c.cyan },                                                  --  any other keyword
+  Operator = { fg = c.blue5 },                                                -- "sizeof", "+", "*", etc.
+  PreProc = { fg = c.cyan },                                                  -- (preferred) generic Preprocessor
+  Special = { fg = c.blue1 },                                                 -- (preferred) any special symbol
+  Statement = { fg = c.magenta },                                             -- (preferred) any statement
+  String = { fg = c.green },                                                  --   a string constant: "this is a string"
+  Todo = { bg = c.yellow, fg = c.bg },                                        -- (preferred) anything that needs extra attention; mostly the keywords TODO FIXME and XXX
+  Type = { fg = c.blue1 },                                                    -- (preferred) int, long, char, etc.
+  Underlined = { underline = true },                                          -- (preferred) text that stands out, HTML links
+  debugBreakpoint = { bg = Util.blend_bg(c.info, 0.1, tmp.bg), fg = c.info }, -- used for breakpoint colors in terminal-debug
+  debugPC = { bg = c.bg_sidebar },                                            -- used for highlighting the current line in terminal-debug
   dosIniLabel = { link = "@property" },
   helpCommand = { bg = c.terminal_black, fg = c.blue },
   htmlH1 = { fg = c.magenta, bold = true },
@@ -225,19 +245,19 @@ local s = {
   LspInfoBorder = { fg = c.border_highlight, bg = c.bg_float },
 
   -- diagnostics
-  DiagnosticError = { fg = c.error },                                                 -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticWarn = { fg = c.warning },                                                -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticInfo = { fg = c.info },                                                   -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticHint = { fg = c.hint },                                                   -- Used as the base highlight group. Other Diagnostic highlights link to this by default
-  DiagnosticUnnecessary = { fg = c.terminal_black },                                  -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticError = { fg = c.error },                                                         -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticWarn = { fg = c.warning },                                                        -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticInfo = { fg = c.info },                                                           -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticHint = { fg = c.hint },                                                           -- Used as the base highlight group. Other Diagnostic highlights link to this by default
+  DiagnosticUnnecessary = { fg = c.terminal_black },                                          -- Used as the base highlight group. Other Diagnostic highlights link to this by default
   DiagnosticVirtualTextError = { bg = Util.blend_bg(c.error, 0.1, tmp.bg), fg = c.error },    -- Used for "Error" diagnostic virtual text
   DiagnosticVirtualTextWarn = { bg = Util.blend_bg(c.warning, 0.1, tmp.bg), fg = c.warning }, -- Used for "Warning" diagnostic virtual text
   DiagnosticVirtualTextInfo = { bg = Util.blend_bg(c.info, 0.1, tmp.bg), fg = c.info },       -- Used for "Information" diagnostic virtual text
   DiagnosticVirtualTextHint = { bg = Util.blend_bg(c.hint, 0.1, tmp.bg), fg = c.hint },       -- Used for "Hint" diagnostic virtual text
-  DiagnosticUnderlineError = { undercurl = true, sp = c.error },                      -- Used to underline "Error" diagnostics
-  DiagnosticUnderlineWarn = { undercurl = true, sp = c.warning },                     -- Used to underline "Warning" diagnostics
-  DiagnosticUnderlineInfo = { undercurl = true, sp = c.info },                        -- Used to underline "Information" diagnostics
-  DiagnosticUnderlineHint = { undercurl = true, sp = c.hint },                        -- Used to underline "Hint" diagnostics
+  DiagnosticUnderlineError = { undercurl = true, sp = c.error },                              -- Used to underline "Error" diagnostics
+  DiagnosticUnderlineWarn = { undercurl = true, sp = c.warning },                             -- Used to underline "Warning" diagnostics
+  DiagnosticUnderlineInfo = { undercurl = true, sp = c.info },                                -- Used to underline "Information" diagnostics
+  DiagnosticUnderlineHint = { undercurl = true, sp = c.hint },                                -- Used to underline "Hint" diagnostics
 
   -- Health
   healthError = { fg = c.error },
@@ -342,10 +362,10 @@ local s = {
   ["@type.builtin"] = { fg = Util.blend_bg(c.blue1, 0.8, tmp.bg) },
   ["@type.definition"] = { link = "Typedef" },
   ["@type.qualifier"] = { link = "@keyword" },
-  ["@variable"] = { fg = c.fg },                                           -- Any variable name that does not have another highlight.
-  ["@variable.builtin"] = { fg = c.red },                                  -- Variable names that are defined by the languages, like `this` or `self`.
-  ["@variable.member"] = { fg = c.green1 },                                -- For fields.
-  ["@variable.parameter"] = { fg = c.yellow },                             -- For parameters of a function.
+  ["@variable"] = { fg = c.fg },                                                   -- Any variable name that does not have another highlight.
+  ["@variable.builtin"] = { fg = c.red },                                          -- Variable names that are defined by the languages, like `this` or `self`.
+  ["@variable.member"] = { fg = c.green1 },                                        -- For fields.
+  ["@variable.parameter"] = { fg = c.yellow },                                     -- For parameters of a function.
   ["@variable.parameter.builtin"] = { fg = Util.blend_fg(c.yellow, 0.8, tmp.fg) }, -- For builtin parameters of a function, e.g. "..." or Smali's p[1-99]
 
   -- stylua: ignore
@@ -454,12 +474,12 @@ local s = {
   BlinkCmpKindVariable = { link = "@variable" },
   BlinkCmpKindValue = { link = "@string" },
 
-  RenderMarkdownBullet = { fg = c.orange },    -- horizontal rule
+  RenderMarkdownBullet = { fg = c.orange }, -- horizontal rule
   RenderMarkdownCode = { bg = c.bg_dark },
-  RenderMarkdownDash = { fg = c.orange },      -- horizontal rule
+  RenderMarkdownDash = { fg = c.orange },   -- horizontal rule
   RenderMarkdownTableHead = { fg = c.red },
   RenderMarkdownTableRow = { fg = c.orange },
-  RenderMarkdownCodeInline = {link = "@markup.raw.markdown_inline"}
+  RenderMarkdownCodeInline = { link = "@markup.raw.markdown_inline" }
 }
 
 local hl = api.nvim_set_hl
