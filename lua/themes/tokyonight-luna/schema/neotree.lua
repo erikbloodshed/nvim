@@ -6,7 +6,7 @@ M.get = function(c)
     NeoTreeDimText              = { fg = c.fg_gutter },
     NeoTreeFileName             = { fg = c.fg_dark },
     NeoTreeGitModified          = { fg = c.orange },
-    NeoTreeGitStaged            = { fg = c.green1 },
+    NeoTreeGitStaged            = { fg = c.teal },
     NeoTreeGitUntracked         = { fg = c.magenta },
     NeoTreeNormal               = { link = "Normal" },
     NeoTreeNormalNC             = { link = "NeoTreeNormalNC" },
