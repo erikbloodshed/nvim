@@ -37,7 +37,7 @@ M = {
 }
 
 M.dark             = blend(M.bg_dark, 0.8, "#000000")
-M.bg_visual        = blend_bg(M.blue0, 0.4, M.bg)
+M.bg_visual        = blend_bg(M.blue0, 0.3, M.bg)
 M.black            = blend_bg(M.bg, 0.8, "#000000")
 M.border_highlight = blend_bg(M.blue1, 0.8, M.bg)
 M.red_bright       = brighten(M.red)

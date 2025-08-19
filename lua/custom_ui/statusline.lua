@@ -394,7 +394,7 @@ local function create_components(winid, bufnr)
       if not clients or #clients == 0 then return "" end
       local names = {}
       for _, c in ipairs(clients) do names[#names + 1] = c.name end
-      return hl("StatusLineLSP", config.icons.lsp .. " " .. table.concat(names, ", "))
+      return hl("StatusLineLsp", config.icons.lsp .. " " .. table.concat(names, ", "))
     end)
   end
 

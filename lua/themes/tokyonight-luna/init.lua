@@ -3,6 +3,7 @@ local g = vim.g
 
 return function(bg_clear)
   require("themes.tokyonight-luna.schema.base").get(c, bg_clear)
+  require("themes.tokyonight-luna.schema.status").get(c)
   require("themes.tokyonight-luna.schema.treesitter").get(c)
   require("themes.tokyonight-luna.schema.semantic-token").get(c)
   require("themes.tokyonight-luna.schema.blink").get(c)
