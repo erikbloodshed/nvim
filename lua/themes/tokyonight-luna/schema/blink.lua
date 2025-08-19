@@ -5,7 +5,7 @@ M.get = function(c)
   local g = {
     BlinkCmpDoc                 = { fg = c.fg, bg = c.bg_dark },
     BlinkCmpDocBorder           = { fg = c.border_highlight, bg = c.bg_dark },
-    BlinkCmpGhostText           = { fg = c.bg_dark3 },
+    BlinkCmpGhostText           = { fg = c.terminal_black },
     BlinkCmpKindCodeium         = { fg = c.teal, bg = c.none },
     BlinkCmpKindCopilot         = { fg = c.teal, bg = c.none },
     BlinkCmpKindDefault         = { fg = c.fg_dark, bg = c.none },

@@ -20,7 +20,7 @@ M.get = function(c, t)
     DiffText                    = { bg = c.blue7 },
     EndOfBuffer                 = { fg = c.bg },
     ErrorMsg                    = { fg = c.red },
-    WinSeparator                = { fg = c.border_highlight },
+    WinSeparator                = { fg = c.fg_gutter },
     Folded                      = { fg = c.blue, bg = c.fg_gutter },
     FoldColumn                  = { bg = t and c.none or c.bg, fg = c.comment },
     SignColumn                  = { bg = t and c.none or c.bg, fg = c.fg_gutter },

@@ -1,10 +1,6 @@
-local blend        = require("themes.util").blend
-local blend_bg     = require("themes.util").blend_bg
-local brighten     = require("themes.util").brighten
+-- Tokyonight Moon Palette
+local M = {}
 
-local M            = {}
-
----@format disable-next
 M = {
   bg             = "#222436",
   bg_dark        = "#1e2030",
@@ -35,19 +31,5 @@ M = {
   yellow         = "#ffc777",
   none           = "NONE",
 }
-
-M.dark             = blend(M.bg_dark, 0.8, "#000000")
-M.bg_visual        = blend_bg(M.blue0, 0.3, M.bg)
-M.black            = blend_bg(M.bg, 0.8, "#000000")
-M.border_highlight = blend_bg(M.blue1, 0.8, M.bg)
-M.red_bright       = brighten(M.red)
-M.green_bright     = brighten(M.green)
-M.yellow_bright    = brighten(M.yellow)
-M.blue_bright      = brighten(M.blue)
-M.magenta_bright   = brighten(M.magenta)
-M.cyan_bright      = brighten(M.cyan)
-
----@format disable-next
-M.rainbow = { M.blue, M.yellow, M.green, M.teal, M.magenta, M.purple, M.orange, M.red, }
 
 return M

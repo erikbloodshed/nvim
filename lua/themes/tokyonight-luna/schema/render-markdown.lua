@@ -1,5 +1,7 @@
 local api = vim.api
 local blend_bg = require("themes.util").blend_bg
+local hl = api.nvim_set_hl
+
 local M = {}
 
 M.get = function(c)
@@ -11,10 +13,14 @@ M.get = function(c)
     RenderMarkdownTableRow   = { link = "RenderMarkdownBullet" },
     RenderMarkdownCodeInline = { link = "@markup.raw.markdown_inline" }
   }
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for key, val in pairs(g) do hl(0, key, val) end
-  for i, v in ipairs(c.rainbow) do
+
+  local rainbow = { c.blue, c.yellow, c.green, c.teal, c.magenta, c.purple, c.orange, c.red, }
+
+  for key, val in pairs(g) do
+    hl(0, key, val)
+  end
+
+  for i, v in ipairs(rainbow) do
     hl(0, "RenderMarkdownH" .. i .. "Bg", { bg = blend_bg(v, 0.1, c.bg) })
     hl(0, "RenderMarkdownH" .. i .. "Fg", { fg = v, bold = true })
   end
