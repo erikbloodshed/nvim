@@ -136,6 +136,7 @@ local config = {
     },
     filetypes = {
       ["neo-tree"] = true,
+      NvimTree = true,
       lazy = true,
       lspinfo = true,
       checkhealth = true,
@@ -318,6 +319,7 @@ local function create_components(winid, bufnr)
           lazy = "💤 lazy",
           ["neo-tree"] = "🌳 neo-tree",
           ["neo-tree-popup"] = "🌳 neo-tree",
+          NvimTree = "🌳 nvim-tree",
           lspinfo = "🔧 lsp info",
           checkhealth = "🩺 checkhealth",
           man = "📖 manual",

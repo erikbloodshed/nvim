@@ -27,6 +27,7 @@ require("lazy").setup({
         "gzip",
         "man",
         "rplugin",
+        "netrw",
         "netrwPlugin",
         "spellfile",
         "tarPlugin",
