@@ -301,8 +301,8 @@ local function create_components(winid, bufnr)
       local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
       local title_map = {
         buftype = {
-          terminal = "🖥terminal",
-          popup = "📜 popup", -- Added for popup windows
+          terminal = icons.terminal .. " terminal",
+          popup = icons.dock .. " Popup", -- Added for popup windows
         },
         filetype = {
           lazy = icons.sleep .. " Lazy",

@@ -13,4 +13,6 @@ return {
   sleep = "󰒲",
   status = "󱖫",
   warn = "󱈸",
+  terminal = "",
+  dock = "󱂬",
 }

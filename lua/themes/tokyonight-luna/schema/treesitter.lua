@@ -94,11 +94,11 @@ M.get = function(c)
     ["@type.qualifier"]               = { link = "@keyword" },
     ["@variable"]                     = { fg = c.fg },
     ["@variable.builtin"]             = { link = "@keyword" },
-    ["@variable.builtin.c"]           = { fg = c.red },
+    ["@variable.builtin.c"]           = { fg = c.param },
     ["@variable.builtin.python"]      = { fg = c.red, italic = true },
     ["@variable.member"]              = { fg = c.teal },
-    ["@variable.parameter"]           = { fg = c.red },
-    ["@variable.parameter.builtin"]   = { fg = c.red },
+    ["@variable.parameter"]           = { fg = c.param },
+    ["@variable.parameter.builtin"]   = { fg = c.param },
   }
 
   ---@format disable-next

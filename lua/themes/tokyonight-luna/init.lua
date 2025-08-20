@@ -8,6 +8,7 @@ return function(bg_clear)
   c.bg_visual        = blend(c.blue0, 0.35, c.bg)    -- #2b3b6e
   c.border_highlight = blend(c.blue1, 0.8, c.bg)     -- #579dd6
   c.black             = blend(c.bg, 0.8, "#000000")
+  c.param             = brighten(c.red, 0.05)
 
   require("themes.tokyonight-luna.schema.base").get(c, bg_clear)
   require("themes.tokyonight-luna.schema.treesitter").get(c)
