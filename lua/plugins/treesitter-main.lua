@@ -1,6 +1,6 @@
 return {
   "nvim-treesitter/nvim-treesitter",
-  event = "VeryLazy",
+  lazy = true,
   branch = "main",
 
   build = function()
