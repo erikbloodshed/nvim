@@ -5,7 +5,9 @@ return {
   },
 
   config = function()
-    require("nvim-tree").setup({})
+    require("nvim-tree").setup({
+      hijack_cursor = true,
+    })
   end,
 
   keys = {
@@ -16,5 +18,4 @@ return {
       end
     },
   },
-
 }
