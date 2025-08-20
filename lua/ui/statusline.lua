@@ -4,7 +4,6 @@ local M = {}
 
 local Cache = {}
 
--- Create a new cache table with the given TTL map
 function Cache.new(ttl_map)
   return {
     data = {},
@@ -14,12 +13,10 @@ function Cache.new(ttl_map)
   }
 end
 
--- Get current time in milliseconds
 function Cache.now_ms()
   return loop.hrtime() / 1e6
 end
 
--- Check if a cache entry is valid
 function Cache.valid(cache, key)
   local v = cache.data[key]
   if v == nil then
@@ -33,7 +30,6 @@ function Cache.valid(cache, key)
   return (Cache.now_ms() - created) < ttl
 end
 
--- Update a cache entry
 function Cache.update(cache, key, value)
   cache.data[key] = value
   cache.ts[key] = Cache.now_ms()
@@ -45,7 +41,6 @@ function Cache.update(cache, key, value)
   end
 end
 
--- Get or set a cache entry
 function Cache.get_or_set(cache, key, fnc)
   if Cache.valid(cache, key) then
     return cache.data[key]
@@ -58,7 +53,6 @@ function Cache.get_or_set(cache, key, fnc)
   return v
 end
 
--- Invalidate cache entries
 function Cache.invalidate(cache, keys)
   if not keys then
     return
@@ -73,19 +67,16 @@ function Cache.invalidate(cache, keys)
   end
 end
 
--- Per-window caches and state
 local window_caches = {}
 local window_git_cache = {}
 local window_git_jobs = {}
 local window_file_icon_cache = {}
 local window_file_icon_jobs = {}
 
--- Get or create cache for a specific window
 local function get_window_cache(winid)
   if not window_caches[winid] then
     local bt = api.nvim_get_option_value("buftype", { buf = api.nvim_win_get_buf(winid) })
     if bt == "popup" then
-      -- Lightweight cache for transient windows (e.g., popups)
       window_caches[winid] = Cache.new({
         mode = 50,
         simple_title = 3000,
@@ -108,7 +99,6 @@ local function get_window_cache(winid)
   return window_caches[winid]
 end
 
--- Clean up cache for closed windows
 local function cleanup_window_cache(winid)
   window_caches[winid] = nil
   window_git_cache[winid] = nil
@@ -177,7 +167,6 @@ local function require_safe(mod)
   return loaded[mod]
 end
 
--- Per-window file icon handling
 local function get_file_icon(winid, filename, extension)
   if not window_file_icon_cache[winid] then
     window_file_icon_cache[winid] = {}
@@ -231,7 +220,6 @@ local function get_file_icon(winid, filename, extension)
   return ""
 end
 
--- Per-window git branch handling
 local function fetch_git_branch(winid, root)
   if not window_git_jobs[winid] then
     window_git_jobs[winid] = {}
@@ -318,9 +306,9 @@ local function create_components(winid, bufnr)
         },
         filetype = {
           lazy = icons.sleep .. " Lazy",
-          ["neo-tree"] = icons.file_tree .. " Files",
-          ["neo-tree-popup"] = icons.file_tree .. " Files",
-          NvimTree = icons.file_tree .. " Files",
+          ["neo-tree"] = icons.file_tree .. " File Explorer",
+          ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
+          NvimTree = icons.file_tree .. " Files Explorer",
           lspinfo = icons.info .. " LSP Info",
           checkhealth = icons.status .. " Health",
           man = icons.book .. " Manual",
@@ -467,14 +455,8 @@ M.refresh_window = function(winid)
     return
   end
 
-  local main_expr = string.format(
-    '%%!v:lua.require("ui.statusline").statusline_for_window(%d)',
-    winid
-  )
-  local simple_expr = string.format(
-    '%%!v:lua.require("ui.statusline").simple_statusline_for_window(%d)',
-    winid
-  )
+  local main_expr = string.format('%%!v:lua.require("ui.statusline").statusline_for_window(%d)', winid)
+  local simple_expr = string.format('%%!v:lua.require("ui.statusline").simple_statusline_for_window(%d)', winid)
 
   if is_excluded_buftype(winid) then
     api.nvim_set_option_value("statusline", simple_expr, { win = winid })
