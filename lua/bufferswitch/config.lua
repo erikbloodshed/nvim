@@ -28,7 +28,7 @@ function M.create(user_config)
       "quickfix", "nofile", "help", "prompt"
     },
     exclude_filetypes = {     -- Filetypes to exclude from list
-      "qf", "netrw", "Trouble", "fugitive",
+      "qf", "netrw", "Trouble", "fugitive", "NvimTree"
     },
     periodic_cleanup = true,     -- Enable periodic cleanup
     debug = false,               -- Enable debug logging

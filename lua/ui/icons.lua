@@ -1,0 +1,16 @@
+return {
+  book = "󰂺",
+  error = "",
+  file_tree = "󰙅",
+  fix = "󰁨",
+  git = "",
+  help = "󰞋",
+  hint = "",
+  info = "",
+  lsp = "",
+  modified = "[+]",
+  readonly = "",
+  sleep = "󰒲",
+  status = "󱖫",
+  warn = "󱈸",
+}

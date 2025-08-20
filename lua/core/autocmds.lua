@@ -37,9 +37,9 @@ autocmd({ "Filetype" }, {
 
 autocmd({ "VimEnter" }, {
   callback = function()
-    require("custom_ui.statusline")
-    require("custom_ui.input")
-    require("custom_ui.select")
+    require("ui.statusline")
+    require("ui.input")
+    require("ui.select")
 
     keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
       { noremap = true, silent = true })

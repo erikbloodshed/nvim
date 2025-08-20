@@ -1,25 +1,11 @@
---[[
-  custom_qf.lua - A custom quickfix formatter for Neovim
-  This module improves the appearance of quickfix and location list windows by:
-  1. Adding diagnostic signs (/󱈸//) with appropriate highlighting
-  2. Highlighting file paths using the Directory highlight group
-  3. Highlighting line/column numbers using the Number highlight group
-  4. Highlighting diagnostic messages with the same highlight as their signs
-  5. Supporting path truncation for long file paths
-  6. Making annotations like "(fix available)" appear in italic
---]]
-
+local icons = require("ui.icons")
 local M = {}
 
-local txt = vim.diagnostic.config().signs.text
-local x = vim.diagnostic.severity
-
----@diagnostic disable:need-check-nil
 local signs = {
-  error   = { text = txt[x.ERROR], hl = 'DiagnosticSignError' },
-  warning = { text = txt[x.WARN], hl = 'DiagnosticSignWarn' },
-  info    = { text = txt[x.INFO], hl = 'DiagnosticSignInfo' },
-  hint    = { text = txt[x.HINT], hl = 'DiagnosticSignHint' },
+  error = { text = icons.error, hl = 'DiagnosticSignError' },
+  warn  = { text = icons.warn, hl = 'DiagnosticSignWarn' },
+  info  = { text = icons.info, hl = 'DiagnosticSignInfo' },
+  hint  = { text = icons.hint, hl = 'DiagnosticSignHint' },
 }
 
 -- Create a unique namespace for our buffer highlights
@@ -58,7 +44,7 @@ local function trim_path(path)
   -- Truncate if configured maximum length is exceeded
   if max_filename_length > 0 and len > max_filename_length then
     fname = filename_truncate_prefix
-        .. vim.fn.strpart(fname, len - max_filename_length, max_filename_length, 1)
+      .. vim.fn.strpart(fname, len - max_filename_length, max_filename_length, 1)
   end
 
   return fname
@@ -83,7 +69,7 @@ local function apply_highlights(bufnr, highlights)
   -- This helps if the quickfix buffer is closed unexpectedly
   if not vim.api.nvim_buf_is_valid(bufnr) then
     -- print("Warning: Quickfix buffer invalidated before applying highlights")
-    return     -- Exit the function if the buffer is not valid
+    return -- Exit the function if the buffer is not valid
   end
 
   for _, hl in ipairs(highlights) do
@@ -91,7 +77,7 @@ local function apply_highlights(bufnr, highlights)
     if hl == nil or type(hl) ~= 'table' or hl.line == nil or hl.col == nil or hl.end_col == nil or hl.group == nil then
       -- Optionally log a warning or skip this iteration
       -- print("Warning: Skipping invalid or incomplete highlight entry:", hl)
-      goto continue       -- Skip if hl is nil, not a table, or missing essential fields
+      goto continue -- Skip if hl is nil, not a table, or missing essential fields
     end
 
     -- Add validation for end_col and line existence
@@ -105,14 +91,14 @@ local function apply_highlights(bufnr, highlights)
       -- The line no longer exists or is out of bounds by the time
       -- apply_highlights is executed.
       -- print("Warning: Skipping highlight for non-existent line:", hl.line)
-      goto continue       -- Skip this highlight if the line is gone
+      goto continue -- Skip this highlight if the line is gone
     end
 
     local end_col = hl.end_col
     -- Validate end_col against line length and start column
     if end_col < hl.col or end_col > line_length then
       -- print("Warning: Invalid end_col value for highlight:", hl)
-      goto continue       -- Skip if end_col is invalid
+      goto continue -- Skip if end_col is invalid
     end
 
     -- All checks passed, apply the extmark
@@ -140,18 +126,18 @@ function M.format(info)
   local qf_bufnr = list.qfbufnr
   local raw_items = list.items
   local lines = {}
-  local pad_to = 0   -- For aligning text across all lines
+  local pad_to = 0 -- For aligning text across all lines
 
   -- Map single-letter type codes to our sign configurations
   local type_mapping = {
-    E = signs.error,       -- Error
-    W = signs.warning,     -- Warning
-    I = signs.info,        -- Information
-    N = signs.hint,        -- Note/Hint
+    E = signs.error, -- Error
+    W = signs.warn,  -- Warning
+    I = signs.info,  -- Information
+    N = signs.hint,  -- Note/Hint
   }
 
   local items = {}
-  local show_sign = false   -- Will be set to true if any item has a valid type
+  local show_sign = false -- Will be set to true if any item has a valid type
 
   -- Clear existing highlights when creating a new list
   if info.start_idx == 1 then
@@ -165,12 +151,12 @@ function M.format(info)
     if raw then
       -- Create a processed item with all the information we need
       local item = {
-        type = raw.type,           -- Diagnostic type (E/W/I/N)
-        text = raw.text,           -- Message text
-        location = '',             -- File path + line/col (to be built)
-        path_size = 0,             -- Length of just the file path part
-        line_col_size = 0,         -- Length of just the line/col part
-        index = i,                 -- Original index for positioning
+        type = raw.type,   -- Diagnostic type (E/W/I/N)
+        text = raw.text,   -- Message text
+        location = '',     -- File path + line/col (to be built)
+        path_size = 0,     -- Length of just the file path part
+        line_col_size = 0, -- Length of just the line/col part
+        index = i,         -- Original index for positioning
       }
 
       -- Check if this item has a valid diagnostic type
@@ -231,7 +217,7 @@ function M.format(info)
 
   -- Second pass: format items and collect highlights
   for _, item in ipairs(items) do
-    local line_idx = item.index - 1     -- 0-indexed for buffer operations
+    local line_idx = item.index - 1 -- 0-indexed for buffer operations
 
     -- Get just the first line of the message by default
     -- (Quickfix window doesn't handle newlines well)
@@ -253,7 +239,7 @@ function M.format(info)
 
     -- Get the sign configuration for this item type
     local sign_conf = type_mapping[item.type]
-    local sign = ' '     -- Default to space if no type or unknown type
+    local sign = ' ' -- Default to space if no type or unknown type
     local sign_hl = nil
 
     if sign_conf then
@@ -318,7 +304,7 @@ function M.format(info)
       if fix_annotation_end then
         local text_start = #prefix + #location
         table.insert(highlights, {
-          group = 'Comment',           -- Comment group typically uses italic formatting
+          group = 'Comment', -- Comment group typically uses italic formatting
           line = line_idx,
           col = text_start + fix_annotation_start - 1,
           end_col = text_start + fix_annotation_end,
@@ -394,7 +380,7 @@ function M.setup(opts)
   create_highlight_groups()
 
   -- Register our format function with Neovim using Lua API
-  vim.opt.quickfixtextfunc = "v:lua.require'custom_ui.qf'.format"
+  vim.opt.quickfixtextfunc = "v:lua.require'ui.qf'.format"
 end
 
 -- Example usage:

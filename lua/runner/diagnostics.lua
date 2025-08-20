@@ -1,7 +1,7 @@
 M = {}
 
 M.open_quickfixlist = function()
-  require("custom_ui.qf").setup({
+  require("qf").setup({
     show_multiple_lines = false,
     max_filename_length = 30,
   })

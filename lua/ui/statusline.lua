@@ -1,4 +1,5 @@
 local api, fn, loop = vim.api, vim.fn, vim.loop
+local icons = require("ui.icons")
 local M = {}
 
 local Cache = {}
@@ -120,14 +121,14 @@ local config = {
   separators = { left = "", right = "", section = " │ " },
   throttle_ms = 50,
   icons = {
-    modified = "[+]",
-    readonly = "",
-    git = "",
-    lsp = "",
-    error = "",
-    warn = "󱈸",
-    info = "",
-    hint = "",
+    modified = icons.modified,
+    readonly = icons.readonly,
+    git = icons.git,
+    lsp = icons.lsp,
+    error = icons.error,
+    warn = icons.warn,
+    info = icons.info,
+    hint = icons.hint,
   },
   exclude = {
     buftypes = {
@@ -312,19 +313,19 @@ local function create_components(winid, bufnr)
       local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
       local title_map = {
         buftype = {
-          terminal = "🖥 terminal",
+          terminal = "🖥terminal",
           popup = "📜 popup", -- Added for popup windows
         },
         filetype = {
-          lazy = "💤 lazy",
-          ["neo-tree"] = "🌳 neo-tree",
-          ["neo-tree-popup"] = "🌳 neo-tree",
-          NvimTree = "🌳 nvim-tree",
-          lspinfo = "🔧 lsp info",
-          checkhealth = "🩺 checkhealth",
-          man = "📖 manual",
-          qf = "📋 quickfix",
-          help = "❓ help",
+          lazy = icons.sleep .. " Lazy",
+          ["neo-tree"] = icons.file_tree .. " Files",
+          ["neo-tree-popup"] = icons.file_tree .. " Files",
+          NvimTree = icons.file_tree .. " Files",
+          lspinfo = icons.info .. " LSP Info",
+          checkhealth = icons.status .. " Health",
+          man = icons.book .. " Manual",
+          qf = icons.fix .. " Quickfix",
+          help = icons.help .. " Help",
         },
       }
 
@@ -467,11 +468,11 @@ M.refresh_window = function(winid)
   end
 
   local main_expr = string.format(
-    '%%!v:lua.require("custom_ui.statusline").statusline_for_window(%d)',
+    '%%!v:lua.require("ui.statusline").statusline_for_window(%d)',
     winid
   )
   local simple_expr = string.format(
-    '%%!v:lua.require("custom_ui.statusline").simple_statusline_for_window(%d)',
+    '%%!v:lua.require("ui.statusline").simple_statusline_for_window(%d)',
     winid
   )
 

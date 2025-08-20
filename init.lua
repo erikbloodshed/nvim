@@ -10,7 +10,7 @@
  ░          ░  ░    ░ ░      ░ ░     ░          ░   ░  ░  ░   ░  ░   ░
       ░                            ░                               ░
 --]]
--- Add to your init.lua
+
 require("core.options")
 require("core.lazy")
 require("core.lsp")
