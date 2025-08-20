@@ -20,7 +20,6 @@ return {
           dir = "/home/xenyan/.config/nvim",
           toggle = true,
           reveal = true,
-          reveal_force_cwd = true,
         })
       end,
     },

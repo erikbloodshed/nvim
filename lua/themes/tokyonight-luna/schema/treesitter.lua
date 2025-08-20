@@ -95,7 +95,7 @@ M.get = function(c)
     ["@variable"]                     = { fg = c.fg },
     ["@variable.builtin"]             = { link = "@keyword" },
     ["@variable.builtin.c"]           = { fg = c.param },
-    ["@variable.builtin.python"]      = { fg = c.red, italic = true },
+    ["@variable.builtin.python"]      = { fg = c.param, italic = true },
     ["@variable.member"]              = { fg = c.teal },
     ["@variable.parameter"]           = { fg = c.param },
     ["@variable.parameter.builtin"]   = { fg = c.param },
