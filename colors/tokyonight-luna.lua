@@ -7,4 +7,4 @@ vim.o.background = "dark"
 vim.g.colors_name = "tokyonight-luna"
 vim.g.matchparen_disable_cursor_hl = 1
 
-require("themes.tokyonight-luna")(true)
+require("themes.tokyonight-luna")(false)
