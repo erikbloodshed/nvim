@@ -15,7 +15,6 @@ return function(bg_clear)
   require("themes.tokyonight-luna.schema.status").get(c)
   require("themes.tokyonight-luna.schema.blink").get(c)
   require("themes.tokyonight-luna.schema.neotree").get(c)
-  require("themes.tokyonight-luna.schema.render-markdown").get(c)
 
   g.terminal_color_0  = c.black
   g.terminal_color_1  = c.red
