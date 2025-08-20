@@ -4,7 +4,6 @@ local M = {}
 
 M.get = function(c)
   local b = c.bg
-  local f = c.fg
   local g = {
     ["@annotation"]                   = { link = "PreProc" },
     ["@attribute"]                    = { link = "PreProc" },
@@ -94,12 +93,12 @@ M.get = function(c)
     ["@type.definition"]              = { link = "Typedef" },
     ["@type.qualifier"]               = { link = "@keyword" },
     ["@variable"]                     = { fg = c.fg },
-    ["@variable.builtin"]             = { fg = blend(c.red, 0.8, f) },
-    ["@variable.builtin.c"]           = { fg = blend(c.red, 0.8, f) },
-    ["@variable.builtin.python"]             = { fg = blend(c.red, 0.8, f), italic = true },
+    ["@variable.builtin"]             = { link = "@keyword" },
+    ["@variable.builtin.c"]           = { fg = c.red3 },
+    ["@variable.builtin.python"]      = { fg = c.red3, italic = true },
     ["@variable.member"]              = { fg = c.teal },
-    ["@variable.parameter"]           = { fg = c.red },
-    ["@variable.parameter.builtin"]   = { fg = c.red },
+    ["@variable.parameter"]           = { fg = c.red3 },
+    ["@variable.parameter.builtin"]   = { fg = c.red3 },
   }
 
   ---@format disable-next

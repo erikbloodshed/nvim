@@ -3,6 +3,7 @@ local lsp = vim.lsp
 local diagnostic = vim.diagnostic
 local keyset = vim.keymap.set
 local autocmd = api.nvim_create_autocmd
+local icons = require("ui.icons")
 
 lsp.enable({ "basedpyright", "clangd", "luals", "ruff" })
 
@@ -15,7 +16,7 @@ autocmd("LspAttach", {
       severity_sort = true,
       float = { border = "rounded" },
       signs = {
-        text = { [x.ERROR] = "", [x.WARN] = "󱈸", [x.HINT] = "", [x.INFO] = "", },
+        text = { [x.ERROR] = icons.error, [x.WARN] = icons.warn, [x.HINT] = icons.hint, [x.INFO] = icons.info },
       },
     })
 
