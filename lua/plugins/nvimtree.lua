@@ -178,24 +178,18 @@ return {
       end
     })
 
-    local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
-
     autocmd({ "WinEnter", "BufWinEnter" }, {
-      group = groupId,
-      pattern = "NvimTree*",
-      callback = function()
-        api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
-        setlocal.guicursor:append("a:Cursor/lCursor")
-      end
-    })
-
-    autocmd({ "BufLeave", "WinClosed" }, {
-      group = groupId,
-      pattern = "NvimTree*",
-      callback = function()
-        api.nvim_set_hl(0, "Cursor", { blend = 0, fg = hl.fg, bg = hl.bg })
-        setlocal.guicursor:remove("a:Cursor/lCursor")
-      end
+      callback = function(arg)
+        local tree_api = require("nvim-tree.api")
+        local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
+        if tree_api.tree.is_tree_buf(arg.buf) then
+          api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
+          setlocal.guicursor:append("a:Cursor/lCursor")
+        else
+          api.nvim_set_hl(0, "Cursor", { blend = 0, fg = hl.fg, bg = hl.bg })
+          setlocal.guicursor:remove("a:Cursor/lCursor")
+        end
+      end,
     })
   end,
 }
