@@ -28,7 +28,7 @@ vim.ui.input = function(opts, on_confirm)
     height = 1,
     title = prompt,
     title_pos = "center",
-    noautocmd = false,
+    noautocmd = true,
   }
 
   if prompt ~= " New Name " then
