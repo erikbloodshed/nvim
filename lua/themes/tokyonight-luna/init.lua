@@ -1,14 +1,13 @@
 local c        = require("themes.tokyonight-luna.colors")
 local g        = vim.g
 local blend    = require("themes.util").blend
-local blend_bg = require("themes.util").blend_bg
 local brighten = require("themes.util").brighten
 
 return function(bg_clear)
   c.dark             = blend(c.bg_dark, 0.8, "#000000") -- #181926
-  c.bg_visual        = blend_bg(c.blue0, 0.35, c.bg)    -- #2b3b6e
-  c.border_highlight = blend_bg(c.blue1, 0.8, c.bg)     -- #579dd6
-  c.black             = blend_bg(c.bg, 0.8, "#000000")
+  c.bg_visual        = blend(c.blue0, 0.35, c.bg)    -- #2b3b6e
+  c.border_highlight = blend(c.blue1, 0.8, c.bg)     -- #579dd6
+  c.black             = blend(c.bg, 0.8, "#000000")
 
   require("themes.tokyonight-luna.schema.base").get(c, bg_clear)
   require("themes.tokyonight-luna.schema.treesitter").get(c)

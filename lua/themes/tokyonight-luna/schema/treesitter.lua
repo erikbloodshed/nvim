@@ -1,9 +1,10 @@
 local api = vim.api
-local blend_bg = require("themes.util").blend_bg
-local blend_fg = require("themes.util").blend_fg
+local blend = require("themes.util").blend
 local M = {}
 
 M.get = function(c)
+  local b = c.bg
+  local f = c.fg
   local g = {
     ["@annotation"]                   = { link = "PreProc" },
     ["@attribute"]                    = { link = "PreProc" },
@@ -79,24 +80,26 @@ M.get = function(c)
     ["@punctuation.special"]          = { fg = c.blue5 },
     ["@punctuation.special.markdown"] = { fg = c.orange },
     ["@string"]                       = { link = "String" },
-    ["@string.documentation"]         = { fg = c.yellow, italic = true },
+    ["@string.documentation"]         = { fg = c.yellow },
     ["@string.escape"]                = { fg = c.magenta },
     ["@string.regexp"]                = { fg = c.blue6 },
     ["@tag"]                          = { link = "Label" },
     ["@tag.attribute"]                = { link = "@property" },
     ["@tag.delimiter"]                = { link = "Delimiter" },
-    ["@tag.delimiter.tsx"]            = { fg = blend_bg(c.blue, 0.7, c.bg) },
+    ["@tag.delimiter.tsx"]            = { fg = blend(c.blue, 0.7, b) },
     ["@tag.tsx"]                      = { fg = c.red },
     ["@tag.javascript"]               = { fg = c.red },
     ["@type"]                         = { link = "Type" },
-    ["@type.builtin"]                 = { fg = blend_bg(c.blue1, 0.8, c.bg) },
+    ["@type.builtin"]                 = { fg = blend(c.blue1, 0.85, b) },
     ["@type.definition"]              = { link = "Typedef" },
     ["@type.qualifier"]               = { link = "@keyword" },
     ["@variable"]                     = { fg = c.fg },
-    ["@variable.builtin"]             = { fg = blend_fg(c.red, 0.8, c.fg), italic = true },
+    ["@variable.builtin"]             = { fg = blend(c.red, 0.8, f) },
+    ["@variable.builtin.c"]           = { fg = blend(c.red, 0.8, f) },
+    ["@variable.builtin.python"]             = { fg = blend(c.red, 0.8, f), italic = true },
     ["@variable.member"]              = { fg = c.teal },
-    ["@variable.parameter"]           = { fg = c.yellow },
-    ["@variable.parameter.builtin"]   = { fg = blend_fg(c.yellow, 0.8, c.fg) },
+    ["@variable.parameter"]           = { fg = c.red },
+    ["@variable.parameter.builtin"]   = { fg = c.red },
   }
 
   ---@format disable-next

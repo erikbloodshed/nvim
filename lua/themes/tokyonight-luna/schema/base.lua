@@ -1,9 +1,10 @@
 local api = vim.api
-local blend_bg = require("themes.util").blend_bg
-local blend_fg = require("themes.util").blend_fg
+local blend = require("themes.util").blend
 local M = {}
 
 M.get = function(c, t)
+  local b = c.bg
+  local f = c.fg
   local g = {
     Comment                     = { fg = c.comment, italic = true },
     ColorColumn                 = { bg = c.black },
@@ -14,9 +15,9 @@ M.get = function(c, t)
     CursorLine                  = { bg = c.bg_dark2 },
     CursorColumn                = { link = "CursorLine" },
     Directory                   = { fg = c.blue },
-    DiffAdd                     = { bg = blend_bg(c.green1, 0.15, c.bg) },
-    DiffChange                  = { bg = blend_bg(c.blue7, 0.15, c.bg) },
-    DiffDelete                  = { bg = blend_bg(c.red1, 0.15, c.bg) },
+    DiffAdd                     = { bg = blend(c.green1, 0.15, b) },
+    DiffChange                  = { bg = blend(c.blue7, 0.15, b) },
+    DiffDelete                  = { bg = blend(c.red1, 0.15, b) },
     DiffText                    = { bg = c.blue7 },
     EndOfBuffer                 = { fg = c.bg },
     ErrorMsg                    = { fg = c.red },
@@ -43,9 +44,9 @@ M.get = function(c, t)
     FloatTitle                  = { link = "FloatBorder" },
     Pmenu                       = { bg = c.bg_dark, fg = c.fg },
     PmenuMatch                  = { bg = c.bg_dark, fg = c.blue1 },
-    PmenuSel                    = { bg = blend_bg(c.fg_gutter, 0.8, c.bg) },
-    PmenuMatchSel               = { bg = blend_bg(c.fg_gutter, 0.8), fg = c.blue1 },
-    PmenuSbar                   = { bg = blend_fg(c.bg_dark, 0.95, c.fg) },
+    PmenuSel                    = { bg = blend(c.fg_gutter, 0.8, b) },
+    PmenuMatchSel               = { bg = blend(c.fg_gutter, 0.8, b), fg = c.blue1 },
+    PmenuSbar                   = { bg = blend(c.bg_dark, 0.95, f) },
     PmenuThumb                  = { bg = c.fg_gutter },
     Question                    = { fg = c.blue },
     QuickFixLine                = { bg = c.bg_visual, bold = true },
@@ -91,19 +92,19 @@ M.get = function(c, t)
     LspReferenceText            = { bg = c.fg_gutter },
     LspReferenceRead            = { bg = c.fg_gutter },
     LspReferenceWrite           = { bg = c.fg_gutter },
-    LspSignatureActiveParameter = { bg = blend_bg(c.bg_visual, 0.4, c.bg), bold = true },
+    LspSignatureActiveParameter = { bg = blend(c.bg_visual, 0.4, b), bold = true },
     LspCodeLens                 = { fg = c.comment },
-    LspInlayHint                = { bg = blend_bg(c.blue7, 0.1, c.bg), fg = c.dark3 },
+    LspInlayHint                = { bg = blend(c.blue7, 0.1, b), fg = c.dark3 },
     LspInfoBorder               = { fg = c.border_highlight, bg = c.bg_dark },
     DiagnosticError             = { fg = c.red },
     DiagnosticWarn              = { fg = c.yellow },
     DiagnosticInfo              = { fg = c.blue2 },
     DiagnosticHint              = { fg = c.teal },
     DiagnosticUnnecessary       = { fg = c.bg_dark3 },
-    DiagnosticVirtualTextError  = { bg = blend_bg(c.red, 0.1, c.bg), fg = c.red },
-    DiagnosticVirtualTextWarn   = { bg = blend_bg(c.yellow, 0.1, c.bg), fg = c.yellow },
-    DiagnosticVirtualTextInfo   = { bg = blend_bg(c.blue2, 0.1, c.bg), fg = c.blue2 },
-    DiagnosticVirtualTextHint   = { bg = blend_bg(c.teal, 0.1, c.bg), fg = c.teal },
+    DiagnosticVirtualTextError  = { bg = blend(c.red, 0.1, b), fg = c.red },
+    DiagnosticVirtualTextWarn   = { bg = blend(c.yellow, 0.1, b), fg = c.yellow },
+    DiagnosticVirtualTextInfo   = { bg = blend(c.blue2, 0.1, b), fg = c.blue2 },
+    DiagnosticVirtualTextHint   = { bg = blend(c.teal, 0.1, b), fg = c.teal },
     DiagnosticUnderlineError    = { undercurl = true, sp = c.red },
     DiagnosticUnderlineWarn     = { undercurl = true, sp = c.yellow },
     DiagnosticUnderlineInfo     = { undercurl = true, sp = c.blue2 },

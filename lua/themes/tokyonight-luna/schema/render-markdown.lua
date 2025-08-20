@@ -1,10 +1,11 @@
 local api = vim.api
-local blend_bg = require("themes.util").blend_bg
+local blend = require("themes.util").blend
 local hl = api.nvim_set_hl
 
 local M = {}
 
 M.get = function(c)
+  local b = c.bg
   local g = {
     RenderMarkdownBullet     = { fg = c.orange },
     RenderMarkdownCode       = { bg = c.bg_dark },
@@ -21,7 +22,7 @@ M.get = function(c)
   end
 
   for i, v in ipairs(rainbow) do
-    hl(0, "RenderMarkdownH" .. i .. "Bg", { bg = blend_bg(v, 0.1, c.bg) })
+    hl(0, "RenderMarkdownH" .. i .. "Bg", { bg = blend(v, 0.1, b) })
     hl(0, "RenderMarkdownH" .. i .. "Fg", { fg = v, bold = true })
   end
 end

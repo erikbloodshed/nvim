@@ -18,7 +18,7 @@ return {
         editsNearCursor = true,
       }
     },
-    offsetEncoding = { "utf-16" },
+    -- offsetEncoding = { "utf-16" },
   },
 
   on_init = function(client, init_result)
