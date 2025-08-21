@@ -1,35 +1,36 @@
-local g            = vim.g
-local api          = vim.api
-local c            = require("themes.luna.colors")
-local blend        = require("themes.util").blend
-local brighten     = require("themes.util").brighten
-local hl           = api.nvim_set_hl
+local g = vim.g
+local api = vim.api
+local c = require("themes.luna.colors")
+local blend = require("themes.util").blend
+local brighten = require("themes.util").brighten
+local hl = api.nvim_set_hl
 
 vim.cmd.highlight("clear")
 vim.cmd.syntax("reset")
+
 vim.o.termguicolors = true
 vim.o.background = "dark"
 vim.g.colors_name = "tokyonight-luna"
 vim.g.matchparen_disable_cursor_hl = 1
 
 
-c.dark             = blend(c.bg_dark, 0.8, "#000000")   -- #181926
-c.bg_visual        = blend(c.blue0, 0.35, c.bg)         -- #2b3b6e
-c.border_highlight = blend(c.blue1, 0.8, c.bg)          -- #579dd6
-c.black            = blend(c.bg, 0.8, "#000000")
-c.param            = brighten(c.red, 0.05)
+c.dark = blend(c.bg_dark, 0.8, "#000000")             -- #181926
+c.bg_visual = blend(c.blue0, 0.35, c.bg)              -- #2b3b6e
+c.border_highlight = blend(c.blue1, 0.8, c.bg)        -- #579dd6
+c.black = blend(c.bg, 0.8, "#000000")
+c.param = brighten(c.red, 0.05)
 
 local s = {
-  "themes.luna.schema.base",
-  "themes.luna.schema.treesitter",
-  "themes.luna.schema.semantic-token",
-  "themes.luna.schema.status",
-  "themes.luna.schema.blink",
-  "themes.luna.schema.neotree",
+  "base",
+  "treesitter",
+  "semantic-token",
+  "status",
+  "blink",
+  "neotree",
 }
 
 for _, e in ipairs(s) do
-  local ok, mod = pcall(require, e)
+  local ok, mod = pcall(require, "themes.luna.schema." .. e)
   if ok then
     local m = mod.get(c)
     for k, v in pairs(m) do hl(0, k, v) end
@@ -38,16 +39,16 @@ for _, e in ipairs(s) do
   end
 end
 
-g.terminal_color_0  = c.black
-g.terminal_color_1  = c.red
-g.terminal_color_2  = c.green
-g.terminal_color_3  = c.yellow
-g.terminal_color_4  = c.blue
-g.terminal_color_5  = c.magenta
-g.terminal_color_6  = c.cyan
-g.terminal_color_7  = c.fg_dark
-g.terminal_color_8  = brighten(c.black)
-g.terminal_color_9  = brighten(c.red)
+g.terminal_color_0 = c.black
+g.terminal_color_1 = c.red
+g.terminal_color_2 = c.green
+g.terminal_color_3 = c.yellow
+g.terminal_color_4 = c.blue
+g.terminal_color_5 = c.magenta
+g.terminal_color_6 = c.cyan
+g.terminal_color_7 = c.fg_dark
+g.terminal_color_8 = brighten(c.black)
+g.terminal_color_9 = brighten(c.red)
 g.terminal_color_10 = brighten(c.green)
 g.terminal_color_11 = brighten(c.yellow)
 g.terminal_color_12 = brighten(c.blue)
