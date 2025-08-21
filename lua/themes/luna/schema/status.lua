@@ -18,6 +18,7 @@ M.get = function(c)
     StatusLineLsp = { fg = c.green },
     StatusLineLabel = { fg = c.fg_dark },
     StatusLineValue = { fg = c.orange },
+    StatusLineSeparator = { fg = c.bg_dark2 },
   }
 end
 
