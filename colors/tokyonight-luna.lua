@@ -55,3 +55,23 @@ g.terminal_color_12 = brighten(c.blue)
 g.terminal_color_13 = brighten(c.magenta)
 g.terminal_color_14 = brighten(c.cyan)
 g.terminal_color_15 = brighten(c.fg_dark)
+
+local key_priorities = {
+  ["function.builtin"] = 128
+}
+
+api.nvim_create_autocmd("LspTokenUpdate", {
+  callback = function(args)
+    local t = args.data.token
+    local k = vim.treesitter.get_captures_at_pos(args.buf, t.line, t.start_col)
+
+    for _, x in ipairs(k) do
+      local priority = key_priorities[x.capture]
+      if priority then
+        vim.lsp.semantic_tokens.highlight_token(t, args.buf, args.data.client_id, "@" .. x.capture,
+          { priority = priority })
+        return
+      end
+    end
+  end,
+})

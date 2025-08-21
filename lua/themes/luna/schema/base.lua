@@ -76,7 +76,7 @@ M.get = function(c)
     Debug = { fg = c.orange },
     Delimiter = { link = "Special" },
     Error = { fg = c.red },
-    Function = { fg = c.blue, bold = true },
+    Function = { fg = c.blue },
     Identifier = { fg = c.magenta },
     Italic = { italic = true, fg = c.fg },
     Keyword = { fg = c.cyan },
