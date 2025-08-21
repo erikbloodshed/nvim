@@ -26,7 +26,7 @@ M.get = function(c)
     ["@diff.plus"] = { link = "DiffAdd" },
     ["@function"] = { link = "Function" },
     ["@function.builtin"] = { link = "Special" },
-    ["@function.call"] = { link = "@function.method" },
+    ["@function.call"] = { link = "Function" },
     ["@function.macro"] = { link = "Macro" },
     ["@function.method"] = { fg = c.blue, bold = true },
     ["@function.method.call"] = { link = "@function.method" },
