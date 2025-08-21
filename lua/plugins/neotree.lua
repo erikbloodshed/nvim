@@ -37,13 +37,12 @@ return {
 
     local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
     opt.guicursor:append("a:Cursor/lCursor")
-
     local function hide_cursor()
       api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
     end
 
     local function show_cursor()
-      api.nvim_set_hl(0, "Cursor", { blend = 0, fg = hl.fg, bg = hl.bg })
+      api.nvim_set_hl(0, "Cursor", { blend = 0,fg = hl.fg, bg = hl.bg })
     end
 
     require("neo-tree").setup({
@@ -78,7 +77,12 @@ return {
         },
         {
           event = "neo_tree_popup_input_ready",
-          handler = show_cursor
+          handler = function(args)
+            show_cursor()
+            vim.keymap.set("i", "<esc>", vim.cmd.stopinsert, {
+              noremap = true, buffer = args.bufnr
+            })
+          end
         },
         {
           event = "neo_tree_popup_buffer_enter",

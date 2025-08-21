@@ -1,4 +1,8 @@
 local api, keymap  = vim.api, vim.keymap.set
+local win_close = function()
+    vim.cmd.stopinsert()
+    vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+end
 
 ---@diagnostic disable: duplicate-set-field
 vim.ui.input = function(opts, on_confirm)
@@ -13,8 +17,8 @@ vim.ui.input = function(opts, on_confirm)
   local default = opts.default or ""
   on_confirm = on_confirm or function() end
 
-  local default_width = #default + 8
-  local prompt_width = #prompt + 8
+  local default_width = #default + 10
+  local prompt_width = #prompt + 10
   local input_width = math.max(default_width, prompt_width)
 
   local default_win_config = {
@@ -41,24 +45,21 @@ vim.ui.input = function(opts, on_confirm)
   api.nvim_open_win(bufnr, true, default_win_config)
   api.nvim_buf_set_text(bufnr, 0, 0, 0, 0, { default })
 
-  vim.cmd("startinsert")
+  vim.cmd.startinsert()
   api.nvim_win_set_cursor(0, { 1, #default + 1 })
 
   keymap({ "n", "i", "v" }, "<cr>", function()
     on_confirm(api.nvim_buf_get_lines(bufnr, 0, 1, false)[1])
-    vim.cmd("stopinsert")
-    vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+    win_close()
   end, { buffer = bufnr })
 
   keymap("n", "<esc>", function()
     on_confirm(nil)
-    vim.cmd("stopinsert")
-    vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+    win_close()
   end, { buffer = bufnr })
 
   keymap("n", "q", function()
     on_confirm(nil)
-    vim.cmd("stopinsert")
-    vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+    win_close()
   end, { buffer = bufnr })
 end
