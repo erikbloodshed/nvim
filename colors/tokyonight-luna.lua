@@ -21,16 +21,16 @@ c.black = blend(c.bg, 0.8, "#000000")
 c.param = brighten(c.red, 0.05)
 
 local s = {
-  "base",
-  "treesitter",
-  "semantic-token",
-  "status",
-  "blink",
-  "neotree",
+  "themes.luna.schema.base",
+  "themes.luna.schema.treesitter",
+  "themes.luna.schema.semantic-token",
+  "themes.luna.schema.status",
+  "themes.luna.schema.blink",
+  "themes.luna.schema.neotree",
 }
 
 for _, e in ipairs(s) do
-  local ok, mod = pcall(require, "themes.luna.schema." .. e)
+  local ok, mod = pcall(require, e)
   if ok then
     local m = mod.get(c)
     for k, v in pairs(m) do hl(0, k, v) end
