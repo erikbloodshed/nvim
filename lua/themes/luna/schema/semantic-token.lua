@@ -1,11 +1,8 @@
-local api = vim.api
 local blend = require("themes.util").blend
 local M = {}
 
 M.get = function(c)
-  local f = c.fg
-  local b = c.bg
-  local g = {
+  return {
     ["@lsp.type.boolean"]                        = { link = "Boolean" },
     ["@lsp.type.class"]                          = { link = "Type" },
     ["@lsp.type.builtinType"]                    = { link = "@type.builtin" },
@@ -17,7 +14,7 @@ M.get = function(c)
     ["@lsp.type.escapeSequence"]                 = { link = "@string.escape" },
     ["@lsp.type.formatSpecifier"]                = { link = "@markup.list" },
     ["@lsp.type.generic"]                        = { link = "@variable" },
-    ["@lsp.type.interface"]                      = { fg = blend(c.blue1, 0.7, f) },
+    ["@lsp.type.interface"]                      = { fg = blend(c.blue1, 0.7, c.fg) },
     ["@lsp.type.keyword"]                        = { link = "@keyword" },
     ["@lsp.type.lifetime"]                       = { link = "StorageClass" },
     ["@lsp.type.namespace"]                      = { link = "Directory" },
@@ -43,19 +40,14 @@ M.get = function(c)
     ["@lsp.typemod.operator.injected"]           = { link = "Operator" },
     ["@lsp.typemod.string.injected"]             = { link = "String" },
     ["@lsp.typemod.struct.defaultLibrary"]       = { link = "@type.builtin" },
-    ["@lsp.typemod.type.defaultLibrary"]         = { fg = blend(c.blue1, 0.8, b) },
+    ["@lsp.typemod.type.defaultLibrary"]         = { fg = blend(c.blue1, 0.8, c.bg) },
     ["@lsp.typemod.typeAlias.defaultLibrary"]    = { link = "@lsp.typemod.type.defaultLibrary" },
     ["@lsp.typemod.variable.callable"]           = { link = "Function" },
     ["@lsp.typemod.variable.defaultLibrary"]     = { link = "@variable.builtin" },
     ["@lsp.typemod.variable.defaultLibrary.cpp"] = { link = "@variable.builtin.c" },
     ["@lsp.typemod.variable.injected"]           = { link = "@variable" },
     ["@lsp.typemod.variable.static"]             = { link = "Constant" },
-
   }
-
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

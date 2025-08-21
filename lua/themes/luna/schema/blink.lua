@@ -1,8 +1,7 @@
-local api = vim.api
 local M = {}
 
 M.get = function(c)
-  local g = {
+  return {
     BlinkCmpDoc                 = { fg = c.fg, bg = c.bg_dark },
     BlinkCmpDocBorder           = { fg = c.border_highlight, bg = c.bg_dark },
     BlinkCmpGhostText           = { fg = c.terminal_black },
@@ -52,12 +51,7 @@ M.get = function(c)
     BlinkCmpKindTypeParameter   = { link = "@lsp.type.typeParameter" },
     BlinkCmpKindVariable        = { link = "@variable" },
     BlinkCmpKindValue           = { link = "@string" },
-
   }
-
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

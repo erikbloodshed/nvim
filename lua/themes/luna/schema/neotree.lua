@@ -1,8 +1,7 @@
-local api = vim.api
 local M = {}
 
 M.get = function(c)
-  local g = {
+  return {
     NeoTreeDimText              = { fg = c.fg_gutter },
     NeoTreeFileName             = { fg = c.fg_dark },
     NeoTreeGitModified          = { fg = c.orange },
@@ -16,10 +15,6 @@ M.get = function(c)
     NeoTreeTabSeparatorActive   = { fg = c.blue, bg = c.bg_dark },
     NeoTreeTabSeparatorInactive = { fg = c.bg, bg = c.dark },
   }
-
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

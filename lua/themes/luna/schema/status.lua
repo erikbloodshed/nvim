@@ -1,8 +1,7 @@
-local api = vim.api
 local M = {}
 
 M.get = function(c)
-  local g = {
+  return {
     StatusLineNormal = { bg = c.blue, fg = c.black },
     StatusLineInsert = { bg = c.green, fg = c.black },
     StatusLineVisual = { bg = c.magenta, fg = c.black },
@@ -20,10 +19,6 @@ M.get = function(c)
     StatusLineLabel = { fg = c.fg_dark },
     StatusLineValue = { fg = c.orange },
   }
-
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M

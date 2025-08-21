@@ -1,10 +1,8 @@
-local api = vim.api
 local blend = require("themes.util").blend
 local M = {}
 
 M.get = function(c)
-  local b = c.bg
-  local g = {
+  return {
     ["@annotation"]                   = { link = "PreProc" },
     ["@attribute"]                    = { link = "PreProc" },
     ["@boolean"]                      = { link = "Boolean" },
@@ -85,11 +83,11 @@ M.get = function(c)
     ["@tag"]                          = { link = "Label" },
     ["@tag.attribute"]                = { link = "@property" },
     ["@tag.delimiter"]                = { link = "Delimiter" },
-    ["@tag.delimiter.tsx"]            = { fg = blend(c.blue, 0.7, b) },
+    ["@tag.delimiter.tsx"]            = { fg = blend(c.blue, 0.7, c.bg) },
     ["@tag.tsx"]                      = { fg = c.red },
     ["@tag.javascript"]               = { fg = c.red },
     ["@type"]                         = { link = "Type" },
-    ["@type.builtin"]                 = { fg = blend(c.blue1, 0.85, b) },
+    ["@type.builtin"]                 = { fg = blend(c.blue1, 0.85, c.bg) },
     ["@type.definition"]              = { link = "Typedef" },
     ["@type.qualifier"]               = { link = "@keyword" },
     ["@variable"]                     = { fg = c.fg },
@@ -100,10 +98,6 @@ M.get = function(c)
     ["@variable.parameter"]           = { fg = c.param },
     ["@variable.parameter.builtin"]   = { fg = c.param },
   }
-
-  ---@format disable-next
-  local hl = api.nvim_set_hl
-  for k, v in pairs(g) do hl(0, k, v) end
 end
 
 return M
