@@ -108,7 +108,7 @@ local function cleanup_window_cache(winid)
 end
 
 local config = {
-  separators = { left = "", right = "", section = " │ " },
+  separators = { left = "", right = "", section = " ● " },
   throttle_ms = 50,
   icons = {
     modified = icons.modified,
@@ -156,6 +156,7 @@ local modes = {
 local function hl(name, text)
   return ("%%#%s#%s%%*"):format(name, text)
 end
+
 
 local loaded = {}
 local function require_safe(mod)
@@ -501,7 +502,7 @@ M.statusline_for_window = function(winid)
   push(C.lsp_status())
   push(C.position())
   push(C.percentage())
-  local right = table.concat(right_list, config.separators.section)
+  local right = table.concat(right_list, hl("StatusLineSeparator", config.separators.section))
 
   local center = C.file_info()
 
