@@ -86,7 +86,7 @@ M.get = function(c)
     Statement = { fg = c.magenta },
     String = { fg = c.green },
     Todo = { bg = c.yellow, fg = c.bg },
-    Type = { fg = c.blue1 },
+    Type = { fg = blend(c.blue1, 0.7, c.fg) },
     Underlined = { underline = true },
     LspReferenceText = { bg = c.fg_gutter },
     LspReferenceRead = { bg = c.fg_gutter },
