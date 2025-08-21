@@ -1,7 +1,13 @@
-local api, keymap  = vim.api, vim.keymap.set
+local api, keymap = vim.api, vim.keymap.set
+
 local win_close = function()
-    vim.cmd.stopinsert()
-    vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+  vim.cmd.stopinsert()
+  vim.defer_fn(function() api.nvim_win_close(0, true) end, 5)
+end
+
+local function get_cword()
+  local cword = vim.fn.expand("<cword>")
+  return cword ~= "" and cword or nil
 end
 
 ---@diagnostic disable: duplicate-set-field
@@ -14,21 +20,29 @@ vim.ui.input = function(opts, on_confirm)
     prompt = " New Name "
   end
 
+  -- Use word under cursor as default for rename operations
   local default = opts.default or ""
+  if prompt == " New Name " and default == "" then
+    local cWord = get_cword()
+    if cWord then
+      default = cWord
+    end
+  end
+
   on_confirm = on_confirm or function() end
 
-  local default_width = #default + 10
-  local prompt_width = #prompt + 10
-  local input_width = math.max(default_width, prompt_width)
+  local defaultWidth = #default + 10
+  local promptWidth = #prompt + 10
+  local inputWidth = math.max(defaultWidth, promptWidth)
 
-  local default_win_config = {
+  local wincfgDefault = {
     relative = "cursor",
     row = 1,
     col = 0,
     focusable = false,
     style = "minimal",
     border = "rounded",
-    width = input_width,
+    width = inputWidth,
     height = 1,
     title = prompt,
     title_pos = "center",
@@ -36,13 +50,13 @@ vim.ui.input = function(opts, on_confirm)
   }
 
   if prompt ~= " New Name " then
-    default_win_config.relative = "win"
-    default_win_config.row = math.max(api.nvim_win_get_height(0) / 2 - 1, 0)
-    default_win_config.col = math.max(api.nvim_win_get_width(0) / 2 - input_width / 2, 0)
+    wincfgDefault.relative = "win"
+    wincfgDefault.row = math.max(api.nvim_win_get_height(0) / 2 - 1, 0)
+    wincfgDefault.col = math.max(api.nvim_win_get_width(0) / 2 - inputWidth / 2, 0)
   end
 
   local bufnr = api.nvim_create_buf(false, true)
-  api.nvim_open_win(bufnr, true, default_win_config)
+  api.nvim_open_win(bufnr, true, wincfgDefault)
   api.nvim_buf_set_text(bufnr, 0, 0, 0, 0, { default })
 
   vim.cmd.startinsert()
