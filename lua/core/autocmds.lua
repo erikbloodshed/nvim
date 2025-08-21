@@ -36,6 +36,7 @@ autocmd({ "Filetype" }, {
 })
 
 autocmd({ "VimEnter" }, {
+  once = true,
   callback = function()
     require("ui.statusline")
     require("ui.input")
@@ -47,16 +48,14 @@ autocmd({ "VimEnter" }, {
       { noremap = true, silent = true })
 
     require('termswitch').setup({
-      -- Default settings applied to all terminals unless overridden
       defaults = {
         width = 0.85,
         height = 0.85,
         border = 'rounded',
       },
 
-      -- Define all the terminals you want to use
       terminals = {
-        shell = {},             -- A general-purpose shell. Takes all defaults.
+        shell = {},
         python = {
           shell = 'python3.14', -- Or 'python'
           filetype = 'pyterm',
@@ -64,19 +63,14 @@ autocmd({ "VimEnter" }, {
         },
       },
 
-      -- Define convenience commands for your terminals
       commands = {
         { name = 'ToggleTerm',   terminal = 'shell' },
         { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
       },
 
-      -- Define keymaps for your terminals
       keymaps = {
-        -- Normal mode keymaps
         { mode = 'n', lhs = '<leader>tt', terminal = 'shell',  action = 'toggle', desc = 'Toggle shell' },
         { mode = 'n', lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
-
-        -- Terminal mode keymaps (to hide the window)
         { mode = 't', lhs = '<leader>tt', terminal = 'shell',  action = 'hide',   desc = 'Hide shell' },
         { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide',   desc = 'Hide Python' },
       },
