@@ -7,6 +7,7 @@ M.get = function(c)
     ["@lsp.type.class"] = { link = "Type" },
     ["@lsp.type.builtinType"] = { link = "@type.builtin" },
     ["@lsp.type.comment"] = { link = "Comment" },
+    ["@lsp.type.method"] = {},
     ["@lsp.type.decorator"] = { link = "@attribute" },
     ["@lsp.type.deriveHelper"] = { link = "@attribute" },
     ["@lsp.type.enum"] = { link = "Type" },

@@ -19,7 +19,7 @@ M.get = function(c)
     ["@constant"] = { link = "Constant" },
     ["@constant.builtin"] = { link = "Special" },
     ["@constant.macro"] = { link = "Define" },
-    ["@constructor"] = { fg = c.magenta },
+    ["@constructor"] = { fg = c.magenta, nocombine = true },
     ["@constructor.tsx"] = { fg = c.blue1 },
     ["@diff.delta"] = { link = "DiffChange" },
     ["@diff.minus"] = { link = "DiffDelete" },

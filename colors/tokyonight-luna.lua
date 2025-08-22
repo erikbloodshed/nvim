@@ -57,7 +57,8 @@ g.terminal_color_14 = brighten(c.cyan)
 g.terminal_color_15 = brighten(c.fg_dark)
 
 local key_priorities = {
-  ["function.builtin"] = 128
+  ["function.builtin"] = 128,
+  -- ["constructor"] = 128,
 }
 
 api.nvim_create_autocmd("LspTokenUpdate", {
