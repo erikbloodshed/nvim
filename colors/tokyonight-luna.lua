@@ -23,11 +23,16 @@ local function apply_highlights()
     require("themes.luna.schema.neotree"),
   }
 
+  local all_highlights = {}
   for _, mod in ipairs(modules) do
     local highlights = mod.get(c)
     for name, attrs in pairs(highlights) do
-      hl(0, name, attrs)
+      all_highlights[name] = attrs
     end
+  end
+
+  for name, attrs in pairs(all_highlights) do
+    hl(0, name, attrs)
   end
 end
 
