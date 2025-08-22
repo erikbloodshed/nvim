@@ -29,20 +29,6 @@ terminal_black = "#444a73",
 yellow = "#ffc777"
 none = "NONE"
 
-# dark = blend(c.bg_dark, 0.8, "#000000")      -- #181926
-# bg_visual = blend(c.blue0, 0.35, c.bg)       -- #2b3b6e
-# border_highlight = blend(c.blue1, 0.8, c.bg) -- #579dd6
-# black = blend(c.bg, 0.8, "#000000")
-# param = brighten(c.red, 0.05)
-# g.terminal_color_8  = brighten(c.black)
-# g.terminal_color_9  = brighten(c.red)
-# g.terminal_color_10 = brighten(c.green)
-# g.terminal_color_11 = brighten(c.yellow)
-# g.terminal_color_12 = brighten(c.blue)
-# g.terminal_color_13 = brighten(c.magenta)
-# g.terminal_color_14 = brighten(c.cyan)
-# g.terminal_color_15 = brighten(c.fg_dark)
-
 dark = Util.blend(bg_dark, 0.8, "#000000")
 bg_visual = Util.blend(blue0, 0.35, bg)
 border_highlight = Util.blend(blue1, 0.8, bg)
