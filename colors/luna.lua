@@ -1,17 +1,18 @@
 local g = vim.g
 local api = vim.api
 local c = require("colorscheme.colors")
-local hl = api.nvim_set_hl
 
 vim.cmd.highlight("clear")
 vim.cmd.syntax("reset")
 
 vim.o.termguicolors = true
 vim.o.background = "dark"
-vim.g.colors_name = "tokyonight-luna"
+vim.g.colors_name = "luna"
 vim.g.matchparen_disable_cursor_hl = 1
 
 local function apply_highlights()
+  local hl = api.nvim_set_hl
+
   local modules = {
     require("colorscheme.schema.base"),
     require("colorscheme.schema.treesitter"),
