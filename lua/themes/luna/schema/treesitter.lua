@@ -44,7 +44,7 @@ M.get = function(c)
     ["@keyword.return"] = { link = "@keyword" },
     ["@keyword.storage"] = { link = "StorageClass" },
     ["@label"] = { link = "Function" },
-    ["@markup"] = { link = "@none" },
+    ["@markup"] = { link = "@none"},
     ["@markup.emphasis"] = { italic = true },
     ["@markup.environment"] = { link = "Macro" },
     ["@markup.environment.name"] = { link = "Type" },
