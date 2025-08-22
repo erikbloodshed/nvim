@@ -1,5 +1,5 @@
-local hex_to_hsluv = require("themes.hsluv").hex_to_hsluv
-local hsluv_to_hex = require("themes.hsluv").hsluv_to_hex
+local hex_to_hsluv = require("colorscheme.hsluv").hex_to_hsluv
+local hsluv_to_hex = require("colorscheme.hsluv").hsluv_to_hex
 
 local function rgb(c)
   c = string.lower(c)

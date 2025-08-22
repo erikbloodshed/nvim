@@ -1,6 +1,6 @@
 -- Tokyonight Moon Palette
-local blend = require("themes.util").blend
-local brighten = require("themes.util").brighten
+local blend = require("colorscheme.util").blend
+local brighten = require("colorscheme.util").brighten
 local transparency = false
 
 local M = {}

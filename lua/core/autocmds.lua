@@ -38,9 +38,9 @@ autocmd({ "Filetype" }, {
 autocmd({ "VimEnter" }, {
   once = true,
   callback = function()
-    require("ui.statusline")
     require("ui.input")
     require("ui.select")
+    require("ui.statusline")
 
     keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
       { noremap = true, silent = true })
@@ -64,15 +64,15 @@ autocmd({ "VimEnter" }, {
       },
 
       commands = {
-        { name = 'ToggleTerm',   terminal = 'shell' },
+        { name = 'ToggleTerm', terminal = 'shell' },
         { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
       },
 
       keymaps = {
-        { mode = 'n', lhs = '<leader>tt', terminal = 'shell',  action = 'toggle', desc = 'Toggle shell' },
+        { mode = 'n', lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
         { mode = 'n', lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
-        { mode = 't', lhs = '<leader>tt', terminal = 'shell',  action = 'hide',   desc = 'Hide shell' },
-        { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide',   desc = 'Hide Python' },
+        { mode = 't', lhs = '<leader>tt', terminal = 'shell', action = 'hide', desc = 'Hide shell' },
+        { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide', desc = 'Hide Python' },
       },
     })
   end,
