@@ -24,6 +24,7 @@ local function apply_highlights()
   }
 
   local all_highlights = {}
+
   for _, mod in ipairs(modules) do
     local highlights = mod.get(c)
     for name, attrs in pairs(highlights) do
