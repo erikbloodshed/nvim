@@ -14,7 +14,7 @@ return {
     },
 
     {
-      "<C-,>",
+      "<leader>ev",
       function()
         require("neo-tree.command").execute({
           dir = "/home/xenyan/.config/nvim",
