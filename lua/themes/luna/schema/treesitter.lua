@@ -88,7 +88,7 @@ M.get = function(c)
     ["@tag.tsx"] = { fg = c.red },
     ["@tag.javascript"] = { fg = c.red },
     ["@type"] = { link = "Type" },
-    ["@type.builtin"] = { fg = blend(c.blue1, 0.85, c.bg) },
+    ["@type.builtin"] = { link = "Special" },
     ["@type.definition"] = { link = "Typedef" },
     ["@type.qualifier"] = { link = "@keyword" },
     ["@variable"] = { fg = c.fg },
