@@ -2,6 +2,7 @@ local M = {}
 
 M.get = function(c)
   return {
+    -- blink.cmp
     BlinkCmpDoc = { fg = c.fg, bg = c.bg_dark },
     BlinkCmpDocBorder = { fg = c.border_highlight, bg = c.bg_dark },
     BlinkCmpGhostText = { fg = c.terminal_black },
@@ -51,6 +52,19 @@ M.get = function(c)
     BlinkCmpKindTypeParameter = { link = "@lsp.type.typeParameter" },
     BlinkCmpKindVariable = { link = "@variable" },
     BlinkCmpKindValue = { link = "@string" },
+    -- neo-tree.nvim
+    NeoTreeDimText = { fg = c.fg_gutter },
+    NeoTreeFileName = { fg = c.fg_dark },
+    NeoTreeGitModified = { fg = c.orange },
+    NeoTreeGitStaged = { fg = c.teal },
+    NeoTreeGitUntracked = { fg = c.magenta },
+    NeoTreeNormal = { link = "Normal" },
+    NeoTreeNormalNC = { link = "NeoTreeNormalNC" },
+    NeoTreeTabActive = { fg = c.blue, bg = c.bg_dark, bold = true },
+    NeoTreeTabInactive = { fg = c.dark3, bg = c.dark },
+    NeoTreeRootName = { fg = c.comment, bold = true },
+    NeoTreeTabSeparatorActive = { fg = c.blue, bg = c.bg_dark },
+    NeoTreeTabSeparatorInactive = { fg = c.bg, bg = c.dark },
   }
 end
 
