@@ -62,3 +62,39 @@ M = {
 }
 
 return M
+
+--[[
+
+New Name	                Hex Code	  Formerly
+--------                  --------    --------
+dark Midnight	            #181a26	    dark
+blue gray Lunar Dust	    #2c3c6e	    bg_visual
+cyan Starfall	            #28a3bc	    border_highlight
+black Void	              #1b1d2b	    black
+orange Solar Flare	      #ff828c	    param
+cyan Starlight	          #59c8e5	    interface
+dark gray Cosmic Shadow	  #26283b	    br_black
+red Solar Wind	          #ff828c	    br_red
+green Lunar Glow	        #d1f59b	    br_green
+yellow Full Moon	        #ffd38a	    br_yellow
+blue Galactic Core	      #87b0ff	    br_blue
+purple Nebula	            #d0a8ff	    br_magenta
+cyan Ethereal	            #94f0ff	    br_cyan
+white Moonlight	          #969fc8	    br_white
+blue Comet Tail	          #59c8e5	    type_var
+dark green Deep Space	    #273849	    diff_add
+black Dark Matter	        #252a3f	    diff_change
+purple Umbra	            #3a273a	    diff_delete
+dark purple Eclipse	      #382c3d	    error_bg
+dark Meteorite	          #38343d	    warn_bg
+blue Starless Sky	        #203346	    info_bg
+dark blue Nightfall	      #273644	    hint_bg
+dark blue Crater's Edge	  #363c58	    menu_sel
+blue gray Twilight	      #363c58	    match_sel
+black Lunar Blackout	    #27293a	    s_bar
+blue Orion	              #262e4c	    lsp_signature_active_param
+dark blue Cosmic Dust	    #24283c	    lsp_inlay_hint
+blue Lunar Surface	      #607cbd	    delimiter_tsx
+dark The Abyss	          #222436	    background
+
+--]]
