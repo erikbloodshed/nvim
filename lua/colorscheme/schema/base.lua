@@ -104,7 +104,7 @@ M.get = function(c)
     WinBar = { link = "StatusLine" },
     WinBarNC = { link = "StatusLineNC" },
     WinSeparator = { fg = c.fg_gutter },
-    lCursor = { fg = c.bg, bg = c.fg },
+    lCursor = { link = "Cursor" },
   }
 end
 

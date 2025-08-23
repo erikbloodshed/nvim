@@ -1,4 +1,3 @@
--- Tokyonight Moon Palette
 local blend = require("colorscheme.util").blend
 local brighten = require("colorscheme.util").brighten
 local transparency = false
