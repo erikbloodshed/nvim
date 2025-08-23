@@ -49,6 +49,7 @@ set.tabstop = 4
 set.wrap = false
 set.laststatus = 2
 set.showmode = false
+set.foldmethod = "marker"
 
 opt.viewoptions:append({ options = true })
 opt.shortmess:append("cC")
