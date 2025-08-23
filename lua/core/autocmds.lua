@@ -52,6 +52,7 @@ autocmd({ "VimEnter" }, {
         width = 0.85,
         height = 0.85,
         border = 'rounded',
+        open_in_file_dir = true,
       },
 
       terminals = {

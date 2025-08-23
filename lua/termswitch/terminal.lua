@@ -7,7 +7,7 @@ local Terminal = {}
 Terminal.__index = Terminal
 
 function Terminal:new(name, user_config)
-  local merged_config = vim.tbl_extend('force', config.DEFAULT_CONFIG, user_config or {})
+  local merged_config = vim.tbl_extend('force', config.defaults, user_config or {})
   merged_config = config.validate_config(merged_config)
 
   if not merged_config.title then
@@ -165,9 +165,19 @@ function Terminal:destroy_backdrop()
   end
 end
 
-function Terminal:start_process()
+function Terminal:start_process(target_cwd)
   -- Check if terminal process is already running
   if self:is_terminal_buffer() then return end
+
+  -- >> START of new logic <<
+  local original_cwd = vim.fn.getcwd() -- Store the original working directory
+  local cwd_changed = false
+  -- >> FIX: Use the directory passed from the open() function
+
+  if target_cwd and target_cwd ~= original_cwd then
+    vim.cmd('cd ' .. vim.fn.fnameescape(target_cwd))
+    cwd_changed = true
+  end
 
   local current_buf = api.nvim_get_current_buf()
   api.nvim_set_current_buf(self.buf)
@@ -181,6 +191,13 @@ function Terminal:start_process()
   self._is_terminal = true -- Mark as terminal buffer
   self._buf_valid = true
   self._job_id = nil       -- Reset job ID cache
+
+  -- >> START of restoring directory <<
+  -- Restore the original CWD if we changed it
+  if cwd_changed then
+    vim.cmd('cd ' .. vim.fn.fnameescape(original_cwd))
+  end
+  -- >> END of restoring directory <<
 
   -- Set buffer options after terminal creation
   utils.set_buf_options(self.buf, {
@@ -277,6 +294,16 @@ end
 function Terminal:open()
   self:ensure_buffer()
 
+  -- >> FIX: Determine the target CWD *before* creating any windows.
+  -- At this point, the user's file buffer is still active.
+  local target_cwd = nil
+  if self.config.open_in_file_dir then
+    local file_dir = vim.fn.expand('%:p:h')
+    if file_dir and vim.fn.isdirectory(file_dir) == 1 then
+      target_cwd = file_dir
+    end
+  end
+
   if self:is_valid_window() then
     -- Window exists, just focus it
     api.nvim_set_current_win(self.win)
@@ -294,7 +321,7 @@ function Terminal:open()
   end
 
   -- Start terminal process if needed
-  self:start_process()
+  self:start_process(target_cwd)
 
   -- Enter insert mode
   vim.cmd('startinsert')
