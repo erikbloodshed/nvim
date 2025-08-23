@@ -42,14 +42,12 @@ end
 M.setup = function(opts)
   local config = require("runner.config").init(opts)
 
-  -- Skip if no configuration for this filetype
   if not config then
     vim.notify("No runner configuration for filetype: " .. vim.api.nvim_get_option_value("filetype", { buf = 0 }),
       vim.log.levels.WARN)
     return {}
   end
 
-  -- Initialize modules
   local state = require("runner.state").init(validate_config(config))
   local commands = require("runner.commands").create(state)
   local handler = require("runner.handler")

@@ -1,1 +1,1 @@
-require("colorscheme")
+require("themes.luna")
