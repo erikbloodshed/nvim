@@ -1,8 +1,8 @@
 local M = {}
 
 function M.get(c, o)
-  local active_bg = o.transparent_background and c.none or c.mantle
-  local inactive_bg = o.transparent_background and c.none or c.base
+  local active_bg = o.transparency and c.none or c.mantle
+  local inactive_bg = o.transparency and c.none or c.base
 
   return {
     NeoTreeDirectoryName = { fg = c.blue },
@@ -37,8 +37,8 @@ function M.get(c, o)
     NeoTreeTabSeparatorInactive = { fg = inactive_bg, bg = inactive_bg },
     NeoTreeVertSplit = { fg = c.base, bg = inactive_bg },
     NeoTreeWinSeparator = {
-      fg = o.transparent_background and c.surface1 or c.base,
-      bg = o.transparent_background and c.none or c.base,
+      fg = o.transparency and c.surface1 or c.base,
+      bg = o.transparency and c.none or c.base,
     },
     NeoTreeStatusLineNC = { fg = c.mantle, bg = c.mantle },
   }

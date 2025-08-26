@@ -1,6 +1,6 @@
 local M = {}
 
-function M.get(c, o, u)
+function M.get(c, o)
   return {
     Comment            = { fg = c.overlay2, italic = true }, -- just comments
     SpecialComment     = { link = "Special" },               -- special things inside a comment
@@ -42,22 +42,22 @@ function M.get(c, o, u)
     -- ("Ignore", below, may be invisible...)
     -- Ignore = { }, -- (preferred) left blank, hidden  |hl-Ignore|
 
-    Error              = { fg = c.red },                                       -- (preferred) any erroneous construct
+    Error              = { fg = c.red },                                -- (preferred) any erroneous construct
     Todo               = { bg = c.flamingo, fg = c.base, bold = true }, -- (preferred) anything that needs extra attention; mostly the keywords TODO FIXME and XXX
     qfLineNr           = { fg = c.yellow },
     qfFileName         = { fg = c.blue },
     htmlH1             = { fg = c.pink, bold = true },
     htmlH2             = { fg = c.blue, bold = true },
-    -- mkdHeading = { fg = C.peach, bold = true },
-    -- mkdCode = { bg = C.terminal_black, fg = C.text },
+    -- mkdHeading = { fg = c.peach, bold = true },
+    -- mkdCode = { bg = c.terminal_black, fg = c.text },
     mkdCodeDelimiter   = { bg = c.base, fg = c.text },
     mkdCodeStart       = { fg = c.flamingo, bold = true },
     mkdCodeEnd         = { fg = c.flamingo, bold = true },
     -- mkdLink = { fg = C.blue, underline = true },
 
     -- debugging
-    debugPC            = { bg = o.transparent_background and c.none or c.crust }, -- used for highlighting the current line in terminal-debug
-    debugBreakpoint    = { bg = c.base, fg = c.overlay0 },                        -- used for breakpoint colors in terminal-debug
+    debugPC            = { bg = o.transparency and c.none or c.crust },
+    debugBreakpoint    = { bg = c.base, fg = c.overlay0 },
     -- illuminate
     illuminatedWord    = { bg = c.surface1 },
     illuminatedCurWord = { bg = c.surface1 },
@@ -70,10 +70,10 @@ function M.get(c, o, u)
     diffFile           = { fg = c.blue },
     diffLine           = { fg = c.overlay0 },
     diffIndexLine      = { fg = c.teal },
-    DiffAdd            = { bg = u.darken(c.green, 0.18, c.base) }, -- diff mode: Added line |diff.txt|
-    DiffChange         = { bg = u.darken(c.blue, 0.07, c.base) },  -- diff mode: Changed line |diff.txt|
-    DiffDelete         = { bg = u.darken(c.red, 0.18, c.base) },   -- diff mode: Deleted line |diff.txt|
-    DiffText           = { bg = u.darken(c.blue, 0.30, c.base) },  -- diff mode: Changed text within a changed line |diff.txt|
+    DiffAdd            = { bg = c.bg_diff_add },
+    DiffChange         = { bg = c.bg_diff_change },
+    DiffDelete         = { bg = c.bg_diff_delete },
+    DiffText           = { bg = c.bg_diff_text },
     -- NeoVim
     healthError        = { fg = c.red },
     healthSuccess      = { fg = c.teal },

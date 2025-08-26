@@ -16,5 +16,5 @@ require("core.lazy")
 require("core.lsp")
 require("core.autocmds")
 require("ui.statusline")
--- vim.cmd.colorscheme("luna")
+
 vim.cmd.colorscheme("decaffuccin")

@@ -33,24 +33,24 @@ function M.get(c)
     ["@number.float"] = { link = "Float" },                                          -- For floats.
 
     -- Types
-    ["@type"] = { link = "Type" },                        -- For types.
-    ["@type.builtin"] = { fg = c.yellow, italic = true }, -- For builtin types.
-    ["@type.definition"] = { link = "Type" },             -- type definitions (e.g. `typedef` in C)
+    ["@type"] = { link = "Type" },            -- For types.
+    ["@type.builtin"] = { link = "Type" },    -- For builtin types.
+    ["@type.definition"] = { link = "Type" }, -- type definitions (e.g. `typedef` in C)
 
-    ["@attribute"] = { link = "Constant" },               -- attribute annotations (e.g. Python decorators)
-    ["@property"] = { fg = c.lavender },                  -- Same as TSField.
+    ["@attribute"] = { link = "Constant" },   -- attribute annotations (e.g. Python decorators)
+    ["@property"] = { fg = c.lavender },      -- Same as TSField.
 
     -- Functions
-    ["@function"] = { link = "Function" },             -- For function (calls and definitions).
-    ["@function.builtin"] = { fg = c.peach },          -- For builtin functions: table.insert in Lua.
-    ["@function.call"] = { link = "Function" },        -- function calls
-    ["@function.macro"] = { fg = c.teal },             -- For macro defined functions (calls and definitions): each macro_rules in Rust.
+    ["@function"] = { link = "Function" },                      -- For function (calls and definitions).
+    ["@function.builtin"] = { fg = c.peach, nocombine = true }, -- For builtin functions: table.insert in Lua.
+    ["@function.call"] = { link = "Function" },                 -- function calls
+    ["@function.macro"] = { fg = c.teal },                      -- For macro defined functions (calls and definitions): each macro_rules in Rust.
 
-    ["@function.method"] = { link = "Function" },      -- For method definitions.
-    ["@function.method.call"] = { link = "Function" }, -- For method calls.
+    ["@function.method"] = { link = "Function" },               -- For method definitions.
+    ["@function.method.call"] = { link = "Function" },          -- For method calls.
 
-    ["@constructor"] = { fg = c.sapphire },            -- For constructor calls and definitions: = { } in Lua, and Java constructors.
-    ["@operator"] = { link = "Operator" },             -- For any operator: +, but also -> and * in C.
+    ["@constructor"] = { fg = c.sapphire },                     -- For constructor calls and definitions: = { } in Lua, and Java constructors.
+    ["@operator"] = { link = "Operator" },                      -- For any operator: +, but also -> and * in C.
 
     -- Keywords
     ["@keyword"] = { link = "Keyword" },                      -- For keywords that don't fall in previous categories.

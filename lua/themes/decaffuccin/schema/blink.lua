@@ -1,6 +1,6 @@
 local M = {}
 
-function M.get(c, u)
+function M.get(c, o)
   local highlights = {
     BlinkCmpLabel = { fg = c.overlay2 },
     BlinkCmpLabelDeprecated = { fg = c.overlay0, strikethrough = true },
@@ -40,7 +40,10 @@ function M.get(c, u)
     BlinkCmpKindOperator = { fg = c.sky },
     BlinkCmpKindTypeParameter = { fg = c.maroon },
     BlinkCmpKindCopilot = { fg = c.teal },
-    BlinkCmpMenuBorder = { fg = c.surface2, bg = u.darken(c.surface0, 0.8, c.crust) },
+    BlinkCmpMenuBorder = {
+      fg = o.float.solid and ((o.float.transparent and vim.o.winblend == 0) and c.surface2 or c.mantle) or c.blue,
+      bg = (o.transparency and vim.o.pumblend == 0) and c.none or c.mantle
+    },
     BlinkCmpDocBorder = { link = "FloatBorder" }
   }
 
