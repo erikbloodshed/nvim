@@ -66,7 +66,7 @@ function M.get(c, o)
     LspDiagnosticsUnderlineHint = { undercurl = true, sp = hint },
     LspCodeLens = { fg = c.overlay0 },
     LspCodeLensSeparator = { link = "LspCodeLens" },
-    LspInlayHint = { fg = c.overlay0, bg = o.transparency and c.none or c.bg_inlay_hint },
+    LspInlayHint = { fg = c.overlay0, bg = o.transparency and c.none or c.bg_line },
     LspInfoBorder = { link = "FloatBorder" },
   }
 end

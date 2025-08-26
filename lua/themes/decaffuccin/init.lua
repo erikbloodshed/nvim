@@ -1,7 +1,4 @@
-local g = vim.g
-local o = vim.o
-local api = vim.api
-local darken = require("themes.decaffuccin.utils").darken
+local g, o, api = vim.g, vim.o, vim.api
 
 o.termguicolors = true
 o.background = "dark"
@@ -12,23 +9,17 @@ end
 
 g.colors_name = "decaffuccin"
 
-
-local opts = {
+local cfg = {
   transparency = false,
   float = {
-    transparent = true,
+    transparent = false,
     solid = true,
   },
   show_end_of_buffer = false,
-  term_colors = false,
   dim_inactive = {
-    enabled = true,
-    shade = "dark",
+    enabled = false,
     percentage = 0.15,
   },
-  no_italic = false,
-  no_bold = false,
-  no_underline = false,
 }
 
 local c = {
@@ -58,48 +49,59 @@ local c = {
   base      = "#1e1e2e",
   mantle    = "#181825",
   crust     = "#11111b",
-  none      = "NONE"
+  none = "NONE"
 }
 
 local function apply_highlights()
-  c.dim = darken(c.base, opts.dim_inactive.percentage, c.mantle)
+  local pat = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
+
+  local rgb = function(hex_str)
+    local red, green, blue = string.match(string.lower(hex_str), pat)
+    return { tonumber(red, 16), tonumber(green, 16), tonumber(blue, 16) }
+  end
+
+  local darken = function(f, a, b)
+    b, f = rgb(b), rgb(f)
+    local blendChannel = function(i)
+      local ret = (a * f[i] + ((1 - a) * b[i]))
+      return math.floor(math.min(math.max(0, ret), 255) + 0.5)
+    end
+
+    return string.format("#%02X%02X%02X", blendChannel(1), blendChannel(2), blendChannel(3))
+  end
+
+  c.dim = darken(c.base, cfg.dim_inactive.percentage, c.mantle)
   c.bg_dvt_error = darken(c.red, 0.095, c.base)
   c.bg_dvt_warn = darken(c.yellow, 0.095, c.base)
   c.bg_dvt_info = darken(c.sky, 0.095, c.base)
   c.bg_dvt_hint = darken(c.teal, 0.095, c.base)
   c.bg_dvt_ok = darken(c.green, 0.095, c.base)
   c.bg_inlay_hint = darken(c.surface0, 0.64, c.base)
+  c.bg_line = darken(c.surface0, 0.64, c.base)
   c.bg_diff_add = darken(c.green, 0.18, c.base)
   c.bg_diff_change = darken(c.blue, 0.07, c.base)
   c.bg_diff_delete = darken(c.red, 0.18, c.base)
   c.bg_diff_text = darken(c.blue, 0.30, c.base)
-  c.bg_cursorline = darken(c.surface0, 0.64, c.base)
-  c.bg_pmenu = darken(c.surface0, 0.8, c.crust)
   c.bg_search = darken(c.sky, 0.30, c.base)
   c.bg_incsearch = darken(c.sky, 0.90, c.base)
-  c.bg_blink_menu = darken(c.surface0, 0.8, c.crust)
 
-  local modules = {
-    require("themes.decaffuccin.schema.editor").get(c, opts),
-    require("themes.decaffuccin.schema.native_lsp").get(c, opts),
-    require("themes.decaffuccin.schema.syntax").get(c, opts),
+  local mod = {
+    require("themes.decaffuccin.schema.editor").get(c, cfg),
+    require("themes.decaffuccin.schema.native_lsp").get(c, cfg),
+    require("themes.decaffuccin.schema.syntax").get(c, cfg),
     require("themes.decaffuccin.schema.treesitter").get(c),
     require("themes.decaffuccin.schema.semantic_tokens").get(c),
-    require("themes.decaffuccin.schema.blink").get(c, opts),
-    require("themes.decaffuccin.schema.neotree").get(c, opts)
+    require("themes.decaffuccin.schema.blink").get(c),
+    require("themes.decaffuccin.schema.neotree").get(c, cfg)
   }
 
   local all_highlights = {}
-  for _, mod in pairs(modules) do
-    for name, attrs in pairs(mod) do
-      all_highlights[name] = attrs
-    end
+  for _, m in pairs(mod) do
+    for n, a in pairs(m) do all_highlights[n] = a end
   end
 
   local hl = api.nvim_set_hl
-  for name, attrs in pairs(all_highlights) do
-    hl(0, name, attrs)
-  end
+  for n, a in pairs(all_highlights) do hl(0, n, a) end
 end
 
 local ok, err = pcall(apply_highlights)
