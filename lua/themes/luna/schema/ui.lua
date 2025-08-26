@@ -67,7 +67,7 @@ M.get = function(c)
     -- {{{ 📜 Status & Messages
     ModeMsg                     = { fg = c.fg_dark, bold = true },
     MoreMsg                     = { fg = c.blue },
-    MsgArea                     = { fg = c.fg_dark },
+    -- MsgArea                     = { fg = c.fg_dark },
     Question                    = { fg = c.blue },
     QuickFixLine                = { bg = c.blue8, bold = true },
     StatusLine                  = { fg = c.fg_dark, bg = c.dark },
