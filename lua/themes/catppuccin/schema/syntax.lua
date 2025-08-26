@@ -78,8 +78,6 @@ function M.get(C, O, U)
     healthError        = { fg = C.red },
     healthSuccess      = { fg = C.teal },
     healthWarning      = { fg = C.yellow },
-    -- misc
-
     -- glyphs
     GlyphPalette1      = { fg = C.red },
     GlyphPalette2      = { fg = C.teal },
@@ -88,7 +86,6 @@ function M.get(C, O, U)
     GlyphPalette6      = { fg = C.teal },
     GlyphPalette7      = { fg = C.text },
     GlyphPalette9      = { fg = C.red },
-
     -- rainbow
     rainbow1           = { fg = C.red },
     rainbow2           = { fg = C.peach },
@@ -96,7 +93,6 @@ function M.get(C, O, U)
     rainbow4           = { fg = C.green },
     rainbow5           = { fg = C.sapphire },
     rainbow6           = { fg = C.lavender },
-
     -- csv
     csvCol0            = { fg = C.red },
     csvCol1            = { fg = C.peach },
