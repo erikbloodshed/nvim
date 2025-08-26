@@ -1,7 +1,6 @@
 local g = vim.g
 local o = vim.o
 local api = vim.api
-local transparency = false
 
 o.termguicolors = true
 o.background = "dark"
@@ -10,46 +9,41 @@ if g.colors_name then
   vim.cmd.highlight("clear")
 end
 
-g.colors_name = "catppuccin"
+g.colors_name = "decaffuccin"
 
 local function apply_highlights()
   local hl = api.nvim_set_hl
-  local c = {
-    rosewater = "#f5e0dc",
-    flamingo = "#f2cdcd",
-    pink = "#f5c2e7",
-    mauve = "#cba6f7",
-    red = "#f38ba8",
-    maroon = "#eba0ac",
-    peach = "#fab387",
-    yellow = "#f9e2af",
-    green = "#a6e3a1",
-    teal = "#94e2d5",
-    sky = "#89dceb",
-    sapphire = "#74c7ec",
-    blue = "#89b4fa",
-    lavender = "#b4befe",
-    text = "#cdd6f4",
-    subtext1 = "#bac2de",
-    subtext0 = "#a6adc8",
-    overlay2 = "#9399b2",
-    overlay1 = "#7f849c",
-    overlay0 = "#6c7086",
-    surface2 = "#585b70",
-    surface1 = "#45475a",
-    surface0 = "#313244",
-    base = "#1e1e2e",
-    mantle = "#181825",
-    crust = "#11111b",
+  local c = require("themes.decaffuccin.palette.mocka")
+  local u = require("themes.decaffuccin.utils")
+  local opts = {
+    transparent_background = false,
+    float = {
+      transparent = false,
+      solid = false,
+    },
+    show_end_of_buffer = false,
+    term_colors = false,
+    dim_inactive = {
+      enabled = false,
+      shade = "dark",
+      percentage = 0.15,
+    },
+    no_italic = false,
+    no_bold = false,
+    no_underline = false,
   }
-
-  c.background = transparency and c.none or c.bg
 
   local modules = {
-    require("themes.luna.schema.ui").get(c),
-    require("themes.luna.schema.coding").get(c),
-    require("themes.luna.schema.extensions").get(c),
+    require("themes.decaffuccin.schema.editor").get(c, opts, u),
+    require("themes.decaffuccin.schema.native_lsp").get(c, opts, u),
+    require("themes.decaffuccin.schema.syntax").get(c, opts, u),
+    require("themes.decaffuccin.schema.treesitter").get(c),
+    require("themes.decaffuccin.schema.semantic_tokens").get(c),
+    require("themes.decaffuccin.schema.blink").get(c, u),
+    require("themes.decaffuccin.schema.neotree").get(c, opts)
   }
+
+  -- require("themes.decaffuccin.schema.terminal")
 
   local all_highlights = {}
 
