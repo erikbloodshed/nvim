@@ -10,7 +10,7 @@ if g.colors_name then
   vim.cmd.highlight("clear")
 end
 
-g.colors_name = "luna"
+g.colors_name = "catppuccin"
 
 local function apply_highlights()
   local hl = api.nvim_set_hl
@@ -20,6 +20,7 @@ local function apply_highlights()
     pink      = "#f5c2e7",
     mauve     = "#cba6f7",
     red       = "#f38ba8",
+
     maroon    = "#eba0ac",
     peach     = "#fab387",
     yellow    = "#f9e2af",
