@@ -2,37 +2,31 @@ local M = {}
 
 function M.get(c, o)
   return {
-    ColorColumn           = { bg = c.surface0 },                                           -- used for the columns set with 'colorcolumn'
-    Conceal               = { fg = c.overlay1 },                                           -- placeholder characters substituted for concealed text (see 'conceallevel')
-    Cursor                = { fg = c.base, bg = c.rosewater },                             -- character under the cursor
-    lCursor               = { fg = c.base, bg = c.rosewater },                             -- the character under the cursor when |language-mapping| is used (see 'guicursor')
-    CursorIM              = { fg = c.base, bg = c.rosewater },                             -- like Cursor, but used when in IME mode |CursorIM|
-    CursorColumn          = { bg = c.mantle },                                             -- Screen-column at the cursor, when 'cursorcolumn' is set.
-    CursorLine            = { bg = c.bg_line },                                            -- Screen-line at the cursor, when 'cursorline' is set.  Low-priority if forecrust (ctermfg OR guifg) is not set.
-    Directory             = { fg = c.blue },                                               -- directory names (and other special names in listings)
-    EndOfBuffer           = { fg = o.show_end_of_buffer and c.surface1 or c.base },        -- filler lines (~) after the end of the buffer.  By default, this is highlighted like |hl-NonText|.
-    ErrorMsg              = { fg = c.red, bold = true, italic = true },                    -- error messages on the command line
-    VertSplit             = { fg = o.transparency and c.surface1 or c.crust },             -- the column separating vertically split windows
-    Folded                = { fg = c.blue, bg = o.transparency and c.none or c.surface1 }, -- line used for closed folds
-    FoldColumn            = { fg = c.overlay0 },                                           -- 'foldcolumn'
-    SignColumn            = { fg = c.surface1 },                                           -- column where |signs| are displayed
-    SignColumnSB          = { bg = c.crust, fg = c.surface1 },                             -- column where |signs| are displayed
-    Substitute            = { bg = c.surface1, fg = c.pink },                              -- |:substitute| replacement text highlighting
-    LineNr                = { fg = c.surface1 },                                           -- Line number for ":number" and ":#" commands, and when 'number' or 'relativenumber' option is set.
-    CursorLineNr          = { fg = c.lavender },                                           -- Like LineNr when 'cursorline' or 'relativenumber' is set for the cursor line. highlights the number in numberline.
-    MatchParen            = { fg = c.peach, bg = c.surface1, bold = true },                -- The character under the cursor or just before it, if it is a paired bracket, and its match. |pi_paren.txt|
-    ModeMsg               = { fg = c.text, bold = true },                                  -- 'showmode' message (e.g., "-- INSERT -- ")
-    MsgSeparator          = {},                                                            -- Separator for scrolled messages, `msgsep` flag of 'display'
-    MoreMsg               = { fg = c.blue },                                               -- |more-prompt|
-    NonText               = { fg = c.overlay0 },                                           -- '@' at the end of the window, characters from 'showbreak' and other characters that do not really exist in the text (e.g., ">" displayed when a double-wide character doesn't fit at the end of the line). See also |hl-EndOfBuffer|.
-    Normal                = { fg = c.text, bg = o.transparency and c.none or c.base },     -- normal text
-    NormalNC              = {
-      fg = c.text,
-      bg = (o.transparency and o.dim_inactive.enabled and c.dim)
-        or (o.dim_inactive.enabled and c.dim)
-        or (o.transparency and c.none)
-        or c.base,
-    },                                                                                                                  -- normal text in non-current windows
+    ColorColumn           = { bg = c.surface0 },                                                                        -- used for the columns set with 'colorcolumn'
+    Conceal               = { fg = c.overlay1 },                                                                        -- placeholder characters substituted for concealed text (see 'conceallevel')
+    Cursor                = { fg = c.base, bg = c.rosewater },                                                          -- character under the cursor
+    lCursor               = { link = "Cursor" },                                                                        -- the character under the cursor when |language-mapping| is used (see 'guicursor')
+    CursorIM              = { link = "Cursor" },                                                                        -- like Cursor, but used when in IME mode |CursorIM|
+    CursorColumn          = { bg = c.mantle },                                                                          -- Screen-column at the cursor, when 'cursorcolumn' is set.
+    CursorLine            = { bg = c.bg_line },                                                                         -- Screen-line at the cursor, when 'cursorline' is set.  Low-priority if forecrust (ctermfg OR guifg) is not set.
+    Directory             = { fg = c.blue },                                                                            -- directory names (and other special names in listings)
+    EndOfBuffer           = { fg = c.base, },                                                                           -- filler lines (~) after the end of the buffer.  By default, this is highlighted like |hl-NonText|.
+    ErrorMsg              = { fg = c.red, bold = true, italic = true },                                                 -- error messages on the command line
+    VertSplit             = { fg = o.transparency and c.surface1 or c.crust },                                          -- the column separating vertically split windows
+    Folded                = { fg = c.blue, bg = o.transparency and c.none or c.surface1 },                              -- line used for closed folds
+    FoldColumn            = { fg = c.overlay0 },                                                                        -- 'foldcolumn'
+    SignColumn            = { fg = c.surface1 },                                                                        -- column where |signs| are displayed
+    SignColumnSB          = { bg = c.crust, fg = c.surface1 },                                                          -- column where |signs| are displayed
+    Substitute            = { bg = c.surface1, fg = c.pink },                                                           -- |:substitute| replacement text highlighting
+    LineNr                = { fg = c.surface1 },                                                                        -- Line number for ":number" and ":#" commands, and when 'number' or 'relativenumber' option is set.
+    CursorLineNr          = { fg = c.lavender },                                                                        -- Like LineNr when 'cursorline' or 'relativenumber' is set for the cursor line. highlights the number in numberline.
+    MatchParen            = { fg = c.peach, bg = c.surface1, bold = true },                                             -- The character under the cursor or just before it, if it is a paired bracket, and its match. |pi_paren.txt|
+    ModeMsg               = { fg = c.text, bold = true },                                                               -- 'showmode' message (e.g., "-- INSERT -- ")
+    MsgSeparator          = {},                                                                                         -- Separator for scrolled messages, `msgsep` flag of 'display'
+    MoreMsg               = { fg = c.blue },                                                                            -- |more-prompt|
+    NonText               = { fg = c.overlay0 },                                                                        -- '@' at the end of the window, characters from 'showbreak' and other characters that do not really exist in the text (e.g., ">" displayed when a double-wide character doesn't fit at the end of the line). See also |hl-EndOfBuffer|.
+    Normal                = { fg = c.text, bg = o.transparency and c.none or c.base },                                  -- normal text
+    NormalNC              = { fg = c.text, bg = o.transparency and c.none or c.dim, },                                  -- normal text in non-current windows
     NormalSB              = { fg = c.text, bg = c.crust },                                                              -- normal text in non-current windows
     NormalFloat           = { fg = c.text, bg = (o.float.transparent and vim.o.winblend == 0) and c.none or c.mantle }, -- Normal text in floating windows.
     FloatBorder           = { fg = c.surface1, bg = c.mantle },
@@ -89,7 +83,7 @@ function M.get(c, o)
     TermCursorNC          = { fg = c.base, bg = c.overlay2 },               -- cursor in unfocused terminals
     Title                 = { fg = c.blue, bold = true },                   -- titles for output from ":set all", ":autocmd" etc.
     Visual                = { bg = c.surface1, bold = true },               -- Visual mode selection
-    VisualNOS             = { bg = c.surface1, bold = true },               -- Visual mode selection when vim is "Not Owning the Selection".
+    VisualNOS             = { link = "Visual" },                            -- Visual mode selection when vim is "Not Owning the Selection".
     WarningMsg            = { fg = c.yellow },                              -- warning messages
     Whitespace            = { fg = c.surface1 },                            -- "nbsp", "space", "tab" and "trail" in 'listchars'
     WildMenu              = { bg = c.overlay0 },                            -- current match in 'wildmenu' completion

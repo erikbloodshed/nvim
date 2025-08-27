@@ -15,11 +15,6 @@ local cfg = {
     transparent = false,
     solid = true,
   },
-  show_end_of_buffer = false,
-  dim_inactive = {
-    enabled = false,
-    percentage = 0.15,
-  },
 }
 
 local c = {
@@ -49,7 +44,7 @@ local c = {
   base      = "#1e1e2e",
   mantle    = "#181825",
   crust     = "#11111b",
-  none = "NONE"
+  none      = "NONE"
 }
 
 local function apply_highlights()
@@ -70,13 +65,12 @@ local function apply_highlights()
     return string.format("#%02X%02X%02X", blendChannel(1), blendChannel(2), blendChannel(3))
   end
 
-  c.dim = darken(c.base, cfg.dim_inactive.percentage, c.mantle)
+  c.dim = darken(c.base, 0.15, c.mantle)
   c.bg_dvt_error = darken(c.red, 0.095, c.base)
   c.bg_dvt_warn = darken(c.yellow, 0.095, c.base)
   c.bg_dvt_info = darken(c.sky, 0.095, c.base)
   c.bg_dvt_hint = darken(c.teal, 0.095, c.base)
   c.bg_dvt_ok = darken(c.green, 0.095, c.base)
-  c.bg_inlay_hint = darken(c.surface0, 0.64, c.base)
   c.bg_line = darken(c.surface0, 0.64, c.base)
   c.bg_diff_add = darken(c.green, 0.18, c.base)
   c.bg_diff_change = darken(c.blue, 0.07, c.base)
@@ -88,11 +82,11 @@ local function apply_highlights()
   local mod = {
     require("themes.decaffuccin.schema.editor").get(c, cfg),
     require("themes.decaffuccin.schema.native_lsp").get(c, cfg),
+    require("themes.decaffuccin.schema.neotree").get(c, cfg),
     require("themes.decaffuccin.schema.syntax").get(c, cfg),
     require("themes.decaffuccin.schema.treesitter").get(c),
     require("themes.decaffuccin.schema.semantic_tokens").get(c),
     require("themes.decaffuccin.schema.blink").get(c),
-    require("themes.decaffuccin.schema.neotree").get(c, cfg)
   }
 
   local all_highlights = {}
