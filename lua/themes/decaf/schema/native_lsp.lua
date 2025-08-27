@@ -6,17 +6,18 @@ function M.get(c, o)
   local info = c.sky
   local hint = c.teal
   local ok = c.green
+  local transp = o.transparency and c.none
 
   return {
     LspReferenceText = { bg = c.surface1 },
     LspReferenceRead = { bg = c.surface1 },
     LspReferenceWrite = { bg = c.surface1 },
 
-    DiagnosticVirtualTextError = { bg = o.transparency and c.none or c.bg_dvt_error, fg = error, italic = true, },
-    DiagnosticVirtualTextWarn = { bg = o.transparency and c.none or c.bg_dvt_warn, fg = warning, italic = true, },
-    DiagnosticVirtualTextInfo = { bg = o.transparency and c.none or c.bg_dvt_info, fg = info, italic = true, },
-    DiagnosticVirtualTextHint = { bg = o.transparency and c.none or c.bg_dvt_hint, fg = hint, italic = true, },
-    DiagnosticVirtualTextOk = { bg = o.transparency and c.none or c.bg_dvt_ok, fg = ok, italic = true, },
+    DiagnosticVirtualTextError = { bg = transp or c.bg_dvt_error, fg = error, italic = true, },
+    DiagnosticVirtualTextWarn = { bg = transp or c.bg_dvt_warn, fg = warning, italic = true, },
+    DiagnosticVirtualTextInfo = { bg = transp or c.bg_dvt_info, fg = info, italic = true, },
+    DiagnosticVirtualTextHint = { bg = transp or c.bg_dvt_hint, fg = hint, italic = true, },
+    DiagnosticVirtualTextOk = { bg = transp or c.bg_dvt_ok, fg = ok, italic = true, },
 
     DiagnosticError = { bg = c.none, fg = error, italic = true },
     DiagnosticWarn = { bg = c.none, fg = warning, italic = true },
@@ -30,27 +31,23 @@ function M.get(c, o)
     DiagnosticUnderlineHint = { undercurl = true, sp = hint },
     DiagnosticUnderlineOk = { undercurl = true, sp = ok },
 
-    DiagnosticFloatingError = { fg = error },         -- Used to color "Error" diagnostic messages in diagnostics float
-    DiagnosticFloatingWarn = { fg = warning },        -- Used to color "Warn" diagnostic messages in diagnostics float
-    DiagnosticFloatingInfo = { fg = info },           -- Used to color "Info" diagnostic messages in diagnostics float
-    DiagnosticFloatingHint = { fg = hint },           -- Used to color "Hint" diagnostic messages in diagnostics float
-    DiagnosticFloatingOk = { fg = ok },               -- Used to color "Ok" diagnostic messages in diagnostics float
+    DiagnosticFloatingError = { fg = error },
+    DiagnosticFloatingWarn = { fg = warning },
+    DiagnosticFloatingInfo = { fg = info },
+    DiagnosticFloatingHint = { fg = hint },
+    DiagnosticFloatingOk = { fg = ok },
 
-    DiagnosticSignError = { fg = error },             -- Used for "Error" signs in sign column
-    DiagnosticSignWarn = { fg = warning },            -- Used for "Warn" signs in sign column
-    DiagnosticSignInfo = { fg = info },               -- Used for "Info" signs in sign column
-    DiagnosticSignHint = { fg = hint },               -- Used for "Hint" signs in sign column
-    DiagnosticSignOk = { fg = ok },                   -- Used for "Ok" signs in sign column
+    DiagnosticSignError = { fg = error },
+    DiagnosticSignWarn = { fg = warning },
+    DiagnosticSignInfo = { fg = info },
+    DiagnosticSignHint = { fg = hint },
+    DiagnosticSignOk = { fg = ok },
 
-    LspDiagnosticsDefaultError = { fg = error },      -- Used as the mantle highlight group. Other LspDiagnostic highlights link to this by default (except Underline)
-    LspDiagnosticsDefaultWarning = { fg = warning },  -- Used as the mantle highlight group. Other LspDiagnostic highlights link to this by default (except Underline)
-    LspDiagnosticsDefaultInformation = { fg = info }, -- Used as the mantle highlight group. Other LspDiagnostic highlights link to this by default (except Underline)
-    LspDiagnosticsDefaultHint = { fg = hint },        -- Used as the mantle highlight group. Other LspDiagnostic highlights link to this by default (except Underline)
+    LspDiagnosticsDefaultError = { fg = error },
+    LspDiagnosticsDefaultWarning = { fg = warning },
+    LspDiagnosticsDefaultInformation = { fg = info },
+    LspDiagnosticsDefaultHint = { fg = hint },
     LspSignatureActiveParameter = { bg = c.surface0, bold = true },
-    -- LspDiagnosticsFloatingError         = { }, -- Used to color "Error" diagnostic messages in diagnostics float
-    -- LspDiagnosticsFloatingWarning       = { }, -- Used to color "Warning" diagnostic messages in diagnostics float
-    -- LspDiagnosticsFloatingInformation   = { }, -- Used to color "Information" diagnostic messages in diagnostics float
-    -- LspDiagnosticsFloatingHint          = { }, -- Used to color "Hint" diagnostic messages in diagnostics float
 
     LspDiagnosticsError = { fg = error },
     LspDiagnosticsWarning = { fg = warning },
@@ -66,7 +63,7 @@ function M.get(c, o)
     LspDiagnosticsUnderlineHint = { undercurl = true, sp = hint },
     LspCodeLens = { fg = c.overlay0 },
     LspCodeLensSeparator = { link = "LspCodeLens" },
-    LspInlayHint = { fg = c.overlay0, bg = o.transparency and c.none or c.bg_line },
+    LspInlayHint = { fg = c.overlay0, bg = transp or c.bg_line },
     LspInfoBorder = { link = "FloatBorder" },
   }
 end
