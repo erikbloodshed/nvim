@@ -4,7 +4,7 @@ function M.get(c)
   return {
     Comment            = { fg = c.overlay2, italic = true },
     SpecialComment     = { link = "Special" },
-    Constant           = { fg = c.peach },
+    Constant           = { fg = c.peach, nocombine = true },
     String             = { fg = c.green },
     Character          = { fg = c.teal },
     Number             = { link = "Constant" },
