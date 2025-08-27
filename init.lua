@@ -17,4 +17,4 @@ require("core.lsp")
 require("core.autocmds")
 require("ui.statusline")
 
-vim.cmd.colorscheme("decaffuccin")
+vim.cmd.colorscheme("decaf")

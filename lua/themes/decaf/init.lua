@@ -7,7 +7,7 @@ if g.colors_name then
   vim.cmd.highlight("clear")
 end
 
-g.colors_name = "decaffuccin"
+g.colors_name = "decaf"
 
 local cfg = {
   transparency = false,
@@ -80,13 +80,13 @@ local function apply_highlights()
   c.bg_incsearch = darken(c.sky, 0.90, c.base)
 
   local mod = {
-    require("themes.decaffuccin.schema.editor").get(c, cfg),
-    require("themes.decaffuccin.schema.native_lsp").get(c, cfg),
-    require("themes.decaffuccin.schema.neotree").get(c, cfg),
-    require("themes.decaffuccin.schema.syntax").get(c, cfg),
-    require("themes.decaffuccin.schema.treesitter").get(c),
-    require("themes.decaffuccin.schema.semantic_tokens").get(c),
-    require("themes.decaffuccin.schema.blink").get(c),
+    require("themes.decaf.schema.editor").get(c, cfg),
+    require("themes.decaf.schema.native_lsp").get(c, cfg),
+    require("themes.decaf.schema.neotree").get(c, cfg),
+    require("themes.decaf.schema.syntax").get(c, cfg),
+    require("themes.decaf.schema.treesitter").get(c),
+    require("themes.decaf.schema.semantic_tokens").get(c),
+    require("themes.decaf.schema.blink").get(c),
   }
 
   local all_highlights = {}
@@ -103,7 +103,7 @@ if not ok then
   vim.notify("Theme loading failed: " .. err, vim.log.levels.ERROR)
 end
 
-local term = require("themes.decaffuccin.schema.terminal").get(c)
+local term = require("themes.decaf.schema.terminal").get(c)
 for i, color in pairs(term) do
   vim.g[i] = color
 end
