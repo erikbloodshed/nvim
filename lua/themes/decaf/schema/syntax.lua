@@ -2,46 +2,45 @@ local M = {}
 
 function M.get(c, o)
   return {
-    Comment            = { fg = c.overlay2, italic = true }, -- just comments
-    SpecialComment     = { link = "Special" },               -- special things inside a comment
-    Constant           = { fg = c.peach },                   -- (preferred) any constant
-    String             = { fg = c.green },                   -- a string constant: "this is a string"
-    Character          = { fg = c.teal },                    --  a character constant: 'c', '\n'
-    Number             = { fg = c.peach },                   --   a number constant: 234, 0xff
-    Float              = { link = "Number" },                --    a floating point constant: 2.3e10
-    Boolean            = { fg = c.peach },                   --  a boolean constant: TRUE, false
-    Identifier         = { fg = c.flamingo },                -- (preferred) any variable name
-    Function           = { fg = c.blue },                    -- function name (also: methods for classes)
-    Statement          = { fg = c.mauve },                   -- (preferred) any statement
-    Conditional        = { fg = c.mauve },                   --  if, then, else, endif, switch, etc.
-    Repeat             = { fg = c.mauve },                   --   for, do, while, etc.
-    Label              = { fg = c.sapphire },                --    case, default, etc.
-    Operator           = { fg = c.sky },                     -- "sizeof", "+", "*", etc.
-    Keyword            = { fg = c.mauve },                   --  any other keyword
-    Exception          = { fg = c.mauve },                   --  try, catch, throw
+    Comment            = { fg = c.overlay2, italic = true },             -- just comments
+    SpecialComment     = { link = "Special" },                           -- special things inside a comment
+    Constant           = { fg = c.peach },                               -- (preferred) any constant
+    String             = { fg = c.green },                               -- a string constant: "this is a string"
+    Character          = { fg = c.teal },                                --  a character constant: 'c', '\n'
+    Number             = { link = "Constant" },                          --   a number constant: 234, 0xff
+    Float              = { link = "Constant" },                          --    a floating point constant: 2.3e10
+    Boolean            = { link = "Constant" },                          --  a boolean constant: TRUE, false
+    Identifier         = { fg = c.flamingo },                            -- (preferred) any variable name
+    Function           = { fg = c.blue, bold = true, nocombine = true }, -- function name (also: methods for classes)
+    Statement          = { fg = c.mauve },                               -- (preferred) any statement
+    Conditional        = { link = "Statement" },                         --  if, then, else, endif, switch, etc.
+    Repeat             = { link = "Statement" },                         --   for, do, while, etc.
+    Label              = { fg = c.sapphire },                            --    case, default, etc.
+    Operator           = { fg = c.sky },                                 -- "sizeof", "+", "*", etc.
+    Keyword            = { link = "Statement" },                         --  any other keyword
+    Exception          = { link = "Statement" },                         --  try, catch, throw
 
-    PreProc            = { fg = c.pink },                    -- (preferred) generic Preprocessor
-    Include            = { fg = c.mauve },                   --  preprocessor #include
-    Define             = { link = "PreProc" },               -- preprocessor #define
-    Macro              = { fg = c.mauve },                   -- same as Define
-    PreCondit          = { link = "PreProc" },               -- preprocessor #if, #else, #endif, etc.
+    PreProc            = { fg = c.pink },                                -- (preferred) generic Preprocessor
+    Include            = { link = "Statement" },                         --  preprocessor #include
+    Define             = { link = "PreProc" },                           -- preprocessor #define
+    Macro              = { link = "Statement" },                         -- same as Define
+    PreCondit          = { link = "PreProc" },                           -- preprocessor #if, #else, #endif, etc.
 
-    StorageClass       = { fg = c.yellow },                  -- static, register, volatile, etc.
-    Structure          = { fg = c.yellow },                  --  struct, union, enum, etc.
-    Special            = { fg = c.pink },                    -- (preferred) any special symbol
-    Type               = { fg = c.yellow },                  -- (preferred) int, long, char, etc.
-    Typedef            = { link = "Type" },                  --  A typedef
-    SpecialChar        = { link = "Special" },               -- special character in a constant
-    Tag                = { fg = c.lavender },                -- you can use CTRL-] on this
-    Delimiter          = { fg = c.overlay2 },                -- character that needs attention
-    Debug              = { link = "Special" },               -- debugging statements
+    StorageClass       = { fg = c.yellow, nocombine = true },            -- static, register, volatile, etc.
+    Structure          = { link = "StorageClass" },                      --  struct, union, enum, etc.
+    Special            = { fg = c.pink },                                -- (preferred) any special symbol
+    Type               = { link = "StorageClass" },                      -- (preferred) int, long, char, etc.
+    Typedef            = { link = "Type" },                              --  A typedef
+    SpecialChar        = { link = "Special" },                           -- special character in a constant
+    Tag                = { fg = c.lavender },                            -- you can use CTRL-] on this
+    Delimiter          = { fg = c.overlay2 },                            -- character that needs attention
+    Debug              = { link = "Special" },                           -- debugging statements
 
-    Underlined         = { underline = true },               -- (preferred) text that stands out, HTML links
+    Underlined         = { underline = true },                           -- (preferred) text that stands out, HTML links
     Bold               = { bold = true },
     Italic             = { italic = true },
     -- ("Ignore", below, may be invisible...)
     -- Ignore = { }, -- (preferred) left blank, hidden  |hl-Ignore|
-
     Error              = { fg = c.red },                                -- (preferred) any erroneous construct
     Todo               = { bg = c.flamingo, fg = c.base, bold = true }, -- (preferred) anything that needs extra attention; mostly the keywords TODO FIXME and XXX
     qfLineNr           = { fg = c.yellow },
@@ -75,7 +74,7 @@ function M.get(c, o)
     DiffDelete         = { bg = c.bg_diff_delete },
     DiffText           = { bg = c.bg_diff_text },
     -- NeoVim
-    healthError        = { fg = c.red },
+    healthError        = { link = "Error" },
     healthSuccess      = { fg = c.teal },
     healthWarning      = { fg = c.yellow },
     -- glyphs
