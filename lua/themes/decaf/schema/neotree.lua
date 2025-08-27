@@ -1,8 +1,8 @@
 local M = {}
 
 function M.get(c, o)
-  local trans = o.transparency
-  local t = trans and c.none
+  local transp = o.transparency
+  local t = transp and c.none
   local active_bg = t or c.mantle
   local inactive_bg = t or c.base
 
@@ -20,8 +20,8 @@ function M.get(c, o)
     NeoTreeGitAdded = { fg = c.green },
     NeoTreeGitConflict = { fg = c.red },
     NeoTreeGitDeleted = { fg = c.red },
-    NeoTreeGitIgnored = { fg = c.overlay0 },
     NeoTreeGitModified = { fg = c.yellow },
+    NeoTreeGitIgnored = { fg = c.overlay0 },
     NeoTreeGitUnstaged = { fg = c.red },
     NeoTreeGitUntracked = { fg = c.mauve },
     NeoTreeGitStaged = { fg = c.green },
@@ -38,7 +38,7 @@ function M.get(c, o)
     NeoTreeTabSeparatorActive = { fg = active_bg, bg = active_bg },
     NeoTreeTabSeparatorInactive = { fg = inactive_bg, bg = inactive_bg },
     NeoTreeVertSplit = { fg = c.base, bg = inactive_bg },
-    NeoTreeWinSeparator = { fg = trans and c.surface1 or c.base, bg = t or c.base },
+    NeoTreeWinSeparator = { fg = transp and c.surface1 or c.base, bg = inactive_bg },
     NeoTreeStatusLineNC = { fg = c.mantle, bg = c.mantle },
   }
 end

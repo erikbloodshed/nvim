@@ -1,22 +1,5 @@
 local M = {}
 
-local p = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
-
-local rgb = function(hex)
-  local r, g, b = string.match(string.lower(hex), p)
-  return { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
-end
-
-local dkn = function(f, a, b)
-  b, f = rgb(b), rgb(f)
-  local blend = function(i)
-    local r = (a * f[i] + ((1 - a) * b[i]))
-    return math.floor(math.min(math.max(0, r), 255) + 0.5)
-  end
-  return string.format("#%02X%02X%02X", blend(1), blend(2), blend(3))
-end
-
-
 M = {
   rosewater = "#f5e0dc",
   flamingo  = "#f2cdcd",
@@ -46,6 +29,22 @@ M = {
   crust     = "#11111b",
   none      = "NONE"
 }
+
+local p = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
+
+local rgb = function(hex)
+  local r, g, b = string.match(string.lower(hex), p)
+  return { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
+end
+
+local dkn = function(f, a, b)
+  b, f = rgb(b), rgb(f)
+  local blend = function(i)
+    local r = (a * f[i] + ((1 - a) * b[i]))
+    return math.floor(math.min(math.max(0, r), 255) + 0.5)
+  end
+  return string.format("#%02X%02X%02X", blend(1), blend(2), blend(3))
+end
 
 M.dim = dkn(M.base, 0.15, M.mantle)
 M.bg_dvt_error = dkn(M.red, 0.095, M.base)

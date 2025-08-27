@@ -1,7 +1,7 @@
-local api = vim.api
-local keyset = vim.keymap.set
-local autocmd = api.nvim_create_autocmd
+local wo, api = vim.wo, vim.api
+local keyset, autocmd = vim.keymap.set, api.nvim_create_autocmd
 
+--- @diagnostic disable: assign-type-mismatch 
 autocmd({ "Filetype" }, {
   pattern = { "c", "cpp", "asm", "python", "lua" },
   callback = function(args)
@@ -21,7 +21,7 @@ autocmd({ "Filetype" }, {
           response_file = ".compile_flags",
         },
         python = {
-          run_command = "python3.14"
+          run_command = "python3"
         }
       }
     })
@@ -40,7 +40,7 @@ autocmd({ "VimEnter" }, {
   callback = function()
     require("ui.input")
     require("ui.select")
-    -- require("ui.statusline")
+    require("ui.statusline")
 
     keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
       { noremap = true, silent = true })
@@ -49,10 +49,15 @@ autocmd({ "VimEnter" }, {
 
     require('termswitch').setup({
       defaults = {
-        width = 0.85,
-        height = 0.85,
+        width = 0.8,
+        height = 0.8,
         border = 'rounded',
         open_in_file_dir = true,
+        backdrop = {
+          enabled = true,    -- Enable/disable backdrop
+          opacity = 60,      -- Backdrop opacity (0-100)
+          color = "#000000", -- Backdrop color
+        }
       },
 
       terminals = {
@@ -83,5 +88,21 @@ autocmd({ "TermOpen" }, {
   pattern = { "*" },
   callback = function()
     vim.cmd.startinsert()
+  end,
+})
+
+local cl_group = api.nvim_create_augroup("CursorLineControl", { clear = true })
+
+api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
+  group = cl_group,
+  callback = function()
+    wo.cursorline = false
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+  group = cl_group,
+  callback = function()
+    wo.cursorline = true
   end,
 })

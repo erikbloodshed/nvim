@@ -7,7 +7,7 @@ end
 g.colors_name = "decaf"
 o.termguicolors = true
 
-local cfg = {
+local s = {
   transparency = false,
   float = {
     transparent = false,
@@ -18,13 +18,13 @@ local cfg = {
 local c = require("themes.decaf.colors")
 
 local mod = {
-  require("themes.decaf.schema.editor").get(c, cfg),
-  require("themes.decaf.schema.native_lsp").get(c, cfg),
-  require("themes.decaf.schema.neotree").get(c, cfg),
+  require("themes.decaf.schema.editor").get(c, s),
+  require("themes.decaf.schema.native_lsp").get(c, s),
+  require("themes.decaf.schema.neotree").get(c, s),
+  require("themes.decaf.schema.blink").get(c),
   require("themes.decaf.schema.syntax").get(c),
   require("themes.decaf.schema.treesitter").get(c),
-  require("themes.decaf.schema.semantic_tokens").get(c),
-  require("themes.decaf.schema.blink").get(c),
+  require("themes.decaf.schema.semantic_tokens").get(),
 }
 
 local hls = {}
@@ -34,7 +34,6 @@ end
 
 local hl = api.nvim_set_hl
 for n, a in pairs(hls) do hl(0, n, a) end
-
 
 local t = require("themes.decaf.schema.terminal").get(c)
 for i, k in pairs(t) do

@@ -1,19 +1,19 @@
 local M = {}
 
 function M.get(c)
-  local colors = {                                    -- Reference: https://github.com/nvim-treesitter/nvim-treesitter/blob/master/CONTRIBUTING.md
+  local colors = {                                         -- Reference: https://github.com/nvim-treesitter/nvim-treesitter/blob/master/CONTRIBUTING.md
     -- Identifiers
-    ["@variable"] = { fg = c.text },                  -- Any variable name that does not have another highlight.
-    ["@variable.builtin"] = { fg = c.red },           -- Variable names that are defined by the languages, like this or self.
-    ["@variable.parameter"] = { fg = c.maroon },      -- For parameters of a function.
-    ["@variable.member"] = { fg = c.lavender },       -- For fields.
+    ["@variable"] = { fg = c.text },                       -- Any variable name that does not have another highlight.
+    ["@variable.builtin"] = { fg = c.red, italic = true }, -- Variable names that are defined by the languages, like this or self.
+    ["@variable.parameter"] = { fg = c.maroon },           -- For parameters of a function.
+    ["@variable.member"] = { fg = c.lavender },            -- For fields.
 
-    ["@constant"] = { link = "Constant" },            -- For constants
-    ["@constant.builtin"] = { link = "Constant" },    -- For constant that are built in the language: nil in Lua.
-    ["@constant.macro"] = { link = "Macro" },         -- For constants that are defined by macros: NULL in C.
+    ["@constant"] = { link = "Constant" },                 -- For constants
+    ["@constant.builtin"] = { link = "Constant" },         -- For constant that are built in the language: nil in Lua.
+    ["@constant.macro"] = { link = "Macro" },              -- For constants that are defined by macros: NULL in C.
 
-    ["@module"] = { fg = c.lavender, italic = true }, -- For identifiers referring to modules and namespaces.
-    ["@label"] = { link = "Label" },                  -- For labels: label: in C and :label: in Lua.
+    ["@module"] = { fg = c.lavender },                     -- For identifiers referring to modules and namespaces.
+    ["@label"] = { link = "Label" },                       -- For labels: label: in C and :label: in Lua.
 
     -- Literals
     ["@string"] = { link = "String" },                                               -- For strings.
@@ -26,7 +26,7 @@ function M.get(c)
     ["@string.special.url"] = { fg = c.rosewater, italic = true, underline = true }, -- urls, links and emails
 
     ["@character"] = { link = "Character" },                                         -- character literals
-    ["@character.special"] = { link = "SpecialChar" },                               -- special characters (e.g. wildcards)
+    ["@character.special"] = { link = "Special" },                                   -- special characters (e.g. wildcards)
 
     ["@boolean"] = { link = "Constant" },                                            -- For booleans.
     ["@number"] = { link = "Constant" },                                             -- For all numbers
@@ -34,7 +34,7 @@ function M.get(c)
 
     -- Types
     ["@type"] = { link = "StorageClass" },            -- For types.
-    ["@type.builtin"] = { link = "StorageClass" },    -- For builtin types.
+    ["@type.builtin"] = { link = "Statement" },       -- For builtin types.
     ["@type.definition"] = { link = "StorageClass" }, -- type definitions (e.g. `typedef` in C)
 
     ["@attribute"] = { link = "Constant" },           -- attribute annotations (e.g. Python decorators)
@@ -42,7 +42,7 @@ function M.get(c)
 
     -- Functions
     ["@function"] = { link = "Function" },             -- For function (calls and definitions).
-    ["@function.builtin"] = { link = "Constant" },     -- For builtin functions: table.insert in Lua.
+    ["@function.builtin"] = { link = "Function" },     -- For builtin functions: table.insert in Lua.
     ["@function.call"] = { link = "Function" },        -- function calls
     ["@function.macro"] = { fg = c.teal },             -- For macro defined functions (calls and definitions): each macro_rules in Rust.
 
@@ -58,7 +58,7 @@ function M.get(c)
     ["@keyword.type"] = { link = "Statement" },               -- For keywords describing composite types (e.g. `struct`, `enum`)
     ["@keyword.coroutine"] = { link = "Statement" },          -- For keywords related to coroutines (e.g. `go` in Go, `async/await` in Python)
     ["@keyword.function"] = { link = "Statement" },           -- For keywords used to define a function.
-    ["@keyword.operator"] = { link = "Operator" },            -- For new keyword operator
+    ["@keyword.operator"] = { link = "Statement" },           -- For new keyword operator
     ["@keyword.import"] = { link = "Include" },               -- For includes: #include in C, use or extern crate in Rust, or require in Lua.
     ["@keyword.repeat"] = { link = "Statement" },             -- For keywords related to loops.
     ["@keyword.return"] = { link = "Statement" },

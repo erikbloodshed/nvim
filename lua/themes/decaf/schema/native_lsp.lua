@@ -9,10 +9,6 @@ function M.get(c, o)
   local t = o.transparency and c.none
 
   return {
-    LspReferenceText = { bg = c.surface1 },
-    LspReferenceRead = { link = "LspReferenceText" },
-    LspReferenceWrite = { link = "LspReferenceText" },
-
     DiagnosticVirtualTextError = { bg = t or c.bg_dvt_error, fg = error, italic = true, },
     DiagnosticVirtualTextWarn = { bg = t or c.bg_dvt_warn, fg = warn, italic = true, },
     DiagnosticVirtualTextInfo = { bg = t or c.bg_dvt_info, fg = info, italic = true, },
@@ -47,24 +43,30 @@ function M.get(c, o)
     LspDiagnosticsDefaultWarning = { link = "DiagnosticFloatingWarn" },
     LspDiagnosticsDefaultInformation = { link = "DiagnosticFloatingInfo" },
     LspDiagnosticsDefaultHint = { link = "DiagnosticFloatingHint" },
-    LspSignatureActiveParameter = { bg = c.surface0, bold = true },
 
     LspDiagnosticsError = { link = "DiagnosticFloatingError" },
     LspDiagnosticsWarning = { link = "DiagnosticFloatingWarn" },
     LspDiagnosticsInformation = { link = "DiagnosticFloatingInfo" },
     LspDiagnosticsHint = { link = "DiagnosticFloatingHint" },
-    LspDiagnosticsVirtualTextError = { fg = error, italic = true },
-    LspDiagnosticsVirtualTextWarning = { fg = warn, italic = true },
-    LspDiagnosticsVirtualTextInformation = { fg = info, italic = true },
-    LspDiagnosticsVirtualTextHint = { fg = hint, italic = true },
-    LspDiagnosticsUnderlineError = { undercurl = true, sp = error },
-    LspDiagnosticsUnderlineWarning = { undercurl = true, sp = warn },
-    LspDiagnosticsUnderlineInformation = { undercurl = true, sp = info },
-    LspDiagnosticsUnderlineHint = { undercurl = true, sp = hint },
+
+    LspDiagnosticsVirtualTextError = { link = "DiagnosticError" },
+    LspDiagnosticsVirtualTextWarning = { link = "DiagnosticWarn" },
+    LspDiagnosticsVirtualTextInformation = { link = "DiagnosticInfo" },
+    LspDiagnosticsVirtualTextHint = { link = "DiagnosticHint" },
+
+    LspDiagnosticsUnderlineError = { link = "DiagnosticUnderlineError" },
+    LspDiagnosticsUnderlineWarning = { link = "DiagnosticUnderlineWarn" },
+    LspDiagnosticsUnderlineInformation = { link = "DiagnosticUnderlineInfo" },
+    LspDiagnosticsUnderlineHint = { link = "DiagnosticUnderlineHint" },
+
+    LspSignatureActiveParameter = { bg = c.surface0, bold = true },
     LspCodeLens = { fg = c.overlay0 },
     LspCodeLensSeparator = { link = "LspCodeLens" },
     LspInlayHint = { fg = c.overlay0, bg = t or c.bg_line },
     LspInfoBorder = { link = "FloatBorder" },
+    LspReferenceText = { bg = c.surface1 },
+    LspReferenceRead = { link = "LspReferenceText" },
+    LspReferenceWrite = { link = "LspReferenceText" },
   }
 end
 
