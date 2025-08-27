@@ -21,22 +21,22 @@ local mod = {
   require("themes.decaf.schema.editor").get(c, cfg),
   require("themes.decaf.schema.native_lsp").get(c, cfg),
   require("themes.decaf.schema.neotree").get(c, cfg),
-  require("themes.decaf.schema.syntax").get(c, cfg),
+  require("themes.decaf.schema.syntax").get(c),
   require("themes.decaf.schema.treesitter").get(c),
   require("themes.decaf.schema.semantic_tokens").get(c),
   require("themes.decaf.schema.blink").get(c),
 }
 
-local all_highlights = {}
+local hls = {}
 for _, m in pairs(mod) do
-  for n, a in pairs(m) do all_highlights[n] = a end
+  for n, a in pairs(m) do hls[n] = a end
 end
 
 local hl = api.nvim_set_hl
-for n, a in pairs(all_highlights) do hl(0, n, a) end
+for n, a in pairs(hls) do hl(0, n, a) end
 
 
-local term = require("themes.decaf.schema.terminal").get(c)
-for i, color in pairs(term) do
-  vim.g[i] = color
+local t = require("themes.decaf.schema.terminal").get(c)
+for i, k in pairs(t) do
+  vim.g[i] = k
 end

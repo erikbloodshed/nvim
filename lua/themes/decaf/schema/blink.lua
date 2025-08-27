@@ -2,6 +2,8 @@ local M = {}
 
 function M.get(c)
   local highlights = {
+    BlinkCmpMenuBorder = { fg = c.surface2, bg = c.mantle },
+    linkCmpDocBorder = { link = "FloatBorder" },
     BlinkCmpLabel = { fg = c.overlay2 },
     BlinkCmpLabelDeprecated = { fg = c.overlay0, strikethrough = true },
     BlinkCmpKind = { fg = c.blue },
@@ -40,8 +42,6 @@ function M.get(c)
     BlinkCmpKindOperator = { fg = c.sky },
     BlinkCmpKindTypeParameter = { fg = c.maroon },
     BlinkCmpKindCopilot = { fg = c.teal },
-    BlinkCmpMenuBorder = { fg = c.surface2, bg = c.mantle },
-    BlinkCmpDocBorder = { link = "FloatBorder" }
   }
 
   return highlights

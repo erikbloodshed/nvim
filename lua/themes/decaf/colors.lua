@@ -1,19 +1,19 @@
 local M = {}
 
-local pat = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
-local rgb = function(hex_str)
-  local red, green, blue = string.match(string.lower(hex_str), pat)
-  return { tonumber(red, 16), tonumber(green, 16), tonumber(blue, 16) }
+local p = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
+
+local rgb = function(hex)
+  local r, g, b = string.match(string.lower(hex), p)
+  return { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
 end
 
-local darken = function(f, a, b)
+local dkn = function(f, a, b)
   b, f = rgb(b), rgb(f)
-  local blendChannel = function(i)
-    local ret = (a * f[i] + ((1 - a) * b[i]))
-    return math.floor(math.min(math.max(0, ret), 255) + 0.5)
+  local blend = function(i)
+    local r = (a * f[i] + ((1 - a) * b[i]))
+    return math.floor(math.min(math.max(0, r), 255) + 0.5)
   end
-
-  return string.format("#%02X%02X%02X", blendChannel(1), blendChannel(2), blendChannel(3))
+  return string.format("#%02X%02X%02X", blend(1), blend(2), blend(3))
 end
 
 
@@ -47,18 +47,18 @@ M = {
   none      = "NONE"
 }
 
-M.dim = darken(M.base, 0.15, M.mantle)
-M.bg_dvt_error = darken(M.red, 0.095, M.base)
-M.bg_dvt_warn = darken(M.yellow, 0.095, M.base)
-M.bg_dvt_info = darken(M.sky, 0.095, M.base)
-M.bg_dvt_hint = darken(M.teal, 0.095, M.base)
-M.bg_dvt_ok = darken(M.green, 0.095, M.base)
-M.bg_line = darken(M.surface0, 0.64, M.base)
-M.bg_diff_add = darken(M.green, 0.18, M.base)
-M.bg_diff_change = darken(M.blue, 0.07, M.base)
-M.bg_diff_delete = darken(M.red, 0.18, M.base)
-M.bg_diff_text = darken(M.blue, 0.30, M.base)
-M.bg_search = darken(M.sky, 0.30, M.base)
-M.bg_incsearch = darken(M.sky, 0.90, M.base)
+M.dim = dkn(M.base, 0.15, M.mantle)
+M.bg_dvt_error = dkn(M.red, 0.095, M.base)
+M.bg_dvt_warn = dkn(M.yellow, 0.095, M.base)
+M.bg_dvt_info = dkn(M.sky, 0.095, M.base)
+M.bg_dvt_hint = dkn(M.teal, 0.095, M.base)
+M.bg_dvt_ok = dkn(M.green, 0.095, M.base)
+M.bg_line = dkn(M.surface0, 0.64, M.base)
+M.bg_diff_add = dkn(M.green, 0.18, M.base)
+M.bg_diff_change = dkn(M.blue, 0.07, M.base)
+M.bg_diff_delete = dkn(M.red, 0.18, M.base)
+M.bg_diff_text = dkn(M.blue, 0.30, M.base)
+M.bg_search = dkn(M.sky, 0.30, M.base)
+M.bg_incsearch = dkn(M.sky, 0.90, M.base)
 
 return M

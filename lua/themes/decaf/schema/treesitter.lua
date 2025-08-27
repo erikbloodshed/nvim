@@ -75,7 +75,7 @@ function M.get(c)
 
     -- Punctuation
     ["@punctuation.delimiter"] = { link = "Delimiter" }, -- For delimiters (e.g. `;` / `.` / `,`).
-    ["@punctuation.bracket"] = { fg = c.overlay2 },      -- For brackets and parenthesis.
+    ["@punctuation.bracket"] = { link = "Delimiter" },   -- For brackets and parenthesis.
     ["@punctuation.special"] = { link = "Special" },     -- For special punctuation that does not fall in the categories before (e.g. `{}` in string interpolation).
 
     -- Comment
