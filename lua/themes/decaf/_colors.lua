@@ -32,8 +32,8 @@ M = {
 
 local p = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
 
-local rgb = function(hex)
-  local r, g, b = string.match(string.lower(hex), p)
+local rgb = function(h)
+  local r, g, b = string.match(string.lower(h), p)
   return { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
 end
 

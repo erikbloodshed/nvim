@@ -175,13 +175,11 @@ function M.get(c, o)
     Operator                                   = { fg = c.sky },
     Keyword                                    = { link = "Statement" },
     Exception                                  = { link = "Statement" },
-
     PreProc                                    = { fg = c.pink },
     Include                                    = { link = "Statement" },
     Define                                     = { link = "PreProc" },
     Macro                                      = { link = "Statement" },
     PreCondit                                  = { link = "PreProc" },
-
     StorageClass                               = { fg = c.yellow },
     Structure                                  = { link = "StorageClass" },
     Special                                    = { fg = c.pink },
@@ -191,11 +189,9 @@ function M.get(c, o)
     Tag                                        = { fg = c.lavender },
     Delimiter                                  = { fg = c.overlay2 },
     Debug                                      = { link = "Special" },
-
     Underlined                                 = { underline = true },
     Bold                                       = { bold = true },
     Italic                                     = { italic = true },
-
     Error                                      = { fg = error },
     Todo                                       = { bg = c.flamingo, fg = c.base, bold = true },
     DiffAdd                                    = { bg = c.bg_diff_add },
@@ -346,7 +342,7 @@ function M.get(c, o)
     ["@lsp.type.decorator"]                    = {},
     ["@lsp.type.enumMember"]                   = { link = "Constant" },
     ["@lsp.type.escapeSequence"]               = { link = "Special" },
-    ["@lsp.type.function"]                     = { link = "Function" },
+    ["@lsp.type.function"]                     = {},
     ["@lsp.type.formatSpecifier"]              = { link = "Special" },
     ["@lsp.type.interface"]                    = { link = "Identifier" },
     ["@lsp.type.keyword"]                      = { link = "Statement" },
@@ -356,6 +352,7 @@ function M.get(c, o)
     ["@lsp.type.operator"]                     = { link = "Operator" },
     ["@lsp.type.parameter"]                    = { link = "@variable.parameter" },
     ["@lsp.type.property"]                     = { link = "@variable.member" },
+    ["@lsp.type.selfParameter"]                = { fg = c.red, italic = true },
     ["@lsp.type.selfKeyword"]                  = { link = "@variable.builtin" },
     ["@lsp.type.typeAlias"]                    = { link = "@type.definition" },
     ["@lsp.type.unresolvedReference"]          = { link = "Error" },
@@ -370,7 +367,7 @@ function M.get(c, o)
     ["@lsp.typemod.operator.injected"]         = { link = "Operator" },
     ["@lsp.typemod.string.injected"]           = { link = "String" },
     ["@lsp.typemod.type.defaultLibrary"]       = { link = "Statement" },
-    ["@lsp.typemod.variable.defaultLibrary"]   = { link = "@variable.builtin" },
+    ["@lsp.typemod.variable.defaultLibrary"]   = {},
     ["@lsp.typemod.variable.injected"]         = { link = "@variable" },
 
     -- Python
