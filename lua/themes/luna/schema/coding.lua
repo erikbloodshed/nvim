@@ -37,7 +37,7 @@ M.get = function(c)
     ["@comment.todo"]                            = { fg = c.blue },
     ["@comment.warning"]                         = { fg = c.yellow },
     ["@constant"]                                = { link = "Constant" },
-    ["@constant.builtin"]                        = { link = "Special" },
+    ["@constant.builtin"]                        = { link = "Constant" },
     ["@constant.macro"]                          = { link = "PreProc" },
     ["@constructor"]                             = { fg = c.magenta, nocombine = true },
     ["@constructor.tsx"]                         = { fg = c.blue1 },
