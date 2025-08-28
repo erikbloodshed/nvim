@@ -15,17 +15,16 @@ function M.create(user_config)
       "quickfix", "help", "nofile", "prompt",
     },
     special_filetypes = {
-      "qf", "help", "netrw", "fugitive", "NvimTree", "neo-tree",
-      "nerdtree", "fern", "CHADTree", "Trouble", "dirvish"
+      "qf", "help", "netrw", "neo-tree",
     },
     special_bufname_patterns = {
-      "^term://", "^fugitive://", "^neo%-tree "
+      "^term://", "^neo%-tree "
     },
     exclude_buftypes = {
       "quickfix", "nofile", "help", "prompt"
     },
     exclude_filetypes = {
-      "qf", "netrw", "Trouble", "fugitive", "NvimTree"
+      "qf", "netrw", "NvimTree"
     },
     periodic_cleanup = true,
     debug = false,
