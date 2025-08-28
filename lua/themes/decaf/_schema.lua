@@ -13,9 +13,8 @@ function M.get(c, o)
   local ok = c.green
   local active_bg = t_co or c.mantle
   local inactive_bg = t_co or c.base
-  local h = {}
 
-  h = {
+  return {
     -- {{{ Editor
     ColorColumn                                = { bg = c.surface0 },
     Conceal                                    = { fg = c.overlay1 },
@@ -66,7 +65,6 @@ function M.get(c, o)
     SpellRare                                  = { sp = c.green, undercurl = true },
     StatusLine                                 = { fg = c.text, bg = t_co or c.mantle },
     StatusLineNC                               = { fg = c.surface1, bg = t_co or c.mantle },
-
     StatusLineNormal                           = { bg = c.blue, fg = c.crust, bold = true },
     StatusLineInsert                           = { bg = c.green, fg = c.crust, bold = true },
     StatusLineVisual                           = { bg = c.mauve, fg = c.crust, bold = true },
@@ -82,7 +80,7 @@ function M.get(c, o)
     StatusLineDiagInfo                         = { link = "DiagnosticInfo" },
     StatusLineLsp                              = { fg = c.green },
     StatusLineLabel                            = { fg = c.surface1 },
-    StatusLineValue                            = { fg = c.peach },
+    StatusLineValue                            = { link = "StatusLineGit" },
     StatusLineSeparator                        = { fg = c.surface0 },
 
     TabLine                                    = { bg = c.crust, fg = c.overlay0 },
@@ -107,11 +105,11 @@ function M.get(c, o)
     DiagnosticVirtualTextHint                  = { bg = t_co or c.bg_dvt_hint, fg = hint, italic = true, },
     DiagnosticVirtualTextOk                    = { bg = t_co or c.bg_dvt_ok, fg = ok, italic = true, },
 
-    DiagnosticError                            = { fg = error, italic = true },
-    DiagnosticWarn                             = { fg = warn, italic = true },
-    DiagnosticInfo                             = { fg = info, italic = true },
-    DiagnosticHint                             = { fg = hint, italic = true },
-    DiagnosticOk                               = { fg = ok, italic = true },
+    DiagnosticError                            = { fg = error },
+    DiagnosticWarn                             = { fg = warn },
+    DiagnosticInfo                             = { fg = info },
+    DiagnosticHint                             = { fg = hint },
+    DiagnosticOk                               = { fg = ok },
 
     DiagnosticUnderlineError                   = { undercurl = true, sp = error },
     DiagnosticUnderlineWarn                    = { undercurl = true, sp = warn },
@@ -119,27 +117,27 @@ function M.get(c, o)
     DiagnosticUnderlineHint                    = { undercurl = true, sp = hint },
     DiagnosticUnderlineOk                      = { undercurl = true, sp = ok },
 
-    DiagnosticFloatingError                    = { fg = error },
-    DiagnosticFloatingWarn                     = { fg = warn },
-    DiagnosticFloatingInfo                     = { fg = info },
-    DiagnosticFloatingHint                     = { fg = hint },
-    DiagnosticFloatingOk                       = { fg = ok },
+    DiagnosticFloatingError                    = { link = "DiagnosticError" },
+    DiagnosticFloatingWarn                     = { link = "DiagnosticWarn" },
+    DiagnosticFloatingInfo                     = { link = "DiagnosticInfo" },
+    DiagnosticFloatingHint                     = { link = "DiagnosticHint" },
+    DiagnosticFloatingOk                       = { link = "DiagnosticOk" },
 
-    DiagnosticSignError                        = { link = "DiagnosticFloatingError" },
-    DiagnosticSignWarn                         = { link = "DiagnosticFloatingWarn" },
-    DiagnosticSignInfo                         = { link = "DiagnosticFloatingInfo" },
-    DiagnosticSignHint                         = { link = "DiagnosticFloatingHint" },
-    DiagnosticSignOk                           = { link = "DiagnosticFloatingOk" },
+    DiagnosticSignError                        = { link = "DiagnosticError" },
+    DiagnosticSignWarn                         = { link = "DiagnosticWarn" },
+    DiagnosticSignInfo                         = { link = "DiagnosticInfo" },
+    DiagnosticSignHint                         = { link = "DiagnosticHint" },
+    DiagnosticSignOk                           = { link = "DiagnosticOk" },
 
-    LspDiagnosticsDefaultError                 = { link = "DiagnosticFloatingError" },
-    LspDiagnosticsDefaultWarning               = { link = "DiagnosticFloatingWarn" },
-    LspDiagnosticsDefaultInformation           = { link = "DiagnosticFloatingInfo" },
-    LspDiagnosticsDefaultHint                  = { link = "DiagnosticFloatingHint" },
+    LspDiagnosticsDefaultError                 = { link = "DiagnosticError" },
+    LspDiagnosticsDefaultWarning               = { link = "DiagnosticWarn" },
+    LspDiagnosticsDefaultInformation           = { link = "DiagnosticInfo" },
+    LspDiagnosticsDefaultHint                  = { link = "DiagnosticHint" },
 
-    LspDiagnosticsError                        = { link = "DiagnosticFloatingError" },
-    LspDiagnosticsWarning                      = { link = "DiagnosticFloatingWarn" },
-    LspDiagnosticsInformation                  = { link = "DiagnosticFloatingInfo" },
-    LspDiagnosticsHint                         = { link = "DiagnosticFloatingHint" },
+    LspDiagnosticsError                        = { link = "DiagnosticError" },
+    LspDiagnosticsWarning                      = { link = "DiagnosticWarn" },
+    LspDiagnosticsInformation                  = { link = "DiagnosticInfo" },
+    LspDiagnosticsHint                         = { link = "DiagnosticHint" },
 
     LspDiagnosticsVirtualTextError             = { link = "DiagnosticError" },
     LspDiagnosticsVirtualTextWarning           = { link = "DiagnosticWarn" },
@@ -198,91 +196,87 @@ function M.get(c, o)
     Bold                                       = { bold = true },
     Italic                                     = { italic = true },
 
-    Error                                      = { fg = c.red },
+    Error                                      = { fg = error },
     Todo                                       = { bg = c.flamingo, fg = c.base, bold = true },
     DiffAdd                                    = { bg = c.bg_diff_add },
     DiffChange                                 = { bg = c.bg_diff_change },
     DiffDelete                                 = { bg = c.bg_diff_delete },
-    DiffText                                   = { bg = c.bg_diff_text },       -- }}}
+    DiffText                                   = { bg = c.bg_diff_text },
+    -- }}}
     -- {{{ Treesitter
-    ["@variable"]                              = { fg = c.text },               -- Any variable name that does not have another highlight.
-    ["@variable.builtin"]                      = { fg = c.red, italic = true }, -- Variable names that are defined by the languages, like this or self.
-    ["@variable.parameter"]                    = { fg = c.maroon },             -- For parameters of a function.
-    ["@variable.member"]                       = { fg = c.lavender },           -- For fields.
+    ["@variable"]                              = { fg = c.text },
+    ["@variable.builtin"]                      = { fg = c.red },
+    ["@variable.parameter"]                    = { fg = c.maroon },
+    ["@variable.member"]                       = { fg = c.lavender },
 
-    ["@constant"]                              = { link = "Constant" },         -- For constants
-    ["@constant.builtin"]                      = { link = "Constant" },         -- For constant that are built in the language: nil in Lua.
-    ["@constant.macro"]                        = { link = "Macro" },            -- For constants that are defined by macros: NULL in C.
+    ["@constant"]                              = { link = "Constant" },
+    ["@constant.builtin"]                      = { link = "Constant" },
+    ["@constant.macro"]                        = { link = "Macro" },
 
-    ["@module"]                                = { fg = c.lavender },           -- For identifiers referring to modules and namespaces.
-    ["@label"]                                 = { link = "Label" },            -- For labels: label: in C and :label: in Lua.
+    ["@module"]                                = { fg = c.lavender },
+    ["@label"]                                 = { link = "Label" },
 
-    -- Literals
-    ["@string"]                                = { link = "String" },                                   -- For strings.
-    ["@string.documentation"]                  = { fg = c.teal },                                       -- For strings documenting code (e.g. Python docstrings).
-    ["@string.regexp"]                         = { link = "Constant" },                                 -- For regexes.
-    ["@string.escape"]                         = { link = "Special" },                                  -- For escape characters within a string.
-    ["@string.special"]                        = { link = "Special" },                                  -- other special strings (e.g. dates)
-    ["@string.special.path"]                   = { link = "Special" },                                  -- filenames
-    ["@string.special.symbol"]                 = { link = "Identifier" },                               -- symbols or atoms
-    ["@string.special.url"]                    = { fg = c.rosewater, italic = true, underline = true }, -- urls, links and emails
+    ["@string"]                                = { link = "String" },
+    ["@string.documentation"]                  = { fg = c.teal },
+    ["@string.regexp"]                         = { link = "Constant" },
+    ["@string.escape"]                         = { link = "Special" },
+    ["@string.special"]                        = { link = "Special" },
+    ["@string.special.path"]                   = { link = "Special" },
+    ["@string.special.symbol"]                 = { link = "Identifier" },
+    ["@string.special.url"]                    = { fg = c.rosewater, italic = true, underline = true },
 
-    ["@character"]                             = { link = "Character" },                                -- character literals
-    ["@character.special"]                     = { link = "Special" },                                  -- special characters (e.g. wildcards)
+    ["@character"]                             = { link = "Character" },
+    ["@character.special"]                     = { link = "Special" },
 
-    ["@boolean"]                               = { link = "Constant" },                                 -- For booleans.
-    ["@number"]                                = { link = "Constant" },                                 -- For all numbers
-    ["@number.float"]                          = { link = "Constant" },                                 -- For floats.
+    ["@boolean"]                               = { link = "Constant" },
+    ["@number"]                                = { link = "Constant" },
+    ["@number.float"]                          = { link = "Constant" },
 
     -- Types
-    ["@type"]                                  = { link = "StorageClass" },     -- For types.
-    ["@type.builtin"]                          = { link = "Statement" },        -- For builtin types.
-    ["@type.definition"]                       = { link = "StorageClass" },     -- type definitions (e.g. `typedef` in C)
+    ["@type"]                                  = { link = "StorageClass" },
+    ["@type.builtin"]                          = { link = "Statement" },
+    ["@type.definition"]                       = { link = "StorageClass" },
 
-    ["@attribute"]                             = { link = "Constant" },         -- attribute annotations (e.g. Python decorators)
-    ["@property"]                              = { link = "@variable.member" }, -- Same as TSField.
+    ["@attribute"]                             = { link = "Constant" },
+    ["@property"]                              = { link = "@variable.member" },
 
     -- Functions
-    ["@function"]                              = { link = "Function" }, -- For function (calls and definitions).
-    ["@function.builtin"]                      = { link = "Function" }, -- For builtin functions: table.insert in Lua.
-    ["@function.call"]                         = { link = "Function" }, -- function calls
-    ["@function.macro"]                        = { fg = c.teal },       -- For macro defined functions (calls and definitions): each macro_rules in Rust.
+    ["@function"]                              = { link = "Function" },
+    ["@function.builtin"]                      = { link = "Function" },
+    ["@function.call"]                         = { link = "Function" },
+    ["@function.macro"]                        = { fg = c.teal },
 
-    ["@function.method"]                       = { link = "Function" }, -- For method definitions.
-    ["@function.method.call"]                  = { link = "Function" }, -- For method calls.
+    ["@function.method"]                       = { link = "Function" },
+    ["@function.method.call"]                  = { link = "Function" },
 
-    ["@constructor"]                           = { fg = c.sapphire },   -- For constructor calls and definitions: = { } in Lua, and Java constructors.
-    ["@operator"]                              = { link = "Operator" }, -- For any operator: +, but also -> and * in C.
+    ["@constructor"]                           = { fg = c.sapphire },
+    ["@operator"]                              = { link = "Operator" },
 
-    -- Keywords
-    ["@keyword"]                               = { link = "Statement" }, -- For keywords that don't fall in previous categories.
-    ["@keyword.modifier"]                      = { link = "Statement" }, -- For keywords modifying other constructs (e.g. `const`, `static`, `public`)
-    ["@keyword.type"]                          = { link = "Statement" }, -- For keywords describing composite types (e.g. `struct`, `enum`)
-    ["@keyword.coroutine"]                     = { link = "Statement" }, -- For keywords related to coroutines (e.g. `go` in Go, `async/await` in Python)
-    ["@keyword.function"]                      = { link = "Statement" }, -- For keywords used to define a function.
-    ["@keyword.operator"]                      = { link = "Statement" }, -- For new keyword operator
-    ["@keyword.import"]                        = { link = "Include" },   -- For includes: #include in C, use or extern crate in Rust, or require in Lua.
-    ["@keyword.repeat"]                        = { link = "Statement" }, -- For keywords related to loops.
+    ["@keyword"]                               = { link = "Statement" },
+    ["@keyword.modifier"]                      = { link = "Statement" },
+    ["@keyword.type"]                          = { link = "Statement" },
+    ["@keyword.coroutine"]                     = { link = "Statement" },
+    ["@keyword.function"]                      = { link = "Statement" },
+    ["@keyword.operator"]                      = { link = "Statement" },
+    ["@keyword.import"]                        = { link = "Include" },
+    ["@keyword.repeat"]                        = { link = "Statement" },
     ["@keyword.return"]                        = { link = "Statement" },
-    ["@keyword.debug"]                         = { link = "Statement" }, -- For keywords related to debugging
-    ["@keyword.exception"]                     = { link = "Statement" }, -- For exception related keywords.
+    ["@keyword.debug"]                         = { link = "Statement" },
+    ["@keyword.exception"]                     = { link = "Statement" },
 
-    ["@keyword.conditional"]                   = { link = "Statement" }, -- For keywords related to conditionnals.
-    ["@keyword.conditional.ternary"]           = { link = "Operator" },  -- For ternary operators (e.g. `?` / `:`)
+    ["@keyword.conditional"]                   = { link = "Statement" },
+    ["@keyword.conditional.ternary"]           = { link = "Operator" },
 
-    ["@keyword.directive"]                     = { link = "PreProc" },   -- various preprocessor directives & shebangs
-    ["@keyword.directive.define"]              = { link = "Define" },    -- preprocessor definition directives
-    -- JS & derivative
+    ["@keyword.directive"]                     = { link = "PreProc" },
+    ["@keyword.directive.define"]              = { link = "Define" },
     ["@keyword.export"]                        = { link = "Operator" },
 
-    -- Punctuation
-    ["@punctuation.delimiter"]                 = { link = "Delimiter" }, -- For delimiters (e.g. `;` / `.` / `,`).
-    ["@punctuation.bracket"]                   = { link = "Delimiter" }, -- For brackets and parenthesis.
-    ["@punctuation.special"]                   = { link = "Special" },   -- For special punctuation that does not fall in the categories before (e.g. `{}` in string interpolation).
+    ["@punctuation.delimiter"]                 = { link = "Delimiter" },
+    ["@punctuation.bracket"]                   = { link = "Delimiter" },
+    ["@punctuation.special"]                   = { link = "Special" },
 
-    -- Comment
     ["@comment"]                               = { link = "Comment" },
-    ["@comment.documentation"]                 = { link = "Comment" }, -- For comments documenting code
+    ["@comment.documentation"]                 = { link = "Comment" },
 
     ["@comment.error"]                         = { fg = c.base, bg = c.red },
     ["@comment.warning"]                       = { fg = c.base, bg = c.yellow },
@@ -290,45 +284,44 @@ function M.get(c, o)
     ["@comment.todo"]                          = { fg = c.base, bg = c.flamingo },
     ["@comment.note"]                          = { fg = c.base, bg = c.rosewater },
 
-    -- Markup
-    ["@markup"]                                = { fg = c.text },                                       -- For strings considerated text in a markup language.
-    ["@markup.strong"]                         = { fg = c.maroon, bold = true },                        -- bold
-    ["@markup.italic"]                         = { fg = c.maroon, italic = true },                      -- italic
-    ["@markup.strikethrough"]                  = { fg = c.text, strikethrough = true },                 -- strikethrough text
-    ["@markup.underline"]                      = { link = "Underlined" },                               -- underlined text
+    ["@markup"]                                = { fg = c.text },
+    ["@markup.strong"]                         = { fg = c.maroon, bold = true },
+    ["@markup.italic"]                         = { fg = c.maroon, italic = true },
+    ["@markup.strikethrough"]                  = { fg = c.text, strikethrough = true },
+    ["@markup.underline"]                      = { link = "Underlined" },
 
-    ["@markup.heading"]                        = { fg = c.blue, bold = true },                          -- titles like: # Example
+    ["@markup.heading"]                        = { fg = c.blue, bold = true },
 
-    ["@markup.math"]                           = { fg = c.blue },                                       -- math environments (e.g. `$ ... $` in LaTeX)
-    ["@markup.quote"]                          = { fg = c.maroon, bold = true },                        -- block quotes
-    ["@markup.environment"]                    = { fg = c.pink },                                       -- text environments of markup languages
-    ["@markup.environment.name"]               = { fg = c.blue },                                       -- text indicating the type of an environment
+    ["@markup.math"]                           = { fg = c.blue },
+    ["@markup.quote"]                          = { fg = c.maroon, bold = true },
+    ["@markup.environment"]                    = { fg = c.pink },
+    ["@markup.environment.name"]               = { fg = c.blue },
 
-    ["@markup.link"]                           = { link = "Tag" },                                      -- text references, footnotes, citations, etc.
-    ["@markup.link.label"]                     = { link = "Label" },                                    -- link, reference descriptions
-    ["@markup.link.url"]                       = { fg = c.rosewater, italic = true, underline = true }, -- urls, links and emails
+    ["@markup.link"]                           = { link = "Tag" },
+    ["@markup.link.label"]                     = { link = "Label" },
+    ["@markup.link.url"]                       = { fg = c.rosewater, italic = true, underline = true },
 
-    ["@markup.raw"]                            = { fg = c.teal },                                       -- used for inline code in markdown and for doc in python (""")
+    ["@markup.raw"]                            = { fg = c.teal },
 
     ["@markup.list"]                           = { link = "Special" },
-    ["@markup.list.checked"]                   = { fg = c.green },    -- todo notes
-    ["@markup.list.unchecked"]                 = { fg = c.overlay1 }, -- todo notes
+    ["@markup.list.checked"]                   = { fg = c.green },
+    ["@markup.list.unchecked"]                 = { fg = c.overlay1 },
 
     -- Diff
-    ["@diff.plus"]                             = { link = "diffAdded" },   -- added text (for diff files)
-    ["@diff.minus"]                            = { link = "diffRemoved" }, -- deleted text (for diff files)
-    ["@diff.delta"]                            = { link = "diffChanged" }, -- deleted text (for diff files)
+    ["@diff.plus"]                             = { link = "diffAdded" },
+    ["@diff.minus"]                            = { link = "diffRemoved" },
+    ["@diff.delta"]                            = { link = "diffChanged" },
 
     -- Tags
-    ["@tag"]                                   = { fg = c.mauve },               -- Tags like html tag names.
-    ["@tag.attribute"]                         = { fg = c.teal, italic = true }, -- Tags like html tag names.
-    ["@tag.delimiter"]                         = { fg = c.sky },                 -- Tag delimiter like < > /
+    ["@tag"]                                   = { fg = c.mauve },
+    ["@tag.attribute"]                         = { fg = c.teal, italic = true },
+    ["@tag.delimiter"]                         = { fg = c.sky },
 
     -- Misc
     ["@error"]                                 = { link = "Error" },
 
     -- lua
-    ["@constructor.lua"]                       = { fg = c.flamingo }, -- For constructor calls and definitions: = { } in Lua.
+    ["@constructor.lua"]                       = { fg = c.flamingo },
 
     -- C/CPP
     ["@property.cpp"]                          = { link = "@variable" },
@@ -336,8 +329,8 @@ function M.get(c, o)
     ["@type.builtin.cpp"]                      = { link = "StorageClass" },
 
     -- Python
-    ["@module.python"]                         = { link = "StorageClass" }, -- For identifiers referring to modules and namespaces.
-    ["@constructor.python"]                    = { link = "StorageClass" }, -- For constructor calls and definitions: = { } in Lua, and Java constructors.
+    ["@module.python"]                         = { link = "StorageClass" },
+    ["@constructor.python"]                    = { link = "StorageClass" },
 
     -- gitcommit
     ["@comment.warning.gitcommit"]             = { fg = c.yellow },
@@ -458,8 +451,6 @@ function M.get(c, o)
     BlinkCmpKindTypeParameter                  = { fg = c.maroon },
     BlinkCmpKindCopilot                        = { fg = c.teal }, -- }}}
   }
-
-  return h
 end
 
 return M
