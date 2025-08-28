@@ -1,40 +1,36 @@
--- BufferSwitcher: configuration module
 local M = {}
 
--- Create and validate configuration
 function M.create(user_config)
-  -- Default configuration
   local default_config = {
     hide_timeout = 800,
     show_tabline = true,
     next_key = '<Right>',
     prev_key = '<Left>',
-    orig_next_key = nil,                     -- Original key for next buffer
-    orig_prev_key = nil,                     -- Original key for prev buffer
-    hide_in_special = true,                  -- Hide tabline in special buffers
-    disable_in_special = true,               -- Disable keybindings in special buffers
-    passthrough_keys_in_special = false,     -- Pass through keys in special buffers
-    special_buftypes = {                     -- Special buftypes to disable in
+    orig_next_key = nil,
+    orig_prev_key = nil,
+    hide_in_special = true,
+    disable_in_special = true,
+    passthrough_keys_in_special = false,
+    special_buftypes = {
       "quickfix", "help", "nofile", "prompt",
     },
-    special_filetypes = {     -- Special filetypes to disable in
+    special_filetypes = {
       "qf", "help", "netrw", "fugitive", "NvimTree", "neo-tree",
       "nerdtree", "fern", "CHADTree", "Trouble", "dirvish"
     },
-    special_bufname_patterns = {     -- Special buffer name patterns
+    special_bufname_patterns = {
       "^term://", "^fugitive://", "^neo%-tree "
     },
-    exclude_buftypes = {     -- Buffer types to exclude from list
+    exclude_buftypes = {
       "quickfix", "nofile", "help", "prompt"
     },
-    exclude_filetypes = {     -- Filetypes to exclude from list
+    exclude_filetypes = {
       "qf", "netrw", "Trouble", "fugitive", "NvimTree"
     },
-    periodic_cleanup = true,     -- Enable periodic cleanup
-    debug = false,               -- Enable debug logging
+    periodic_cleanup = true,
+    debug = false,
   }
 
-  -- Merge user config
   if user_config then
     return vim.tbl_deep_extend('force', default_config, user_config)
   end
