@@ -6,10 +6,10 @@ return {
       vim.cmd.highlight("clear")
     end
 
-    g.colors_name = "decaf"
+    g.colors_name   = "decaf"
     o.termguicolors = true
 
-    local s = {
+    local s         = {
       transparency = false,
       float = {
         transparent = false,
@@ -17,24 +17,9 @@ return {
       },
     }
 
-    local c = require("themes.decaf.colors")
-
-    local mod = {
-      require("themes.decaf.schema.native_lsp").get(c, s),
-      require("themes.decaf.schema.editor").get(c, s),
-      require("themes.decaf.schema.neotree").get(c, s),
-      require("themes.decaf.schema.blink").get(c),
-      require("themes.decaf.schema.syntax").get(c),
-      require("themes.decaf.schema.treesitter").get(c),
-      require("themes.decaf.schema.semantic_tokens").get(),
-    }
-
-    local hls = {}
-    for _, m in pairs(mod) do
-      for n, a in pairs(m) do hls[n] = a end
-    end
-
-    local hl = api.nvim_set_hl
+    local c         = require("themes.decaf.colors")
+    local hls       = require("themes.decaf.schema.schema").get(c, s)
+    local hl        = api.nvim_set_hl
     for n, a in pairs(hls) do hl(0, n, a) end
 
     local t = require("themes.decaf.schema.terminal").get(c)
