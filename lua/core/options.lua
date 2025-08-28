@@ -50,6 +50,7 @@ set.wrap = false
 set.laststatus = 2
 set.showmode = false
 set.foldmethod = "marker"
+set.foldcolumn = "0"
 
 opt.viewoptions:append({ options = true })
 opt.shortmess:append("cC")
