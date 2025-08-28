@@ -18,8 +18,8 @@ local s = {
 local c = require("themes.decaf.colors")
 
 local mod = {
-  require("themes.decaf.schema.editor").get(c, s),
   require("themes.decaf.schema.native_lsp").get(c, s),
+  require("themes.decaf.schema.editor").get(c, s),
   require("themes.decaf.schema.neotree").get(c, s),
   require("themes.decaf.schema.blink").get(c),
   require("themes.decaf.schema.syntax").get(c),

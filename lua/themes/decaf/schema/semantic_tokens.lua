@@ -5,7 +5,7 @@ function M.get()
     ["@lsp.type.boolean"] = { link = "Constant" },
     ["@lsp.type.builtinType"] = { link = "Type" },
     ["@lsp.type.comment"] = { link = "Comment" },
-    ["@lsp.type.class"] = {},
+    ["@lsp.type.class"] = { link = "StorageClass" },
     ["@lsp.type.enum"] = { link = "StorageClass" },
     ["@lsp.type.decorator"] = {},
     ["@lsp.type.enumMember"] = { link = "Constant" },

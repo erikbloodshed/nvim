@@ -50,6 +50,7 @@ function M.get(c)
     ["@function.method.call"] = { link = "Function" }, -- For method calls.
 
     ["@constructor"] = { fg = c.sapphire },            -- For constructor calls and definitions: = { } in Lua, and Java constructors.
+    ["@constructor.python"] = {},                      -- For constructor calls and definitions: = { } in Lua, and Java constructors.
     ["@operator"] = { link = "Operator" },             -- For any operator: +, but also -> and * in C.
 
     -- Keywords
