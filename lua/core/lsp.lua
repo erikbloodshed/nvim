@@ -1,13 +1,12 @@
-local api = vim.api
-local lsp = vim.lsp
-local diagnostic = vim.diagnostic
-local keyset = vim.keymap.set
-local autocmd = api.nvim_create_autocmd
+local api, lsp = vim.api, vim.lsp
+local diagnostic, keyset, autocmd = vim.diagnostic, vim.keymap.set, api.nvim_create_autocmd
 
 lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {
   callback = function(args)
+    require("ui.qf").setup({ show_multiple_lines = false, max_filename_length = 30, })
+
     local icons = require("ui.icons")
     local x = diagnostic.severity
 
