@@ -36,6 +36,9 @@ function M.get()
     ["@lsp.typemod.type.defaultLibrary"] = { link = "Statement" },
     ["@lsp.typemod.variable.defaultLibrary"] = { link = "@variable.builtin" },
     ["@lsp.typemod.variable.injected"] = { link = "@variable" },
+
+    -- Python
+    ["@lsp.type.namespace.python"] = { link = "StorageClass" },
   }
 end
 

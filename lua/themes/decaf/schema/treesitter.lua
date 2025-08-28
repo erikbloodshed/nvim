@@ -50,7 +50,6 @@ function M.get(c)
     ["@function.method.call"] = { link = "Function" }, -- For method calls.
 
     ["@constructor"] = { fg = c.sapphire },            -- For constructor calls and definitions: = { } in Lua, and Java constructors.
-    ["@constructor.python"] = {},                      -- For constructor calls and definitions: = { } in Lua, and Java constructors.
     ["@operator"] = { link = "Operator" },             -- For any operator: +, but also -> and * in C.
 
     -- Keywords
@@ -134,15 +133,15 @@ function M.get(c)
     ["@type.builtin.c"] = { link = "StorageClass" },
     ["@type.builtin.cpp"] = { link = "StorageClass" },
 
+    -- Python
+    ["@module.python"] = { link = "StorageClass" },      -- For identifiers referring to modules and namespaces.
+    ["@constructor.python"] = { link = "StorageClass" }, -- For constructor calls and definitions: = { } in Lua, and Java constructors.
+
     -- gitcommit
     ["@comment.warning.gitcommit"] = { fg = c.yellow },
 
     -- gitignore
     ["@string.special.path.gitignore"] = { fg = c.text },
-
-    -- Misc
-    gitcommitSummary = { fg = c.rosewater, italic = true },
-    zshKSHFunction = { link = "Function" },
   }
 
   return colors
