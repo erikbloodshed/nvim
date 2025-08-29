@@ -1,7 +1,7 @@
 local wo, api = vim.wo, vim.api
 local keyset, autocmd = vim.keymap.set, api.nvim_create_autocmd
 
---- @diagnostic disable: assign-type-mismatch 
+--- @diagnostic disable: assign-type-mismatch
 autocmd({ "Filetype" }, {
   pattern = { "c", "cpp", "asm", "python", "lua" },
   callback = function(args)
@@ -10,6 +10,12 @@ autocmd({ "Filetype" }, {
     if ft == "cpp" or ft == "c" then
       vim.opt_local.cinkeys:remove(":")
       vim.opt_local.cindent = true
+    end
+
+    if ft == "python" then
+      vim.opt_local.autoindent = true
+      vim.opt_local.cindent = true
+      vim.opt_local.indentexpr = ""
     end
 
     require("runner").setup({
@@ -70,15 +76,15 @@ autocmd({ "VimEnter" }, {
       },
 
       commands = {
-        { name = 'ToggleTerm', terminal = 'shell' },
+        { name = 'ToggleTerm',   terminal = 'shell' },
         { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
       },
 
       keymaps = {
-        { mode = 'n', lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
+        { mode = 'n', lhs = '<leader>tt', terminal = 'shell',  action = 'toggle', desc = 'Toggle shell' },
         { mode = 'n', lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
-        { mode = 't', lhs = '<leader>tt', terminal = 'shell', action = 'hide', desc = 'Hide shell' },
-        { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide', desc = 'Hide Python' },
+        { mode = 't', lhs = '<leader>tt', terminal = 'shell',  action = 'hide',   desc = 'Hide shell' },
+        { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide',   desc = 'Hide Python' },
       },
     })
   end,
