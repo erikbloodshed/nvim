@@ -1,6 +1,6 @@
 return {
   "nvim-treesitter/nvim-treesitter",
-  event = "VeryLazy",
+  lazy = false,
   branch = "main",
 
   build = function()
@@ -9,7 +9,7 @@ return {
     require("nvim-treesitter").update()
   end,
 
-  opts = function()
+  config = function()
     vim.api.nvim_create_autocmd("FileType", {
       callback = function(args)
         local lang = vim.treesitter.language.get_lang(args.match)

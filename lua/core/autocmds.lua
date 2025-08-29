@@ -13,9 +13,7 @@ autocmd({ "Filetype" }, {
     end
 
     if ft == "python" then
-      vim.opt_local.autoindent = true
-      vim.opt_local.cindent = true
-      vim.opt_local.indentexpr = ""
+      vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
     end
 
     require("runner").setup({

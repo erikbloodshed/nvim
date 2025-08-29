@@ -237,14 +237,14 @@ function M.get(c, o)
 
     -- Functions
     ["@function"] = { link = "Function" },
-    ["@function.builtin"] = { link = "Function" },
+    ["@function.builtin"] = { fg = c.sky },
     ["@function.call"] = { link = "Function" },
     ["@function.macro"] = { fg = c.teal },
 
     ["@function.method"] = { link = "Function" },
     ["@function.method.call"] = { link = "Function" },
 
-    ["@constructor"] = { fg = c.sapphire },
+    ["@constructor"] = {},
     ["@operator"] = { link = "Operator" },
 
     ["@keyword"] = { link = "Statement" },
@@ -325,7 +325,7 @@ function M.get(c, o)
 
     -- Python
     ["@module.python"] = { link = "StorageClass" },
-    ["@constructor.python"] = { link = "StorageClass" },
+    -- ["@constructor.python"] = { link = "StorageClass" },
 
     -- gitcommit
     ["@comment.warning.gitcommit"] = { fg = c.yellow },
@@ -336,7 +336,7 @@ function M.get(c, o)
     ["@lsp.type.boolean"] = { link = "Constant" },
     ["@lsp.type.builtinType"] = { link = "Type" },
     ["@lsp.type.comment"] = { link = "Comment" },
-    ["@lsp.type.class"] = { link = "StorageClass" },
+    ["@lsp.type.class"] = {},
     ["@lsp.type.enum"] = { link = "StorageClass" },
     ["@lsp.type.decorator"] = {},
     ["@lsp.type.enumMember"] = { link = "Constant" },
