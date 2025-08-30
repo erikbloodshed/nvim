@@ -43,7 +43,7 @@ function M.get(c, o)
     NormalNC = { fg = c.text, bg = t_co or c.dim },
     NormalSB = { fg = c.text, bg = c.crust },
     NormalFloat = { fg = c.text, bg = f_transp or c.mantle },
-    FloatBorder = { fg = c.lavender, bg = c.mantle },
+    FloatBorder = { fg = c.lavender, bg = f_transp or c.mantle },
     FloatTitle = o.float.solid and { fg = c.crust, bg = c.lavender } or { fg = c.subtext0, bg = f_transp or c.mantle },
     FloatShadow = { fg = f_transp or c.overlay0 },
     Pmenu = { bg = p_transp or c.mantle, fg = c.overlay2 },
@@ -232,7 +232,7 @@ function M.get(c, o)
     ["@type.builtin"] = { link = "Statement" },
     ["@type.definition"] = { link = "StorageClass" },
 
-    ["@attribute"] = { link = "Constant" },
+    ["@attribute"] = { link = "Special" },
     ["@property"] = { link = "@variable.member" },
 
     -- Functions
@@ -325,7 +325,7 @@ function M.get(c, o)
 
     -- Python
     ["@module.python"] = { link = "StorageClass" },
-    -- ["@constructor.python"] = { link = "StorageClass" },
+    ["@constructor.python"] = { link = "StorageClass" },
 
     -- gitcommit
     ["@comment.warning.gitcommit"] = { fg = c.yellow },
@@ -356,7 +356,7 @@ function M.get(c, o)
     ["@lsp.type.typeAlias"] = { link = "@type.definition" },
     ["@lsp.type.unresolvedReference"] = { link = "Error" },
     ["@lsp.type.variable"] = {},
-    ["@lsp.typemod.class.defaultLibrary"] = { link = "Statement" },
+    -- ["@lsp.typemod.class.defaultLibrary"] = { link = "Statement" },
     ["@lsp.typemod.enum.defaultLibrary"] = { link = "StorageClass" },
     ["@lsp.typemod.enumMember.defaultLibrary"] = { link = "Constant" },
     ["@lsp.typemod.function.defaultLibrary"] = {},
