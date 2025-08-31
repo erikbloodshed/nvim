@@ -237,7 +237,7 @@ function M.get(c, o)
 
     -- Functions
     ["@function"] = { link = "Function" },
-    ["@function.builtin"] = { fg = c.sky },
+    ["@function.builtin"] = { link = "Operator" },
     ["@function.call"] = { link = "Function" },
     ["@function.macro"] = { fg = c.teal },
 
@@ -252,7 +252,7 @@ function M.get(c, o)
     ["@keyword.type"] = { link = "Statement" },
     ["@keyword.coroutine"] = { link = "Statement" },
     ["@keyword.function"] = { link = "Statement" },
-    ["@keyword.operator"] = { link = "Statement" },
+    ["@keyword.operator"] = { link = "Operator" },
     ["@keyword.import"] = { link = "Include" },
     ["@keyword.repeat"] = { link = "Statement" },
     ["@keyword.return"] = { link = "Statement" },
