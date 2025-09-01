@@ -1,26 +1,6 @@
-local M = {}
-
-M.defaults = {
+return {
   keymaps = {},
   filetype = {
-    c = {
-      execution_model = "compiled",
-      compiler = "gcc",
-      compiler_flags = { "-std=c23", "-O2" },
-      response_file = nil,
-      output_dir = "/tmp/",
-      data_dir_name = nil,
-    },
-
-    cpp = {
-      execution_model = "compiled",
-      compiler = "g++",
-      compiler_flags = { "-std=c++20", "-O2" },
-      response_file = nil,
-      output_dir = "/tmp/",
-      data_dir_name = nil,
-    },
-
     asm = {
       execution_model = "assembled",
       assembler = "nasm",
@@ -32,10 +12,21 @@ M.defaults = {
       data_dir_name = nil,
     },
 
-    python = {
-      execution_model = "interpreted",
-      interpreter = "python3",
-      interpreter_flags = {},
+    c = {
+      execution_model = "compiled",
+      compiler = "gcc",
+      compiler_flags = { "-std=c23", "-O2" },
+      response_file = ".compile_flags",
+      output_dir = "/tmp/",
+      data_dir_name = nil,
+    },
+
+    cpp = {
+      execution_model = "compiled",
+      compiler = "g++",
+      compiler_flags = { "-std=c++20", "-O2" },
+      response_file = ".compile_flags",
+      output_dir = "/tmp/",
       data_dir_name = nil,
     },
 
@@ -45,7 +36,12 @@ M.defaults = {
       interpreter_flags = {},
       data_dir_name = nil,
     },
+
+    python = {
+      execution_model = "interpreted",
+      interpreter = "python3",
+      interpreter_flags = {},
+      data_dir_name = nil,
+    },
   }
 }
-
-return M

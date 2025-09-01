@@ -1,6 +1,5 @@
 return {
   "nvim-neo-tree/neo-tree.nvim",
-  commit = "fc42dcec2861adb48e9b3621f02dfd40a24d923c",
   keys = {
     {
       "<leader>ef",
