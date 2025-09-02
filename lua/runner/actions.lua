@@ -1,4 +1,3 @@
--- In actions.lua
 local M = {}
 
 M.create = function(state, commands, handler)

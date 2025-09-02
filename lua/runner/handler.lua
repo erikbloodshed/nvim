@@ -1,4 +1,3 @@
--- In handler.lua
 local fn = vim.fn
 local api = vim.api
 local execute = require("runner.process").execute

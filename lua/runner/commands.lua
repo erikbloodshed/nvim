@@ -1,4 +1,3 @@
--- In commands.lua
 local M = {}
 
 -- Factory that creates appropriate commands based on language types

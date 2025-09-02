@@ -16,19 +16,20 @@ autocmd({ "Filetype" }, {
       vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
     end
 
-    require("runner").setup({
-      filetype = {
-        c = {
-          response_file = ".compile_flags",
-        },
-        cpp = {
-          response_file = ".compile_flags",
-        },
-        python = {
-          run_command = "python3"
-        }
-      }
-    })
+    -- require("runner").setup({
+    --   filetype = {
+    --     c = {
+    --       response_file = ".compile_flags",
+    --     },
+    --     cpp = {
+    --       response_file = ".compile_flags",
+    --     },
+    --     python = {
+    --       run_command = "python3"
+    --     }
+    --   }
+    -- })
+    require("quickrun").setup()
   end,
 })
 

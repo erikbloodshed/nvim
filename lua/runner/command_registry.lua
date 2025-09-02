@@ -1,4 +1,3 @@
--- Create a new file: command_registry.lua
 local M = {}
 
 M.register = function(actions, state)

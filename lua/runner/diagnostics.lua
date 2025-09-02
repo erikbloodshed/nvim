@@ -16,7 +16,6 @@ M.open_quickfixlist = function()
 end
 
 local auto_close_group = vim.api.nvim_create_augroup("DiagnosticsAutoCloseOnBufLeave", { clear = true })
-
 vim.api.nvim_create_autocmd("BufLeave", {
   group = auto_close_group,
   pattern = "*",

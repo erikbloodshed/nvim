@@ -1,4 +1,3 @@
--- In config.lua
 local M = {}
 
 -- Define language categories

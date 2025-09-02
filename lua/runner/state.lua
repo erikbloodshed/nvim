@@ -1,4 +1,3 @@
--- In state.lua
 local M = {}
 
 M.init = function(config)
