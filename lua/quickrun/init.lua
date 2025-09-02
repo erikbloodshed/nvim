@@ -49,7 +49,8 @@ local DEFAULTS = {
 local state = {
   config = {},
   args = nil,
-  data_file = nil
+  data_file = nil,
+  hash_cache = {} -- Store file hashes to detect changes
 }
 
 -- Utility functions
@@ -67,6 +68,26 @@ end
 
 local function notify(msg, level)
   vim.notify(msg, level or vim.log.levels.INFO)
+end
+
+-- Get hash of current buffer content
+local function get_buffer_hash()
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+  local content = table.concat(lines, "\n")
+  return vim.fn.sha256(content)
+end
+
+-- Check if recompilation is needed
+local function needs_compilation()
+  local current_hash = get_buffer_hash()
+  local cached_hash = state.hash_cache.compile
+
+  if cached_hash == current_hash then
+    notify("Source unchanged, skipping compilation", vim.log.levels.WARN)
+    return false
+  end
+
+  return true, current_hash
 end
 
 -- Execute command synchronously
@@ -148,6 +169,12 @@ function actions.compile()
     return true -- No compilation needed
   end
 
+  -- Check if compilation is needed
+  local should_compile, current_hash = needs_compilation()
+  if not should_compile then
+    return true -- Use existing executable
+  end
+
   vim.cmd("silent! update")
 
   local file = get_current_file()
@@ -166,6 +193,7 @@ function actions.compile()
   if result.code == 0 then
     notify("Compilation successful")
     state.exe_file = exe_file
+    state.hash_cache.compile = current_hash -- Cache the hash on success
     return true
   else
     vim.diagnostic.set(vim.api.nvim_create_namespace("runner"), 0, {}, {})
