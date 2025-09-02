@@ -1,16 +1,9 @@
 -- init.lua - Main plugin entry point
+local process = require("quickrun.process").execute
 local M = {}
 
--- Language types
-local TYPES = {
-  COMPILED = "compiled",
-  INTERPRETED = "interpreted",
-  ASSEMBLED = "assembled",
-  LINKED = "linked"
-}
-
 -- Default configurations
-local DEFAULTS = {
+local defaults = {
   keymaps = {
     { key = "<leader>rr", action = "run", desc = "Run file" },
     { key = "<leader>rc", action = "compile", desc = "Compile file" },
@@ -23,24 +16,26 @@ local DEFAULTS = {
 
   languages = {
     c = {
-      type = TYPES.COMPILED,
+      type = "compiled",
       compiler = "gcc",
       flags = { "-std=c23", "-O2" },
       output_dir = "/tmp/"
     },
     cpp = {
-      type = TYPES.COMPILED,
+      type = "compiled",
       compiler = "g++",
       flags = { "-std=c++20", "-O2" },
       output_dir = "/tmp/"
     },
     python = {
-      type = TYPES.INTERPRETED,
-      runner = "python3"
+      type = "interpreted",
+      compiler = "python3",
+      flags = {},
     },
     lua = {
-      type = TYPES.INTERPRETED,
-      runner = "lua"
+      type = "interpreted",
+      compiler = "lua",
+      flags = {},
     }
   }
 }
@@ -99,14 +94,9 @@ local function execute(cmd_table)
     return result
   end
 
-  local handle = vim.system(cmd_table.cmd, {
-    timeout = 30000,
-    text = true
-  })
-
-  local output = handle:wait()
-  result.code = output.code
-  result.stderr = output.stderr or ""
+  local handle = process(cmd_table.cmd, { timeout = 30000 })
+  result.code = handle.code
+  result.stderr = handle.stderr or ""
 
   return result
 end
@@ -133,13 +123,13 @@ function actions.info()
     "Language: " .. config.type,
   }
 
-  if config.compiler then
+  if config.type == "compiled" then
     table.insert(lines, "Compiler: " .. config.compiler)
     table.insert(lines, "Flags: " .. table.concat(config.flags or {}, " "))
   end
 
-  if config.runner then
-    table.insert(lines, "Runner: " .. config.runner)
+  if config.type == "interpreted" then
+    table.insert(lines, "Runner: " .. config.compiler)
   end
 
   table.insert(lines, "Arguments: " .. (state.args or "None"))
@@ -165,7 +155,7 @@ end
 
 function actions.compile()
   local config = state.config
-  if config.type ~= TYPES.COMPILED then
+  if config.type ~= "compiled" then
     return true -- No compilation needed
   end
 
@@ -214,7 +204,7 @@ function actions.run()
 
   local config = state.config
 
-  if config.type == TYPES.COMPILED then
+  if config.type == "compiled" then
     if not actions.compile() then
       return
     end
@@ -225,11 +215,11 @@ function actions.run()
     end
 
     actions.run_in_terminal(table.concat(cmd, " "))
-  elseif config.type == TYPES.INTERPRETED then
+  elseif config.type == "interpreted" then
     vim.cmd("silent! update")
 
     local file = get_current_file()
-    local cmd = config.runner .. " " .. file
+    local cmd = config.compiler .. " " .. file
     if state.args then
       cmd = cmd .. " " .. state.args
     end
@@ -250,7 +240,7 @@ function actions.run_in_terminal(cmd)
     local buf = vim.api.nvim_get_current_buf()
     local job_id = vim.api.nvim_buf_get_var(buf, "terminal_job_id")
     vim.fn.chansend(job_id, cmd .. "\n")
-  end, 100)
+  end, 75)
 end
 
 function actions.add_data_file()
@@ -326,7 +316,7 @@ function M.setup(opts)
   opts = opts or {}
 
   local ft = get_filetype()
-  local lang_config = DEFAULTS.languages[ft]
+  local lang_config = defaults.languages[ft]
 
   if not lang_config then
     notify("Unsupported filetype: " .. ft, vim.log.levels.WARN)
@@ -346,7 +336,7 @@ function M.setup(opts)
     { "RunnerProblems", actions.quickfix, "Show problems" },
   }
 
-  if state.config.type == TYPES.COMPILED then
+  if state.config.type == "compiled" then
     table.insert(commands, { "RunnerCompile", actions.compile, "Compile file" })
   end
 
@@ -356,7 +346,7 @@ function M.setup(opts)
   end
 
   -- Register keymaps
-  local keymaps = vim.tbl_deep_extend("force", DEFAULTS.keymaps, opts.keymaps or {})
+  local keymaps = vim.tbl_deep_extend("force", defaults.keymaps, opts.keymaps or {})
   for _, map in ipairs(keymaps) do
     if actions[map.action] then
       vim.keymap.set(map.mode or "n", map.key, actions[map.action], {
