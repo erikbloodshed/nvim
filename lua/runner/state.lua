@@ -7,7 +7,7 @@ M.init = function(config)
   local utils = require("runner.utils")
 
   local state = prealloc(0, 24)
-  state.filetype = api.nvim_get_option_value("filetype", { buf = 0 })
+  state.filetype = config.filetype
   state.src_file = api.nvim_buf_get_name(0)
   state.language_types = config.type or {}
   state.compiler = config.compiler

@@ -96,6 +96,7 @@ M.init = function(user_config)
   end
 
   config.keymaps = keymaps
+  config.filetype = ft
 
   return config
 end

@@ -54,6 +54,7 @@ M.run = function(cmd_str, args, datfile)
 
   local buf = api.nvim_get_current_buf()
   local job_id = api.nvim_buf_get_var(buf, "terminal_job_id")
+
   vim.defer_fn(function()
     vim.fn.chansend(job_id, cmd .. "\n")
   end, 75)
