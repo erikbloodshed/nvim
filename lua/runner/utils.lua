@@ -1,22 +1,33 @@
 local uv = vim.uv
+
 local M = {}
 
-M.get_response_file = function(filename)
-  if filename then
-    local path = vim.fs.find(filename, {
+local find_upward = function(name, find_type)
+  if name then
+    local path = vim.fs.find(name, {
       upward = true,
-      type = "file",
+      type = find_type,
       path = vim.fn.expand("%:p:h"),
-      stop = vim.fn.expand("~"),
+      stop = vim.fn.expand("~")
     })[1]
+    return path
+  end
+  return nil
+end
 
-    if path then
-      return { "@" .. path }
-    end
+M.get_response_file = function(filename)
+  local path = find_upward(filename, "file")
+  if path then
+    return { "@" .. path }
   end
 
   return nil
 end
+
+M.get_data_path = function(dirname)
+  return find_upward(dirname, "directory")
+end
+
 
 M.scan_dir = function(dir)
   if not dir or dir == "" then
@@ -110,20 +121,6 @@ M.open = function(title, lines, ft)
   vim.keymap.set("n", "q", vim.cmd.close, { buffer = buf, noremap = true, nowait = true, silent = true })
 
   return buf
-end
-
-M.get_data_path = function(filename)
-  if filename then
-    local path = vim.fs.find(filename, {
-      upward = true,
-      type = "directory",
-      path = vim.fn.expand("%:p:h"),
-      stop = vim.fn.expand("~"),
-    })[1]
-    return path
-  end
-
-  return nil
 end
 
 M.get_date_modified = function(filepath)

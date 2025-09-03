@@ -4,14 +4,7 @@ M.register = function(actions, state)
   local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
 
   -- Helper to check if language belongs to a type
-  local has_type = function(type)
-    for _, lang_type in ipairs(state.language_types) do
-      if lang_type == type then
-        return true
-      end
-    end
-    return false
-  end
+  local has_type = state.has_type
 
   -- Determine available command types based on language
   local commands = {

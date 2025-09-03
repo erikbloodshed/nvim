@@ -15,7 +15,6 @@ M.init = function(config)
   state.linker = config.linker
   state.linker_flags = config.linker_flags or {}
   state.output_directory = config.output_directory or ""
-  state.run_cmd = config.run_command
   state.data_path = utils.get_data_path(config.data_dir_name)
   state.data_file = nil
   state.cmd_args = nil
@@ -44,6 +43,10 @@ M.init = function(config)
   state.cmd_template.arg = nil
   state.cmd_template.timeout = 15000
   state.cmd_template.kill_delay = 3000
+
+  local type_set = prealloc(0, #state.language_types)
+  for _, t in ipairs(state.language_types) do type_set[t] = true end
+  state.has_type = function(t) return type_set[t] end
 
   return state
 end

@@ -29,7 +29,6 @@ M.init = function(user_config)
         response_file = nil,
         data_dir_name = "dat",
         output_directory = "/tmp/",
-        run_command = nil,
       },
 
       cpp = {
@@ -39,7 +38,6 @@ M.init = function(user_config)
         response_file = nil,
         data_dir_name = "dat",
         output_directory = "/tmp/",
-        run_command = nil,
       },
 
       asm = {
@@ -51,27 +49,24 @@ M.init = function(user_config)
         output_directory = "/tmp/",
         linker = "ld",
         linker_flags = { "-m", "elf_x86_64" },
-        run_command = nil,
       },
 
       python = {
         type = { M.LANGUAGE_TYPES.INTERPRETED },
-        compiler = nil,
+        compiler = "python3",
         fallback_flags = {},
         response_file = nil,
         data_dir_name = "dat",
         output_directory = "",
-        run_command = "python3",
       },
 
       lua = {
         type = { M.LANGUAGE_TYPES.INTERPRETED },
-        compiler = nil,
+        compiler = "lua",
         fallback_flags = {},
         response_file = nil,
         data_dir_name = "dat",
         output_directory = "",
-        run_command = "lua",
       },
     }
   }

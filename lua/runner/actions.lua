@@ -9,14 +9,7 @@ M.create = function(state, commands, handler)
   local actions = {}
 
   -- Helper to check if language belongs to a type
-  local has_type = function(type)
-    for _, lang_type in ipairs(state.language_types) do
-      if lang_type == type then
-        return true
-      end
-    end
-    return false
-  end
+  local has_type = state.has_type
 
   -- Common actions for all language types
   actions.set_cmd_args = function()
@@ -95,7 +88,7 @@ M.create = function(state, commands, handler)
     end
 
     if has_type(LANG_TYPES.INTERPRETED) then
-      lines[#lines + 1] = "Run Command       : " .. (state.run_cmd or "None")
+      lines[#lines + 1] = "Run Command       : " .. (state.compiler or "None")
     end
 
     vim.list_extend(lines, {
@@ -161,12 +154,17 @@ M.create = function(state, commands, handler)
       return
     end
 
+    local run_command
     if actions.compile() then
       if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.LINKED) then
-        handler.run(state.exe_file, state.cmd_args, state.data_file)
+        run_command = state.exe_file
       elseif has_type(LANG_TYPES.INTERPRETED) then
-        handler.run(state.run_cmd .. " " .. state.src_file, state.cmd_args, state.data_file)
+        run_command = state.compiler .. " " .. state.src_file
       end
+    end
+
+    if run_command then
+      handler.run(run_command, state.cmd_args, state.data_file)
     end
   end
 

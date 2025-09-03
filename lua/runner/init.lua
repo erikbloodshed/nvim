@@ -25,7 +25,7 @@ local function validate_config(config)
   end
 
   if has_type(LANG_TYPES.INTERPRETED) then
-    assert(config.run_command, "Run command must be specified for interpreted languages")
+    assert(config.compiler, "Run command must be specified for interpreted languages")
   end
 
   -- Ensure output directory ends with a path separator

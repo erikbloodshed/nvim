@@ -24,9 +24,6 @@ autocmd({ "Filetype" }, {
         cpp = {
           response_file = ".compile_flags",
         },
-        python = {
-          run_command = "python3"
-        }
       }
     })
   end,
