@@ -1,95 +1,78 @@
 local M = {}
 
--- Factory that creates appropriate commands based on language types
 M.create = function(state)
   local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
   local language_types = state.language_types or {}
+
+  -- Build a set for quick membership checks
+  local type_set = {}
+  for _, t in ipairs(language_types) do type_set[t] = true end
+  local has_type = function(t) return type_set[t] end
+
+  -- Cache wrapper
+  local function cached(key, build)
+    local cache = state.command_cache
+    if cache[key] then return cache[key] end
+    local cmd = build()
+    cache[key] = cmd
+    return cmd
+  end
+
+  -- Command builder
+  local function make_cmd(tool, flags, ...)
+    local cmd = vim.deepcopy(state.cmd_template)
+    cmd.compiler = tool -- field name kept for compatibility
+    cmd.arg = vim.deepcopy(flags)
+    vim.list_extend(cmd.arg, { ... })
+    return cmd
+  end
+
+  -- Command specs, gated by language type
+  local specs = {
+    {
+      name = "compile",
+      type = LANG_TYPES.COMPILED,
+      tool = "compiler",
+      flags = "compiler_flags",
+      args = { "-o", "exe_file", "src_file" },
+    },
+    {
+      name = "show_assembly",
+      type = LANG_TYPES.COMPILED,
+      tool = "compiler",
+      flags = "compiler_flags",
+      args = { "-c", "-S", "-o", "asm_file", "src_file" },
+    },
+    {
+      name = "compile",
+      type = LANG_TYPES.ASSEMBLED,
+      tool = "compiler",
+      flags = "compiler_flags",
+      args = { "-o", "obj_file", "src_file" },
+    },
+    {
+      name = "link",
+      type = LANG_TYPES.LINKED,
+      tool = "linker",
+      flags = "linker_flags",
+      args = { "-o", "exe_file", "obj_file" },
+    },
+  }
+
   local commands = {}
 
-  -- Helper to check if language belongs to a type
-  local has_type = function(type)
-    for _, lang_type in ipairs(language_types) do
-      if lang_type == type then
-        return true
+  for _, spec in ipairs(specs) do
+    if has_type(spec.type) then
+      commands[spec.name] = function()
+        return cached(spec.name .. "_cmd", function()
+          -- Resolve args (replace keys with state values if available)
+          local resolved = {}
+          for _, a in ipairs(spec.args) do
+            resolved[#resolved + 1] = state[a] or a
+          end
+          return make_cmd(state[spec.tool], state[spec.flags], unpack(resolved))
+        end)
       end
-    end
-    return false
-  end
-
-  -- Add commands based on language type
-  if has_type(LANG_TYPES.COMPILED) then
-    commands.compile = function()
-      if state.command_cache.compile_cmd then
-        return state.command_cache.compile_cmd
-      end
-
-      local cmd = vim.deepcopy(state.cmd_template)
-      cmd.compiler = state.compiler
-
-      cmd.arg = vim.deepcopy(state.compiler_flags)
-      cmd.arg[#cmd.arg + 1] = "-o"
-      cmd.arg[#cmd.arg + 1] = state.exe_file
-      cmd.arg[#cmd.arg + 1] = state.src_file
-
-      state.command_cache.compile_cmd = cmd
-      return cmd
-    end
-
-    commands.show_assembly = function()
-      if state.command_cache.assemble_cmd then
-        return state.command_cache.assemble_cmd
-      end
-
-      local cmd = vim.deepcopy(state.cmd_template)
-      cmd.compiler = state.compiler
-
-      cmd.arg = vim.deepcopy(state.compiler_flags)
-      cmd.arg[#cmd.arg + 1] = "-c"
-      cmd.arg[#cmd.arg + 1] = "-S"
-      cmd.arg[#cmd.arg + 1] = "-o"
-      cmd.arg[#cmd.arg + 1] = state.asm_file
-      cmd.arg[#cmd.arg + 1] = state.src_file
-
-      state.command_cache.assemble_cmd = cmd
-      return cmd
-    end
-  end
-
-  if has_type(LANG_TYPES.ASSEMBLED) then
-    commands.compile = function()
-      if state.command_cache.compile_cmd then
-        return state.command_cache.compile_cmd
-      end
-
-      local cmd = vim.deepcopy(state.cmd_template)
-      cmd.compiler = state.compiler
-
-      cmd.arg = vim.deepcopy(state.compiler_flags)
-      cmd.arg[#cmd.arg + 1] = "-o"
-      cmd.arg[#cmd.arg + 1] = state.obj_file
-      cmd.arg[#cmd.arg + 1] = state.src_file
-
-      state.command_cache.compile_cmd = cmd
-      return cmd
-    end
-  end
-
-  if has_type(LANG_TYPES.LINKED) then
-    commands.link = function()
-      if state.command_cache.link_cmd then
-        return state.command_cache.link_cmd
-      end
-
-      local cmd = vim.deepcopy(state.cmd_template)
-      cmd.compiler = state.linker
-
-      cmd.arg = vim.deepcopy(state.linker_flags)
-      cmd.arg[#cmd.arg + 1] = "-o"
-      cmd.arg[#cmd.arg + 1] = state.exe_file
-      cmd.arg[#cmd.arg + 1] = state.obj_file
-
-      state.command_cache.link_cmd = cmd
-      return cmd
     end
   end
 
