@@ -17,6 +17,7 @@ M.defaults = {
   filetype = 'terminal',
   auto_delete_on_close = false,
   open_in_file_dir = false,
+  open = true,
   -- Backdrop configuration
   backdrop = {
     enabled = true,    -- Enable/disable backdrop

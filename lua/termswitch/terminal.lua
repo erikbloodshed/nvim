@@ -381,15 +381,45 @@ function Terminal:_get_job_id()
   return nil
 end
 
-function Terminal:send(text)
+-- terminal.lua (New recommended implementation)
+function Terminal:send(text, opts)
+  opts = opts or {}
+  local force_open = opts.open -- Add an option to open the terminal if not running
+
   local job_id = self:_get_job_id()
+
   if job_id then
-    vim.defer_fn(function()
-      vim.fn.chansend(job_id, text)
-    end, 75)
+    -- Job is already running, send the text immediately.
+    -- The defer_fn is not necessary here and can be removed.
+    vim.fn.chansend(job_id, text .. '\r')
     return true
   end
-  return false
+
+  if not force_open then
+    vim.notify("TermSwitch: Terminal '" .. self.name .. "' is not running.", vim.log.levels.WARN)
+    return false
+  end
+
+  -- Terminal is not yet running, so we need to open it and
+  -- send the command once it's ready.
+  self:open()
+
+  -- Use a one-shot autocmd to send the command as soon as the terminal is ready.
+  local group = self:_ensure_autocommd_group()
+  api.nvim_create_autocommd('TermOpen', {
+    group = group,
+    buffer = self.buf,
+    once = true,
+    callback = function(args)
+      local ready_job_id = api.nvim_buf_get_var(args.buf, 'terminal_job_id')
+      if ready_job_id then
+        vim.fn.chansend(ready_job_id, text .. '\r')
+      end
+    end,
+    desc = 'Send command to ' .. self.name .. ' after open'
+  })
+
+  return true
 end
 
 function Terminal:is_running()

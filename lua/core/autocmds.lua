@@ -29,7 +29,6 @@ autocmd({ "Filetype" }, {
         }
       }
     })
-    -- require("quickrun").setup()
   end,
 })
 
@@ -58,6 +57,7 @@ autocmd({ "VimEnter" }, {
         height = 0.8,
         border = 'rounded',
         open_in_file_dir = true,
+        open = true,
         backdrop = {
           enabled = true,    -- Enable/disable backdrop
           opacity = 60,      -- Backdrop opacity (0-100)
