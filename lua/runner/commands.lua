@@ -3,7 +3,6 @@ local M = {}
 M.create = function(state)
   local has_type = state.has_type
 
-  -- Cache wrapper
   local function cached(key, build)
     local cache = state.command_cache
     if cache[key] then return cache[key] end
@@ -12,7 +11,6 @@ M.create = function(state)
     return cmd
   end
 
-  -- Command builder
   local function make_cmd(tool, flags, ...)
     local cmd = vim.deepcopy(state.cmd_template)
     cmd.compiler = tool -- field name kept for compatibility
@@ -21,7 +19,6 @@ M.create = function(state)
     return cmd
   end
 
-  -- Command specs, gated by language type
   local specs = {
     {
       name = "compile",
@@ -54,8 +51,8 @@ M.create = function(state)
     {
       name = "interpret",
       type = "interpreted",
-      tool = "compiler",        -- For interpreted languages, this is the interpreter
-      flags = "compiler_flags", -- These become interpreter flags
+      tool = "compiler",
+      flags = "compiler_flags",
       args = { "src_file" },
     },
   }

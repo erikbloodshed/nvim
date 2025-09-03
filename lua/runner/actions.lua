@@ -32,7 +32,6 @@ M.create = function(state, commands, handler)
       if flags_str == nil then return end -- User cancelled the input
 
       if flags_str ~= "" then
-        -- FIX: Split on one or more whitespace characters and remove empty results.
         state.compiler_flags = vim.split(flags_str, "%s+", { trimempty = true })
         invalidate_cache(state)
       else
@@ -143,7 +142,6 @@ M.create = function(state, commands, handler)
     end
   end
 
-  -- Language type specific actions
   if has_type("compiled") or has_type("assembled") then
     actions.compile = function()
       vim.cmd("silent! update")
@@ -173,7 +171,6 @@ M.create = function(state, commands, handler)
     end
   end
 
-  -- Run action based on language type
   actions.run = function()
     local diagnostic_count = #vim.diagnostic.count(0, {
       severity = { vim.diagnostic.severity.ERROR }
@@ -189,7 +186,6 @@ M.create = function(state, commands, handler)
       if has_type("compiled") or has_type("assembled") then
         run_command = state.exe_file
       elseif has_type("interpreted") then
-        -- Use the spec-based approach for interpreted languages
         local run_cmd = commands.interpret()
         if run_cmd then
           run_command = run_cmd.compiler
@@ -205,7 +201,6 @@ M.create = function(state, commands, handler)
     end
   end
 
-  -- Show assembly action only for compiled languages
   if has_type("compiled") then
     actions.show_assembly = function()
       if commands.show_assembly and handler.translate(state.hash_tbl, "assemble", commands.show_assembly()) then

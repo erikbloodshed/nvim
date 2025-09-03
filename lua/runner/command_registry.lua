@@ -1,12 +1,9 @@
 local M = {}
 
 M.register = function(actions, state)
-  -- Helper to check if language belongs to a type
   local has_type = state.has_type
 
-  -- Determine available command types based on language
   local commands = {
-    -- Common commands for all language types
     { name = "RunnerRun", action = actions.run, desc = "Run the current file" },
     { name = "RunnerSetFlags", action = actions.set_compiler_flags, desc = "Set compiler flags for the current session" },
     { name = "RunnerSetArgs", action = actions.set_cmd_args, desc = "Set command-line arguments" },
@@ -16,7 +13,6 @@ M.register = function(actions, state)
     { name = "RunnerProblems", action = actions.open_quickfix, desc = "Open quickfix window" },
   }
 
-  -- Commands for compiled/assembled languages
   if has_type("compiled") or has_type("assembled") then
     table.insert(commands, {
       name = "RunnerCompile",
@@ -25,7 +21,6 @@ M.register = function(actions, state)
     })
   end
 
-  -- Commands for compiled languages only
   if has_type("compiled") and actions.show_assembly then
     table.insert(commands, {
       name = "RunnerShowAssembly",
@@ -34,14 +29,12 @@ M.register = function(actions, state)
     })
   end
 
-  -- Register commands
   if vim.api.nvim_create_user_command then
     for _, cmd in ipairs(commands) do
       vim.api.nvim_create_user_command(cmd.name, cmd.action, { desc = cmd.desc })
     end
   end
 
-  -- Register key mappings if configured
   if state.keymaps then
     for _, mapping in ipairs(state.keymaps) do
       if mapping.action and actions[mapping.action] then

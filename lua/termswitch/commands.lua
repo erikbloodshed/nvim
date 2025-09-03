@@ -1,4 +1,3 @@
--- termswitch/commands.lua
 local api = vim.api
 
 local M = {}

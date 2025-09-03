@@ -19,12 +19,12 @@ function Terminal:new(name, user_config)
     config = merged_config,
     buf = nil,
     win = nil,
-    backdrop_instance = nil, -- Backdrop instance for this terminal
-    _autocmd_group = nil,    -- Single group instead of multiple
-    _buf_valid = false,      -- Cache buffer validity
-    _is_terminal = false,    -- Cache terminal state
-    _job_id = nil,           -- Cache job ID
-    _resize_autocmd = nil,   -- Track resize autocmd
+    backdrop_instance = nil,
+    _autocmd_group = nil,
+    _buf_valid = false,
+    _is_terminal = false,
+    _job_id = nil,
+    _resize_autocmd = nil,
   }
   setmetatable(obj, self)
   return obj
@@ -45,7 +45,7 @@ function Terminal:get_float_config()
     border = self.config.border,
     title = self.config.title,
     title_pos = 'center',
-    zindex = self.config.backdrop.enabled and 50 or nil, -- Higher z-index when backdrop is enabled
+    zindex = self.config.backdrop.enabled and 50 or nil,
   }
 end
 
@@ -54,22 +54,16 @@ function Terminal:setup_auto_resize()
     return
   end
 
-  -- Clear any existing resize handler
   self:clear_auto_resize()
-
-  -- Create autocmd for window resizing
   self._resize_autocmd = api.nvim_create_autocmd("VimResized", {
     callback = function()
       if not self:is_valid_window() then
-        -- Window is no longer valid, clean up this autocmd
         self:clear_auto_resize()
-        return true -- Remove this autocmd
+        return true
       end
 
-      -- Get new float config with updated dimensions
       local new_config = self:get_float_config()
 
-      -- Update window configuration
       local config_to_set = {
         relative = new_config.relative,
         width = new_config.width,
@@ -78,15 +72,12 @@ function Terminal:setup_auto_resize()
         row = new_config.row,
       }
 
-      -- Only include style if it's not empty (to avoid clearing existing style)
       if new_config.style and new_config.style ~= "" then
         config_to_set.style = new_config.style
       end
 
-      -- Set the new window configuration
       pcall(api.nvim_win_set_config, self.win, config_to_set)
 
-      -- Trigger a user event that other plugins can listen to
       vim.api.nvim_exec_autocmds("User", {
         pattern = "TermSwitchResized",
         modeline = false,
@@ -106,20 +97,18 @@ function Terminal:clear_auto_resize()
 end
 
 function Terminal:ensure_buffer()
-  -- Use cached state first, but also verify the buffer still exists
   if self._buf_valid and self.buf and api.nvim_buf_is_valid(self.buf) then
-    return -- Buffer exists and is valid
+    return
   end
 
-  -- Buffer is invalid or doesn't exist, create new one
   self.buf = api.nvim_create_buf(false, true)
   if not self.buf then
     error("Failed to create buffer")
   end
 
   self._buf_valid = true
-  self._is_terminal = false -- Reset terminal state for new buffer
-  self._job_id = nil        -- Reset job ID for new buffer
+  self._is_terminal = false
+  self._job_id = nil
 
   utils.set_buf_options(self.buf, {
     buflisted = false,
@@ -145,16 +134,14 @@ function Terminal:create_backdrop()
     return
   end
 
-  -- Create backdrop instance if it doesn't exist
   if not self.backdrop_instance then
     self.backdrop_instance = backdrop.create_backdrop(self.name, {
       opacity = self.config.backdrop.opacity,
       color = self.config.backdrop.color,
-      zindex = 45, -- Lower than terminal window
+      zindex = 45,
     })
   end
 
-  -- Create the backdrop
   self.backdrop_instance:create()
 end
 
@@ -166,13 +153,10 @@ function Terminal:destroy_backdrop()
 end
 
 function Terminal:start_process(target_cwd)
-  -- Check if terminal process is already running
   if self:is_terminal_buffer() then return end
 
-  -- >> START of new logic <<
-  local original_cwd = vim.fn.getcwd() -- Store the original working directory
+  local original_cwd = vim.fn.getcwd()
   local cwd_changed = false
-  -- >> FIX: Use the directory passed from the open() function
 
   if target_cwd and target_cwd ~= original_cwd then
     vim.cmd('cd ' .. vim.fn.fnameescape(target_cwd))
@@ -188,30 +172,24 @@ function Terminal:start_process(target_cwd)
 
   vim.cmd(cmd)
   self.buf = api.nvim_get_current_buf()
-  self._is_terminal = true -- Mark as terminal buffer
+  self._is_terminal = true
   self._buf_valid = true
-  self._job_id = nil       -- Reset job ID cache
+  self._job_id = nil
 
-  -- >> START of restoring directory <<
-  -- Restore the original CWD if we changed it
   if cwd_changed then
     vim.cmd('cd ' .. vim.fn.fnameescape(original_cwd))
   end
-  -- >> END of restoring directory <<
 
-  -- Set buffer options after terminal creation
   utils.set_buf_options(self.buf, {
     buflisted = false,
     bufhidden = 'hide',
     filetype = self.config.filetype,
   })
 
-  -- Setup auto-delete if configured
   if self.config.auto_delete_on_close then
     self:setup_auto_delete()
   end
 
-  -- Restore previous buffer if different
   if current_buf ~= self.buf and api.nvim_buf_is_valid(current_buf) then
     api.nvim_set_current_buf(current_buf)
   end
@@ -235,7 +213,6 @@ function Terminal:setup_auto_delete()
         if api.nvim_buf_is_valid(self.buf) then
           vim.cmd('bdelete! ' .. self.buf)
         end
-        -- Invalidate cache since buffer will be deleted
         self:invalidate_cache()
       end)
     end,
@@ -251,9 +228,7 @@ function Terminal:setup_window_close_handler()
     pattern = tostring(self.win),
     callback = function()
       self.win = nil
-      -- Clear auto-resize when window closes
       self:clear_auto_resize()
-      -- Destroy backdrop when window closes
       self:destroy_backdrop()
     end,
     once = true,
@@ -269,19 +244,16 @@ function Terminal:is_current_window()
 end
 
 function Terminal:is_terminal_buffer()
-  -- First ensure we have a valid buffer
   if not self._buf_valid or not self.buf or not api.nvim_buf_is_valid(self.buf) then
     self._buf_valid = false
     self._is_terminal = false
     return false
   end
 
-  -- If we've cached that it's a terminal, trust that
   if self._is_terminal then
     return true
   end
 
-  -- Check if it's actually a terminal buffer
   local success, buftype = pcall(api.nvim_get_option_value, 'buftype', { buf = self.buf })
   if success and buftype == 'terminal' then
     self._is_terminal = true
@@ -294,8 +266,6 @@ end
 function Terminal:open()
   self:ensure_buffer()
 
-  -- >> FIX: Determine the target CWD *before* creating any windows.
-  -- At this point, the user's file buffer is still active.
   local target_cwd = nil
   if self.config.open_in_file_dir then
     local file_dir = vim.fn.expand('%:p:h')
@@ -305,38 +275,30 @@ function Terminal:open()
   end
 
   if self:is_valid_window() then
-    -- Window exists, just focus it
     api.nvim_set_current_win(self.win)
   else
-    -- Create backdrop first (if enabled)
     self:create_backdrop()
 
-    -- Create new window
     self.win = api.nvim_open_win(self.buf, true, self:get_float_config())
     self:setup_window_options()
     self:setup_window_close_handler()
 
-    -- Setup auto-resize after window is created
     self:setup_auto_resize()
   end
 
-  -- Start terminal process if needed
   self:start_process(target_cwd)
 
-  -- Enter insert mode
   vim.cmd('startinsert')
 end
 
 function Terminal:hide()
   if not self:is_valid_window() then return end
 
-  -- Clear auto-resize before closing window
   self:clear_auto_resize()
 
   api.nvim_win_close(self.win, false)
   self.win = nil
 
-  -- Destroy backdrop when hiding
   self:destroy_backdrop()
 end
 
@@ -349,7 +311,6 @@ function Terminal:focus()
 end
 
 function Terminal:toggle()
-  -- Optimized: Single state check with cached results
   local current_win = api.nvim_get_current_win()
   local win_valid = self.win and api.nvim_win_is_valid(self.win)
 
@@ -363,7 +324,6 @@ function Terminal:toggle()
 end
 
 function Terminal:_get_job_id()
-  -- Return cached job_id if available
   if self._job_id and self._job_id > 0 then
     return self._job_id
   end
@@ -381,16 +341,13 @@ function Terminal:_get_job_id()
   return nil
 end
 
--- terminal.lua (New recommended implementation)
 function Terminal:send(text, opts)
   opts = opts or {}
-  local force_open = opts.open -- Add an option to open the terminal if not running
+  local force_open = opts.open
 
   local job_id = self:_get_job_id()
 
   if job_id then
-    -- Job is already running, send the text immediately.
-    -- The defer_fn is not necessary here and can be removed.
     vim.fn.chansend(job_id, text .. '\r')
     return true
   end
@@ -400,11 +357,8 @@ function Terminal:send(text, opts)
     return false
   end
 
-  -- Terminal is not yet running, so we need to open it and
-  -- send the command once it's ready.
   self:open()
 
-  -- Use a one-shot autocmd to send the command as soon as the terminal is ready.
   local group = self:_ensure_autocommd_group()
   api.nvim_create_autocommd('TermOpen', {
     group = group,
@@ -434,23 +388,16 @@ end
 
 function Terminal:cleanup()
   self:hide()
-
-  -- Clear auto-resize
   self:clear_auto_resize()
-
-  -- Clean up backdrop
   self:destroy_backdrop()
 
-  -- Single autocmd group cleanup
   if self._autocmd_group then
     pcall(api.nvim_clear_autocmds, { group = self._autocmd_group })
     self._autocmd_group = nil
   end
 
-  -- Reset cached state
   self:invalidate_cache()
 
-  -- Clean up buffer if it exists
   if self.buf and api.nvim_buf_is_valid(self.buf) then
     vim.cmd('bdelete! ' .. self.buf)
   end

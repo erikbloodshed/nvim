@@ -38,10 +38,10 @@ M.init = function(user_config)
         compiler = "nasm",
         fallback_flags = { "-f", "elf64" },
         response_file = nil,
-        data_dir_name = "dat",
-        output_directory = "/tmp/",
         linker = "ld",
         linker_flags = { "-m", "elf_x86_64" },
+        data_dir_name = "dat",
+        output_directory = "/tmp/",
       },
 
       python = {
@@ -50,7 +50,6 @@ M.init = function(user_config)
         fallback_flags = {},
         response_file = nil,
         data_dir_name = "dat",
-        output_directory = "",
       },
 
       lua = {
@@ -59,7 +58,6 @@ M.init = function(user_config)
         fallback_flags = {},
         response_file = nil,
         data_dir_name = "dat",
-        output_directory = "",
       },
     }
   }

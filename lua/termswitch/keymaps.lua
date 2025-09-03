@@ -1,4 +1,3 @@
--- termswitch/keymaps.lua
 local api = vim.api
 
 local M = {}

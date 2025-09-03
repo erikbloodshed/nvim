@@ -1,4 +1,3 @@
--- termswitch/backdrop.lua
 local api = vim.api
 
 local M = {}
@@ -25,8 +24,6 @@ function Backdrop:new(id, opts)
   return obj
 end
 
---- Checks if backdrop should be created based on environment
----@return boolean
 function Backdrop:should_create()
   -- Check if Normal highlight has background color
   local normal, has_bg
@@ -104,6 +101,7 @@ function Backdrop:setup_resize_handler()
   end
 
   api.nvim_create_autocmd("VimResized", {
+    group = api.nvim_create_augroup("TermSwitchBackdrop_" .. self.id, { clear = true }),
     callback = function()
       if self:is_valid() then
         api.nvim_win_set_config(self.win, {
@@ -115,7 +113,6 @@ function Backdrop:setup_resize_handler()
       end
     end,
     desc = "Resize TermSwitch backdrop " .. self.id,
-    group = api.nvim_create_augroup("TermSwitchBackdrop_" .. self.id, { clear = true })
   })
 end
 

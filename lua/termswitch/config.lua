@@ -18,7 +18,7 @@ M.defaults = {
   auto_delete_on_close = false,
   open_in_file_dir = false,
   open = true,
-  -- Backdrop configuration
+
   backdrop = {
     enabled = true,    -- Enable/disable backdrop
     opacity = 60,      -- Backdrop opacity (0-100)
@@ -45,7 +45,6 @@ function M.validate_config(cfg)
     validated.border = M.defaults.border
   end
 
-  -- Validate backdrop configuration
   if validated.backdrop then
     if validated.backdrop.opacity and
       (type(validated.backdrop.opacity) ~= 'number' or
@@ -59,7 +58,6 @@ function M.validate_config(cfg)
       validated.backdrop.color = M.defaults.backdrop.color
     end
   else
-    -- Ensure backdrop config exists
     validated.backdrop = vim.deepcopy(M.defaults.backdrop)
   end
 

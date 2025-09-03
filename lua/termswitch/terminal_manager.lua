@@ -1,4 +1,3 @@
--- termswitch/terminal_manager.lua
 local Terminal = require('termswitch.terminal').Terminal
 
 local M = {}

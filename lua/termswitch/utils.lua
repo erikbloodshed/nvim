@@ -4,7 +4,6 @@ local M = {}
 
 -- Batch set options to reduce API calls
 function M.set_win_options(win, options)
-  -- Separate window-specific options that can be batched
   local win_config = {}
   local individual_opts = {}
 
@@ -16,12 +15,10 @@ function M.set_win_options(win, options)
     end
   end
 
-  -- Batch window config options
   if next(win_config) then
     pcall(api.nvim_win_set_config, win, win_config)
   end
 
-  -- Set remaining options individually (only if needed)
   for opt, val in pairs(individual_opts) do
     api.nvim_set_option_value(opt, val, { win = win })
   end
@@ -60,10 +57,9 @@ function M.get_ui_dimensions()
     return ui.width, ui.height
   end
 
-  return 80, 24   -- Fallback dimensions
+  return 80, 24
 end
 
--- Create title with proper casing
 function M.create_title(name)
   return ' ' .. name:gsub("^%l", string.upper) .. ' '
 end
