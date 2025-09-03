@@ -1,13 +1,7 @@
 local M = {}
 
 M.create = function(state)
-  local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
-  local language_types = state.language_types or {}
-
-  -- Build a set for quick membership checks
-  local type_set = {}
-  for _, t in ipairs(language_types) do type_set[t] = true end
-  local has_type = function(t) return type_set[t] end
+  local has_type = state.has_type
 
   -- Cache wrapper
   local function cached(key, build)
@@ -31,35 +25,35 @@ M.create = function(state)
   local specs = {
     {
       name = "compile",
-      type = LANG_TYPES.COMPILED,
+      type = "compiled",
       tool = "compiler",
       flags = "compiler_flags",
       args = { "-o", "exe_file", "src_file" },
     },
     {
       name = "show_assembly",
-      type = LANG_TYPES.COMPILED,
+      type = "compiled",
       tool = "compiler",
       flags = "compiler_flags",
       args = { "-c", "-S", "-o", "asm_file", "src_file" },
     },
     {
       name = "compile",
-      type = LANG_TYPES.ASSEMBLED,
+      type = "assembled",
       tool = "compiler",
       flags = "compiler_flags",
       args = { "-o", "obj_file", "src_file" },
     },
     {
       name = "link",
-      type = LANG_TYPES.LINKED,
+      type = "assembled",
       tool = "linker",
       flags = "linker_flags",
       args = { "-o", "exe_file", "obj_file" },
     },
     {
       name = "interpret",
-      type = LANG_TYPES.INTERPRETED,
+      type = "interpreted",
       tool = "compiler",        -- For interpreted languages, this is the interpreter
       flags = "compiler_flags", -- These become interpreter flags
       args = { "src_file" },

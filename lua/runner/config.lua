@@ -1,13 +1,5 @@
 local M = {}
 
--- Define language categories
-M.LANGUAGE_TYPES = {
-  COMPILED = "compiled",      -- Languages requiring compilation to binary
-  ASSEMBLED = "assembled",    -- Languages requiring assembly step
-  LINKED = "linked",          -- Languages requiring linking
-  INTERPRETED = "interpreted" -- Languages run through interpreter
-}
-
 M.init = function(user_config)
   local defaults = {
     keymaps = {
@@ -24,7 +16,7 @@ M.init = function(user_config)
 
     filetype = {
       c = {
-        type = { M.LANGUAGE_TYPES.COMPILED },
+        type = "compiled",
         compiler = "gcc",
         fallback_flags = { "-std=c23", "-O2" },
         response_file = nil,
@@ -33,7 +25,7 @@ M.init = function(user_config)
       },
 
       cpp = {
-        type = { M.LANGUAGE_TYPES.COMPILED },
+        type = "compiled",
         compiler = "g++",
         fallback_flags = { "-std=c++20", "-O2" },
         response_file = nil,
@@ -42,7 +34,7 @@ M.init = function(user_config)
       },
 
       asm = {
-        type = { M.LANGUAGE_TYPES.ASSEMBLED, M.LANGUAGE_TYPES.LINKED },
+        type = "assembled",
         compiler = "nasm",
         fallback_flags = { "-f", "elf64" },
         response_file = nil,
@@ -53,7 +45,7 @@ M.init = function(user_config)
       },
 
       python = {
-        type = { M.LANGUAGE_TYPES.INTERPRETED },
+        type = "interpreted",
         compiler = "python3",
         fallback_flags = {},
         response_file = nil,
@@ -62,7 +54,7 @@ M.init = function(user_config)
       },
 
       lua = {
-        type = { M.LANGUAGE_TYPES.INTERPRETED },
+        type = "interpreted",
         compiler = "lua",
         fallback_flags = {},
         response_file = nil,

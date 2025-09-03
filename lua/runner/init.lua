@@ -4,27 +4,18 @@ local function validate_config(config)
   assert(config, "Configuration is required")
   assert(config.type, "Language type must be specified")
 
-  local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
+  local has_type = function(t) return config.type == t end
 
-  local has_type = function(type)
-    for _, lang_type in ipairs(config.type) do
-      if lang_type == type then
-        return true
-      end
-    end
-    return false
-  end
-
-  if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+  if has_type("compiled") or has_type("assembled") then
     assert(config.compiler, "Compiler must be specified for compiled/assembled languages")
     assert(config.output_directory ~= nil, "Output directory must be specified")
   end
 
-  if has_type(LANG_TYPES.LINKED) then
+  if has_type("assembled") then
     assert(config.linker, "Linker must be specified for languages that require linking")
   end
 
-  if has_type(LANG_TYPES.INTERPRETED) then
+  if has_type("interpreted") then
     assert(config.compiler, "Run command must be specified for interpreted languages")
   end
 
@@ -52,8 +43,6 @@ M.setup = function(opts)
   local commands = require("runner.commands").create(state)
   local handler = require("runner.handler")
   local actions = require("runner.actions").create(state, commands, handler)
-
-  -- Register commands
   require("runner.command_registry").register(actions, state)
 end
 

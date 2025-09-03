@@ -1,8 +1,6 @@
 local M = {}
 
 M.register = function(actions, state)
-  local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
-
   -- Helper to check if language belongs to a type
   local has_type = state.has_type
 
@@ -19,7 +17,7 @@ M.register = function(actions, state)
   }
 
   -- Commands for compiled/assembled languages
-  if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+  if has_type("compiled") or has_type("assembled") then
     table.insert(commands, {
       name = "RunnerCompile",
       action = actions.compile,
@@ -28,7 +26,7 @@ M.register = function(actions, state)
   end
 
   -- Commands for compiled languages only
-  if has_type(LANG_TYPES.COMPILED) and actions.show_assembly then
+  if has_type("compiled") and actions.show_assembly then
     table.insert(commands, {
       name = "RunnerShowAssembly",
       action = actions.show_assembly,

@@ -9,7 +9,7 @@ M.init = function(config)
   local state = prealloc(0, 24)
   state.filetype = config.filetype
   state.src_file = api.nvim_buf_get_name(0)
-  state.language_types = config.type or {}
+  state.type = config.type
   state.compiler = config.compiler
   state.compiler_flags = utils.get_response_file(config.response_file) or config.fallback_flags
   state.linker = config.linker
@@ -45,9 +45,7 @@ M.init = function(config)
   state.cmd_template.timeout = 15000
   state.cmd_template.kill_delay = 3000
 
-  local type_set = prealloc(0, #state.language_types)
-  for _, t in ipairs(state.language_types) do type_set[t] = true end
-  state.has_type = function(t) return type_set[t] end
+  state.has_type = function(t) return state.type == t end
 
   return state
 end

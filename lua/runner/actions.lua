@@ -1,8 +1,7 @@
-local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
 local open_quickfix = require("runner.diagnostics").open_quickfixlist
 
 local function invalidate_cache(state)
-  if state.has_type(LANG_TYPES.INTERPRETED) then
+  if state.has_type("interpreted") then
     state.command_cache.interpret_cmd = nil
     vim.notify("Interpreter flags set and cache cleared.", vim.log.levels.INFO)
     return
@@ -10,16 +9,18 @@ local function invalidate_cache(state)
 
   state.command_cache.compile_cmd = nil
   state.command_cache.link_cmd = nil
-  state.command_cache.show_assembly_cmd = nil -- This also uses compiler flags.
+
+  if state.has_type("compiled") then
+    state.command_cache.show_assembly_cmd = nil
+  end
+
   vim.notify("Compiler flags set and cache cleared.", vim.log.levels.INFO)
 end
 
 local M = {}
 
 M.create = function(state, commands, handler)
-  local api = state.api
-  local fn = state.fn
-  local utils = state.utils
+  local api, fn, utils = state.api, state.fn, state.utils
   local actions = {}
 
   local has_type = state.has_type
@@ -101,22 +102,22 @@ M.create = function(state, commands, handler)
     local lines = {
       "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
       "Filetype          : " .. state.filetype,
-      "Language Type     : " .. table.concat(state.language_types or {}, ", "),
+      "Language Type     : " .. state.type,
     }
 
-    if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+    if has_type("compiled") or has_type("assembled") then
       lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
       lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
       lines[#lines + 1] = "Output Directory  : " ..
         (state.output_directory == "" and "None" or state.output_directory)
     end
 
-    if has_type(LANG_TYPES.LINKED) then
+    if has_type("assembled") then
       lines[#lines + 1] = "Linker            : " .. (state.linker or "None")
       lines[#lines + 1] = "Linker Flags      : " .. table.concat(state.linker_flags or {}, " ")
     end
 
-    if has_type(LANG_TYPES.INTERPRETED) then
+    if has_type("interpreted") then
       lines[#lines + 1] = "Run Command       : " .. (state.compiler or "None")
     end
 
@@ -143,7 +144,7 @@ M.create = function(state, commands, handler)
   end
 
   -- Language type specific actions
-  if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.ASSEMBLED) then
+  if has_type("compiled") or has_type("assembled") then
     actions.compile = function()
       vim.cmd("silent! update")
 
@@ -153,7 +154,7 @@ M.create = function(state, commands, handler)
         return false
       end
 
-      if has_type(LANG_TYPES.LINKED) then
+      if has_type("assembled") then
         success = handler.translate(state.hash_tbl, "link", commands.link())
         if not success then
           return false
@@ -165,7 +166,7 @@ M.create = function(state, commands, handler)
   end
 
   -- For interpreted languages, compile is a no-op
-  if has_type(LANG_TYPES.INTERPRETED) then
+  if has_type("interpreted") then
     actions.compile = function()
       vim.cmd("silent! update")
       return true
@@ -185,9 +186,9 @@ M.create = function(state, commands, handler)
 
     local run_command
     if actions.compile() then
-      if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.LINKED) then
+      if has_type("compiled") or has_type("assembled") then
         run_command = state.exe_file
-      elseif has_type(LANG_TYPES.INTERPRETED) then
+      elseif has_type("interpreted") then
         -- Use the spec-based approach for interpreted languages
         local run_cmd = commands.interpret()
         if run_cmd then
@@ -205,7 +206,7 @@ M.create = function(state, commands, handler)
   end
 
   -- Show assembly action only for compiled languages
-  if has_type(LANG_TYPES.COMPILED) then
+  if has_type("compiled") then
     actions.show_assembly = function()
       if commands.show_assembly and handler.translate(state.hash_tbl, "assemble", commands.show_assembly()) then
         utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
