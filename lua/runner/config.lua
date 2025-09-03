@@ -2,23 +2,24 @@ local M = {}
 
 -- Define language categories
 M.LANGUAGE_TYPES = {
-  COMPILED = "compiled",        -- Languages requiring compilation to binary
-  ASSEMBLED = "assembled",      -- Languages requiring assembly step
-  LINKED = "linked",            -- Languages requiring linking
-  INTERPRETED = "interpreted"   -- Languages run through interpreter
+  COMPILED = "compiled",      -- Languages requiring compilation to binary
+  ASSEMBLED = "assembled",    -- Languages requiring assembly step
+  LINKED = "linked",          -- Languages requiring linking
+  INTERPRETED = "interpreted" -- Languages run through interpreter
 }
 
 M.init = function(user_config)
   local defaults = {
     keymaps = {
-      { key = "<leader>rr", action = "run",              mode = "n", desc = "Runner: Run File" },
-      { key = "<leader>rc", action = "compile",          mode = "n", desc = "Runner: Compile File" },
-      { key = "<leader>ra", action = "set_cmd_args",     mode = "n", desc = "Runner: Set Arguments" },
-      { key = "<leader>ri", action = "get_build_info",   mode = "n", desc = "Runner: Show Build Info" },
-      { key = "<leader>rd", action = "add_data_file",    mode = "n", desc = "Runner: Add Data File" },
+      { key = "<leader>rr", action = "run", mode = "n", desc = "Runner: Run File" },
+      { key = "<leader>rc", action = "compile", mode = "n", desc = "Runner: Compile File" },
+      { key = "<leader>ra", action = "set_cmd_args", mode = "n", desc = "Runner: Set Arguments" },
+      { key = "<leader>rf", action = "set_compiler_flags", mode = "n", desc = "Runner: Set Compiler Flags" },
+      { key = "<leader>ri", action = "get_build_info", mode = "n", desc = "Runner: Show Build Info" },
+      { key = "<leader>rd", action = "add_data_file", mode = "n", desc = "Runner: Add Data File" },
       { key = "<leader>rx", action = "remove_data_file", mode = "n", desc = "Runner: Remove Data File" },
-      { key = "<leader>rs", action = "show_assembly",    mode = "n", desc = "Runner: Show Assembly" },
-      { key = "<leader>rq", action = "open_quickfix",    mode = "n", desc = "Runner: Open Quickfix" },
+      { key = "<leader>rs", action = "show_assembly", mode = "n", desc = "Runner: Show Assembly" },
+      { key = "<leader>rq", action = "open_quickfix", mode = "n", desc = "Runner: Open Quickfix" },
     },
 
     filetype = {

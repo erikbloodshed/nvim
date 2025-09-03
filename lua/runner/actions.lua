@@ -1,17 +1,46 @@
+local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
+local open_quickfix = require("runner.diagnostics").open_quickfixlist
+
+local function invalidate_cache(state)
+  if state.has_type(LANG_TYPES.INTERPRETED) then
+    state.command_cache.interpret_cmd = nil
+    vim.notify("Interpreter flags set and cache cleared.", vim.log.levels.INFO)
+    return
+  end
+
+  state.command_cache.compile_cmd = nil
+  state.command_cache.link_cmd = nil
+  state.command_cache.show_assembly_cmd = nil -- This also uses compiler flags.
+  vim.notify("Compiler flags set and cache cleared.", vim.log.levels.INFO)
+end
+
 local M = {}
 
 M.create = function(state, commands, handler)
-  local open_quickfix = require("runner.diagnostics").open_quickfixlist
   local api = state.api
   local fn = state.fn
   local utils = state.utils
-  local LANG_TYPES = require("runner.config").LANGUAGE_TYPES
   local actions = {}
 
-  -- Helper to check if language belongs to a type
   local has_type = state.has_type
+  actions.set_compiler_flags = function()
+    vim.ui.input({
+      prompt = "Enter compiler flags: ",
+      default = table.concat(state.compiler_flags or {}, " ")
+    }, function(flags_str)
+      if flags_str == nil then return end -- User cancelled the input
 
-  -- Common actions for all language types
+      if flags_str ~= "" then
+        -- FIX: Split on one or more whitespace characters and remove empty results.
+        state.compiler_flags = vim.split(flags_str, "%s+", { trimempty = true })
+        invalidate_cache(state)
+      else
+        state.compiler_flags = {}
+        invalidate_cache(state)
+      end
+    end)
+  end
+
   actions.set_cmd_args = function()
     vim.ui.input({
       prompt = "Enter command-line arguments: ",
@@ -79,7 +108,7 @@ M.create = function(state, commands, handler)
       lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
       lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
       lines[#lines + 1] = "Output Directory  : " ..
-          (state.output_directory == "" and "None" or state.output_directory)
+        (state.output_directory == "" and "None" or state.output_directory)
     end
 
     if has_type(LANG_TYPES.LINKED) then
@@ -159,7 +188,14 @@ M.create = function(state, commands, handler)
       if has_type(LANG_TYPES.COMPILED) or has_type(LANG_TYPES.LINKED) then
         run_command = state.exe_file
       elseif has_type(LANG_TYPES.INTERPRETED) then
-        run_command = state.compiler .. " " .. state.src_file
+        -- Use the spec-based approach for interpreted languages
+        local run_cmd = commands.interpret()
+        if run_cmd then
+          run_command = run_cmd.compiler
+          if run_cmd.arg and #run_cmd.arg > 0 then
+            run_command = run_command .. " " .. table.concat(run_cmd.arg, " ")
+          end
+        end
       end
     end
 

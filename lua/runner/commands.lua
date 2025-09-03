@@ -57,6 +57,13 @@ M.create = function(state)
       flags = "linker_flags",
       args = { "-o", "exe_file", "obj_file" },
     },
+    {
+      name = "interpret",
+      type = LANG_TYPES.INTERPRETED,
+      tool = "compiler",        -- For interpreted languages, this is the interpreter
+      flags = "compiler_flags", -- These become interpreter flags
+      args = { "src_file" },
+    },
   }
 
   local commands = {}

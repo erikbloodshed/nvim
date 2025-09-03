@@ -9,12 +9,13 @@ M.register = function(actions, state)
   -- Determine available command types based on language
   local commands = {
     -- Common commands for all language types
-    { name = "RunnerRun",            action = actions.run,              desc = "Run the current file" },
-    { name = "RunnerSetArgs",        action = actions.set_cmd_args,     desc = "Set command-line arguments" },
-    { name = "RunnerAddDataFile",    action = actions.add_data_file,    desc = "Add a data file" },
+    { name = "RunnerRun", action = actions.run, desc = "Run the current file" },
+    { name = "RunnerSetFlags", action = actions.set_compiler_flags, desc = "Set compiler flags for the current session" },
+    { name = "RunnerSetArgs", action = actions.set_cmd_args, desc = "Set command-line arguments" },
+    { name = "RunnerAddDataFile", action = actions.add_data_file, desc = "Add a data file" },
     { name = "RunnerRemoveDataFile", action = actions.remove_data_file, desc = "Remove the current data file" },
-    { name = "RunnerInfo",           action = actions.get_build_info,   desc = "Show build information" },
-    { name = "RunnerProblems",       action = actions.open_quickfix,    desc = "Open quickfix window" },
+    { name = "RunnerInfo", action = actions.get_build_info, desc = "Show build information" },
+    { name = "RunnerProblems", action = actions.open_quickfix, desc = "Open quickfix window" },
   }
 
   -- Commands for compiled/assembled languages

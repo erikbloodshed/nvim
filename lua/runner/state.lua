@@ -33,10 +33,11 @@ M.init = function(config)
   state.hash_tbl.assemble = nil
   state.hash_tbl.link = nil
 
-  state.command_cache = prealloc(0, 3)
+  state.command_cache = prealloc(0, 4)
   state.command_cache.compile_cmd = nil
   state.command_cache.link_cmd = nil
-  state.command_cache.assemble_cmd = nil
+  state.command_cache.show_assembly_cmd = nil
+  state.command_cache.interpret_cmd = nil
 
   state.cmd_template = prealloc(0, 4)
   state.cmd_template.compiler = nil
