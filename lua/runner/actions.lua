@@ -1,9 +1,12 @@
 local open_quickfix = require("runner.diagnostics").open_quickfixlist
+local log_levels = vim.log.levels
 
 local function invalidate_cache(state)
+  state.command_cache.run_cmd = nil
+
   if state.has_type("interpreted") then
     state.command_cache.interpret_cmd = nil
-    vim.notify("Interpreter flags set and cache cleared.", vim.log.levels.INFO)
+    vim.notify("Interpreter flags set and cache cleared.", log_levels.INFO)
     return
   end
 
@@ -14,7 +17,7 @@ local function invalidate_cache(state)
     state.command_cache.show_assembly_cmd = nil
   end
 
-  vim.notify("Compiler flags set and cache cleared.", vim.log.levels.INFO)
+  vim.notify("Compiler flags set and cache cleared.", log_levels.INFO)
 end
 
 local M = {}
@@ -47,11 +50,12 @@ M.create = function(state, commands, handler)
       default = state.cmd_args or ""
     }, function(args)
       if args ~= "" then
+        state.command_cache.run_cmd = nil
         state.cmd_args = args
-        vim.notify("Command arguments set", vim.log.levels.INFO)
+        vim.notify("Command arguments set", log_levels.INFO)
       else
         state.cmd_args = nil
-        vim.notify("Command arguments cleared", vim.log.levels.INFO)
+        vim.notify("Command arguments cleared", log_levels.INFO)
       end
     end)
   end
@@ -61,7 +65,7 @@ M.create = function(state, commands, handler)
       local files = utils.scan_dir(state.data_path)
 
       if vim.tbl_isempty(files) then
-        vim.notify("No files found in data directory: " .. state.data_path, vim.log.levels.WARN)
+        vim.notify("No files found in data directory: " .. state.data_path, log_levels.WARN)
         return
       end
 
@@ -72,12 +76,13 @@ M.create = function(state, commands, handler)
         end,
       }, function(choice)
         if choice then
+          state.command_cache.run_cmd = nil
           state.data_file = choice
-          vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), vim.log.levels.INFO)
+          vim.notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
         end
       end)
     else
-      vim.notify("Data directory not found", vim.log.levels.ERROR)
+      vim.notify("Data directory not found", log_levels.ERROR)
     end
   end
 
@@ -87,12 +92,13 @@ M.create = function(state, commands, handler)
         prompt = "Remove data file (" .. fn.fnamemodify(state.data_file, ':t') .. ")?",
       }, function(choice)
         if choice == "Yes" then
+          state.command_cache.run_cmd = nil
           state.data_file = nil
-          vim.notify("Data file removed", vim.log.levels.INFO)
+          vim.notify("Data file removed", log_levels.INFO)
         end
       end)
     else
-      vim.notify("No data file is currently set", vim.log.levels.WARN)
+      vim.notify("No data file is currently set", log_levels.WARN)
     end
   end
 
@@ -181,35 +187,35 @@ M.create = function(state, commands, handler)
       return
     end
 
-    local run_command
-    if actions.compile() then
-      if has_type("compiled") or has_type("assembled") then
-        run_command = state.exe_file
-      elseif has_type("interpreted") then
-        local run_cmd = commands.interpret()
-        if run_cmd then
-          run_command = run_cmd.compiler
-          if run_cmd.arg and #run_cmd.arg > 0 then
-            run_command = run_command .. " " .. table.concat(run_cmd.arg, " ")
+    local run_command = state.command_cache.run_cmd
+
+    if not run_command then
+      if actions.compile() then
+        if has_type("compiled") or has_type("assembled") then
+          run_command = state.exe_file
+        elseif has_type("interpreted") then
+          local run_cmd = commands.interpret()
+          if run_cmd then
+            run_command = run_cmd.compiler
+            if run_cmd.arg and #run_cmd.arg > 0 then
+              run_command = run_command .. " " .. table.concat(run_cmd.arg, " ")
+            end
           end
         end
       end
-    end
-
-    if run_command then
-      -- Build the complete command string with args and data file redirection
-      local complete_cmd = run_command
 
       if state.cmd_args then
-        complete_cmd = complete_cmd .. " " .. state.cmd_args
+        run_command = run_command .. " " .. state.cmd_args
       end
 
       if state.data_file then
-        complete_cmd = complete_cmd .. " < " .. state.data_file
+        run_command = run_command .. " < " .. state.data_file
       end
 
-      handler.run(complete_cmd)
+      state.command_cache.run_cmd = run_command
     end
+
+    handler.run(run_command)
   end
 
   if has_type("compiled") then
