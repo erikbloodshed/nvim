@@ -22,7 +22,8 @@ end
 
 local M = {}
 
-M.create = function(state, commands, handler)
+M.create = function(state, cmd)
+  local handler = require("runner.handler")
   local api, fn, utils = state.api, state.fn, state.utils
   local actions = {}
 
@@ -152,14 +153,14 @@ M.create = function(state, commands, handler)
     actions.compile = function()
       vim.cmd("silent! update")
 
-      local success = handler.translate(state.hash_tbl, "compile", commands.compile())
+      local success = handler.translate(state.hash_tbl, "compile", cmd.compile())
 
       if not success then
         return false
       end
 
       if has_type("assembled") then
-        success = handler.translate(state.hash_tbl, "link", commands.link())
+        success = handler.translate(state.hash_tbl, "link", cmd.link())
         if not success then
           return false
         end
@@ -194,7 +195,7 @@ M.create = function(state, commands, handler)
         if has_type("compiled") or has_type("assembled") then
           run_command = state.exe_file
         elseif has_type("interpreted") then
-          local run_cmd = commands.interpret()
+          local run_cmd = cmd.interpret()
           if run_cmd then
             run_command = run_cmd.compiler
             if run_cmd.arg and #run_cmd.arg > 0 then
@@ -220,7 +221,7 @@ M.create = function(state, commands, handler)
 
   if has_type("compiled") then
     actions.show_assembly = function()
-      if commands.show_assembly and handler.translate(state.hash_tbl, "assemble", commands.show_assembly()) then
+      if cmd.show_assembly and handler.translate(state.hash_tbl, "assemble", cmd.show_assembly()) then
         utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
       end
     end

@@ -34,16 +34,25 @@ M.setup = function(opts)
   local config = require("runner.config").init(opts)
 
   if not config then
-    vim.notify("No runner configuration for filetype: " .. vim.api.nvim_get_option_value("filetype", { buf = 0 }),
-      vim.log.levels.WARN)
+    vim.notify("No runner configuration for filetype: " ..
+      vim.api.nvim_get_option_value("filetype", { buf = 0 }), vim.log.levels.WARN)
     return {}
   end
 
   local state = require("runner.state").init(validate_config(config))
   local commands = require("runner.commands").create(state)
-  local handler = require("runner.handler")
-  local actions = require("runner.actions").create(state, commands, handler)
-  require("runner.command_registry").register(actions, state)
+  local actions = require("runner.actions").create(state, commands)
+  local keymaps = state.keymaps
+  local map = vim.keymap.set
+
+  if keymaps then
+    for _, m in ipairs(keymaps) do
+      if m.action and actions[m.action] then
+        map(m.mode or "n", m.key, actions[m.action],
+          { buffer = 0, noremap = true, desc = m.desc })
+      end
+    end
+  end
 end
 
 return M
