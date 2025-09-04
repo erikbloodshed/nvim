@@ -1,108 +1,25 @@
--- runner/actions.lua
-local M = {}
+local open_quickfix = require("runner.diagnostics").open_quickfixlist
 
--- Private function to create the low-level command-line execution details.
--- (Formerly the logic in `commands.lua`)
-local function create_execution_commands(state)
-  local has_type = state.has_type
-
-  local function cached(key, build)
-    local cache = state.command_cache
-    if cache[key] then return cache[key] end
-    local cmd = build()
-    cache[key] = cmd
-    return cmd
+local function invalidate_cache(state)
+  if state.has_type("interpreted") then
+    state.command_cache.interpret_cmd = nil
+    vim.notify("Interpreter flags set and cache cleared.", vim.log.levels.INFO)
+    return
   end
 
-  local function make_cmd(tool, flags, ...)
-    local cmd = vim.deepcopy(state.cmd_template)
-    cmd.compiler = tool
-    cmd.arg = vim.deepcopy(flags)
-    vim.list_extend(cmd.arg, { ... })
-    return cmd
+  state.command_cache.compile_cmd = nil
+  state.command_cache.link_cmd = nil
+
+  if state.has_type("compiled") then
+    state.command_cache.show_assembly_cmd = nil
   end
 
-  local specs = {
-    {
-      name = "compile",
-      type = "compiled",
-      tool = "compiler",
-      flags = "compiler_flags",
-      args = { "-o", "exe_file", "src_file" },
-    },
-    {
-      name = "show_assembly",
-      type = "compiled",
-      tool = "compiler",
-      flags = "compiler_flags",
-      args = { "-c", "-S", "-o", "asm_file", "src_file" },
-    },
-    {
-      name = "compile",
-      type = "assembled",
-      tool = "compiler",
-      flags = "compiler_flags",
-      args = { "-o", "obj_file", "src_file" },
-    },
-    {
-      name = "link",
-      type = "assembled",
-      tool = "linker",
-      flags = "linker_flags",
-      args = { "-o", "exe_file", "obj_file" },
-    },
-    {
-      name = "interpret",
-      type = "interpreted",
-      tool = "compiler",
-      flags = "compiler_flags",
-      args = { "src_file" },
-    },
-  }
-
-  local commands = {}
-
-  for _, spec in ipairs(specs) do
-    if has_type(spec.type) then
-      commands[spec.name] = function()
-        return cached(spec.name .. "_cmd", function()
-          -- Resolve args (replace keys with state values if available)
-          local resolved = {}
-          for _, a in ipairs(spec.args) do
-            resolved[#resolved + 1] = state[a] or a
-          end
-          return make_cmd(state[spec.tool], state[spec.flags], unpack(resolved))
-        end)
-      end
-    end
-  end
-
-  return commands
+  vim.notify("Compiler flags set and cache cleared.", vim.log.levels.INFO)
 end
 
+local M = {}
 
--- Private function to create the high-level user action functions.
--- (Formerly the logic in `actions.lua`)
-local function create_actions(state, commands, handler)
-  local open_quickfix = require("runner.diagnostics").open_quickfixlist
-
-  local function invalidate_cache()
-    if state.has_type("interpreted") then
-      state.command_cache.interpret_cmd = nil
-      vim.notify("Interpreter flags set and cache cleared.", vim.log.levels.INFO)
-      return
-    end
-
-    state.command_cache.compile_cmd = nil
-    state.command_cache.link_cmd = nil
-
-    if state.has_type("compiled") then
-      state.command_cache.show_assembly_cmd = nil
-    end
-
-    vim.notify("Compiler flags set and cache cleared.", vim.log.levels.INFO)
-  end
-
+M.create = function(state, commands, handler)
   local api, fn, utils = state.api, state.fn, state.utils
   local actions = {}
 
@@ -116,10 +33,10 @@ local function create_actions(state, commands, handler)
 
       if flags_str ~= "" then
         state.compiler_flags = vim.split(flags_str, "%s+", { trimempty = true })
-        invalidate_cache()
+        invalidate_cache(state)
       else
         state.compiler_flags = {}
-        invalidate_cache()
+        invalidate_cache(state)
       end
     end)
   end
@@ -297,64 +214,6 @@ local function create_actions(state, commands, handler)
   end
 
   return actions
-end
-
--- Private function to register user commands and keymaps.
--- (Formerly the logic in `command_registry.lua`)
-local function register_user_commands(actions, state)
-  local has_type = state.has_type
-
-  local commands = {
-    { name = "RunnerRun", action = actions.run, desc = "Run the current file" },
-    { name = "RunnerSetFlags", action = actions.set_compiler_flags, desc = "Set compiler flags for the current session" },
-    { name = "RunnerSetArgs", action = actions.set_cmd_args, desc = "Set command-line arguments" },
-    { name = "RunnerAddDataFile", action = actions.add_data_file, desc = "Add a data file" },
-    { name = "RunnerRemoveDataFile", action = actions.remove_data_file, desc = "Remove the current data file" },
-    { name = "RunnerInfo", action = actions.get_build_info, desc = "Show build information" },
-    { name = "RunnerProblems", action = actions.open_quickfix, desc = "Open quickfix window" },
-  }
-
-  if has_type("compiled") or has_type("assembled") then
-    table.insert(commands, {
-      name = "RunnerCompile",
-      action = actions.compile,
-      desc = "Compile the current file"
-    })
-  end
-
-  if has_type("compiled") and actions.show_assembly then
-    table.insert(commands, {
-      name = "RunnerShowAssembly",
-      action = actions.show_assembly,
-      desc = "Show assembly output"
-    })
-  end
-
-  if vim.api.nvim_create_user_command then
-    for _, cmd in ipairs(commands) do
-      vim.api.nvim_create_user_command(cmd.name, cmd.action, { desc = cmd.desc })
-    end
-  end
-
-  if state.keymaps then
-    for _, mapping in ipairs(state.keymaps) do
-      if mapping.action and actions[mapping.action] then
-        vim.keymap.set(
-          mapping.mode or "n",
-          mapping.key,
-          actions[mapping.action],
-          { buffer = 0, desc = mapping.desc }
-        )
-      end
-    end
-  end
-end
-
---- Public setup function to orchestrate command and action creation and registration.
-M.init = function(state, handler)
-  local commands = create_execution_commands(state)
-  local actions = create_actions(state, commands, handler)
-  register_user_commands(actions, state)
 end
 
 return M

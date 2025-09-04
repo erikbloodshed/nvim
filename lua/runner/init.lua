@@ -40,9 +40,10 @@ M.setup = function(opts)
   end
 
   local state = require("runner.state").init(validate_config(config))
+  local commands = require("runner.commands").create(state)
   local handler = require("runner.handler")
-
-  require("runner.actions").init(state, handler)
+  local actions = require("runner.actions").create(state, commands, handler)
+  require("runner.command_registry").register(actions, state)
 end
 
 return M
