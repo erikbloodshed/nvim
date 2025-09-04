@@ -1,24 +1,38 @@
-local fn = vim.fn
-local api = vim.api
 local execute = require("runner.process").execute
-
-local get_buffer_hash = function()
-  local lines = api.nvim_buf_get_lines(0, 0, -1, true)
-  local content = table.concat(lines, "\n")
-  return fn.sha256(content)
-end
 
 local M = {}
 
-M.translate = function(value, key, command)
+-- Memoized buffer hash calculation
+local current_buffer_hash = nil
+local current_buffer_changedtick = nil
+
+local function get_buffer_hash()
+  local changedtick = vim.api.nvim_buf_get_changedtick(0)
+
+  -- Return cached hash if buffer hasn't changed
+  if current_buffer_hash and current_buffer_changedtick == changedtick then
+    return current_buffer_hash
+  end
+
+  -- Calculate new hash
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
+  local content = table.concat(lines, "\n")
+  current_buffer_hash = vim.fn.sha256(content)
+  current_buffer_changedtick = changedtick
+
+  return current_buffer_hash
+end
+
+M.translate = function(state, key, command)
   -- No command provided (may happen with interpreted languages)
   if not command then
     return true
   end
 
   local buffer_hash = get_buffer_hash()
+  local cached_hash = state:get_hash(key)
 
-  if value[key] == buffer_hash then
+  if cached_hash == buffer_hash then
     vim.notify("Source code is already processed for " .. key .. ".", vim.log.levels.WARN)
     return true
   end
@@ -26,13 +40,13 @@ M.translate = function(value, key, command)
   local result = execute(command)
 
   if result.code == 0 then
-    value[key] = buffer_hash
+    state:set_hash(key, buffer_hash)
     local action_name = key:sub(1, 1):upper() .. key:sub(2)
     vim.notify(action_name .. " successful with exit code " .. result.code .. ".",
       vim.log.levels.INFO)
     return true
   else
-    if result.stderr ~= nil then
+    if result.stderr and result.stderr ~= "" then
       vim.notify(result.stderr, vim.log.levels.ERROR)
     end
     return false
@@ -47,8 +61,8 @@ M.run = function(cmd)
 
   vim.cmd("ToggleTerm")
 
-  local buf = api.nvim_get_current_buf()
-  local job_id = api.nvim_buf_get_var(buf, "terminal_job_id")
+  local buf = vim.api.nvim_get_current_buf()
+  local job_id = vim.api.nvim_buf_get_var(buf, "terminal_job_id")
 
   vim.defer_fn(function()
     vim.fn.chansend(job_id, cmd .. "\n")

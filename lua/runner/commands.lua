@@ -1,23 +1,12 @@
 local M = {}
 
 M.create = function(state)
-  local has_type = state.has_type
-
-  local function cached(key, build)
+  local function cached(key, build_fn)
     local cache = state.command_cache
     if cache[key] then return cache[key] end
-    local cmd = build()
+    local cmd = build_fn()
     cache[key] = cmd
     return cmd
-  end
-
-  local function make_cmd(tool, flags, ...)
-    return {
-      compiler = tool,
-      arg = vim.list_extend(vim.list_extend({}, flags or {}), { ... }),
-      timeout = state.timeout,
-      kill_delay = state.kill_delay
-    }
   end
 
   local specs = {
@@ -61,15 +50,20 @@ M.create = function(state)
   local commands = {}
 
   for _, spec in ipairs(specs) do
-    if has_type(spec.type) then
+    if state:has_type(spec.type) then
       commands[spec.name] = function()
         return cached(spec.name .. "_cmd", function()
           -- Resolve args (replace keys with state values if available)
-          local resolved = {}
-          for _, a in ipairs(spec.args) do
-            resolved[#resolved + 1] = state[a] or a
+          local resolved_args = {}
+          for _, arg in ipairs(spec.args) do
+            resolved_args[#resolved_args + 1] = state[arg] or arg
           end
-          return make_cmd(state[spec.tool], state[spec.flags], unpack(resolved))
+
+          return state:make_cmd(
+            state[spec.tool],
+            state[spec.flags],
+            unpack(resolved_args)
+          )
         end)
       end
     end
