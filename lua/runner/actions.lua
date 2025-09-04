@@ -197,7 +197,18 @@ M.create = function(state, commands, handler)
     end
 
     if run_command then
-      handler.run(run_command, state.cmd_args, state.data_file)
+      -- Build the complete command string with args and data file redirection
+      local complete_cmd = run_command
+
+      if state.cmd_args then
+        complete_cmd = complete_cmd .. " " .. state.cmd_args
+      end
+
+      if state.data_file then
+        complete_cmd = complete_cmd .. " < " .. state.data_file
+      end
+
+      handler.run(complete_cmd)
     end
   end
 

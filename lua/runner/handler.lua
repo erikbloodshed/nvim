@@ -39,16 +39,11 @@ M.translate = function(value, key, command)
   end
 end
 
-M.run = function(cmd_str, args, datfile)
-  if not cmd_str then
+M.run = function(cmd)
+  if not cmd then
     vim.notify("No run command available for this language type", vim.log.levels.ERROR)
     return
   end
-
-  local cmd = cmd_str
-
-  if args then cmd = cmd .. " " .. args end
-  if datfile then cmd = cmd .. " < " .. datfile end
 
   vim.cmd("ToggleTerm")
 
