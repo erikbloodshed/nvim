@@ -1,51 +1,49 @@
 local M = {}
 
 M.init = function(config)
-  local prealloc = require("table.new")
   local api = vim.api
   local fn = vim.fn
   local utils = require("runner.utils")
 
-  local state = prealloc(0, 24)
-  state.filetype = config.filetype
-  state.src_file = api.nvim_buf_get_name(0)
-  state.type = config.type
-  state.compiler = config.compiler
-  state.compiler_flags = utils.get_response_file(config.response_file) or config.fallback_flags
-  state.linker = config.linker
-  state.linker_flags = config.linker_flags or {}
-  state.output_directory = config.output_directory or ""
-  state.data_path = utils.get_data_path(config.data_dir_name)
-  state.data_file = nil
-  state.cmd_args = nil
-  state.keymaps = config.keymaps
-  state.api = api
-  state.fn = fn
-  state.utils = utils
+  local state = {
+    filetype = config.filetype,
+    src_file = api.nvim_buf_get_name(0),
+    type = config.type,
+    compiler = config.compiler,
+    compiler_flags = utils.get_response_file(config.response_file) or config.fallback_flags,
+    linker = config.linker,
+    linker_flags = config.linker_flags or {},
+    output_directory = config.output_directory or "",
+    data_path = utils.get_data_path(config.data_dir_name),
+    data_file = nil,
+    cmd_args = nil,
+    keymaps = config.keymaps,
+    api = api,
+    fn = fn,
+    utils = utils,
+
+    hash_tbl = {
+      compile = nil,
+      assemble = nil,
+      link = nil,
+    },
+
+    command_cache = {
+      compile_cmd = nil,
+      link_cmd = nil,
+      show_assembly_cmd = nil,
+      interpret_cmd = nil,
+      run_cmd = nil,
+    },
+
+    timeout = 15000,
+    kill_delay = 3000,
+  }
 
   state.src_basename = vim.fn.fnamemodify(state.src_file, ":t:r")
   state.exe_file = state.output_directory .. state.src_basename
   state.asm_file = state.exe_file .. ".s"
   state.obj_file = state.exe_file .. ".o"
-
-  state.hash_tbl = prealloc(0, 3)
-  state.hash_tbl.compile = nil
-  state.hash_tbl.assemble = nil
-  state.hash_tbl.link = nil
-
-  state.command_cache = prealloc(0, 5)
-  state.command_cache.compile_cmd = nil
-  state.command_cache.link_cmd = nil
-  state.command_cache.show_assembly_cmd = nil
-  state.command_cache.interpret_cmd = nil
-  state.command_cache.run_cmd = nil
-
-  state.cmd_template = prealloc(0, 4)
-  state.cmd_template.compiler = nil
-  state.cmd_template.arg = nil
-  state.cmd_template.timeout = 15000
-  state.cmd_template.kill_delay = 3000
-
   state.has_type = function(t) return state.type == t end
 
   return state

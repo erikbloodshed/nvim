@@ -12,11 +12,12 @@ M.create = function(state)
   end
 
   local function make_cmd(tool, flags, ...)
-    local cmd = vim.deepcopy(state.cmd_template)
-    cmd.compiler = tool -- field name kept for compatibility
-    cmd.arg = vim.deepcopy(flags)
-    vim.list_extend(cmd.arg, { ... })
-    return cmd
+    return {
+      compiler = tool,
+      arg = vim.list_extend(vim.list_extend({}, flags or {}), { ... }),
+      timeout = state.timeout,
+      kill_delay = state.kill_delay
+    }
   end
 
   local specs = {
