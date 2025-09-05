@@ -118,18 +118,12 @@ M.create = function(state, cmd)
   end
 
   actions.run = function()
-    local diagnostic_count = #vim.diagnostic.count(0, {
+    local error_count = #vim.diagnostic.count(0, {
       severity = { vim.diagnostic.severity.ERROR }
     })
 
-    if diagnostic_count > 0 then
-      open_quickfix()
-      return
-    end
-
-    if not actions.compile() then
-      return
-    end
+    if error_count > 0 then open_quickfix() return end
+    if not actions.compile() then return end
 
     local run_command = state.command_cache.run_cmd
 
