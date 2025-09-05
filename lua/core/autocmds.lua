@@ -102,7 +102,7 @@ api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
   end,
 })
 
-vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
   group = cl_group,
   callback = function()
     wo.cursorline = true
