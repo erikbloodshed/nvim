@@ -1,34 +1,7 @@
 local M = {}
 
-local function validate_config(config)
-  local has_type = function(t) return config.type == t end
-
-  if has_type("compiled") or has_type("assembled") then
-    assert(config.compiler, "Compiler must be specified for compiled/assembled languages")
-    assert(config.output_directory ~= nil, "Output directory must be specified")
-  end
-
-  if has_type("assembled") then
-    assert(config.linker, "Linker must be specified for languages that require linking")
-  end
-
-  if has_type("interpreted") then
-    assert(config.compiler, "Run command must be specified for interpreted languages")
-  end
-
-  -- Ensure output directory ends with a path separator
-  if config.output_directory and #config.output_directory > 0 then
-    local last_char = config.output_directory:sub(-1)
-    if last_char ~= "/" and last_char ~= "\\" then
-      config.output_directory = config.output_directory .. "/"
-    end
-  end
-
-  return config
-end
-
-M.setup = function(opts)
-  local config = require("runner.config").init(opts)
+M.setup = function(cfg)
+  local config = require("runner.config").init(cfg)
 
   if not config then
     vim.notify("No runner configuration for filetype: " ..
@@ -36,18 +9,16 @@ M.setup = function(opts)
     return {}
   end
 
-  local state = require("runner.state").init(validate_config(config))
+  local state = require("runner.state").init(config)
   local commands = require("runner.commands").create(state)
   local actions = require("runner.actions").create(state, commands)
   local keymaps = state.keymaps
   local map = vim.keymap.set
 
-  if keymaps then
-    for _, m in ipairs(keymaps) do
-      if m.action and actions[m.action] then
-        map(m.mode or "n", m.key, actions[m.action],
-          { buffer = 0, noremap = true, desc = m.desc })
-      end
+  for _, m in ipairs(keymaps) do
+    if m.action and actions[m.action] then
+      map(m.mode or "n", m.key, actions[m.action],
+        { buffer = 0, noremap = true, desc = m.desc })
     end
   end
 end
