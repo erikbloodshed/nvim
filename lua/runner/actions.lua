@@ -94,64 +94,37 @@ M.create = function(state, cmd)
     end
   end
 
-  if state:has_type("compiled") or state:has_type("assembled") then
-    actions.compile = function()
-      vim.cmd("silent! update")
+  actions.compile = function()
+    vim.cmd("silent! update")
 
-      local success = handler.translate(state, "compile", cmd.compile())
+    if state:has_type("interpreted") then
+      return true
+    end
+
+    local success = handler.translate(state, "compile", cmd.compile())
+    if not success then return false end
+
+    if state:has_type("assembled") then
+      success = handler.translate(state, "link", cmd.link())
       if not success then return false end
-
-      if state:has_type("assembled") then
-        success = handler.translate(state, "link", cmd.link())
-        if not success then return false end
-      end
-
-      return true
     end
-  end
 
-  if state:has_type("interpreted") then
-    actions.compile = function()
-      vim.cmd("silent! update")
-      return true
-    end
+    return true
   end
 
   actions.run = function()
-    local error_count = #vim.diagnostic.count(0, {
-      severity = { vim.diagnostic.severity.ERROR }
-    })
-
-    if error_count > 0 then open_quickfix() return end
-    if not actions.compile() then return end
-
-    local run_command = state.command_cache.run_cmd
-
-    if not run_command then
-      if state:has_type("compiled") or state:has_type("assembled") then
-        run_command = state.exe_file
-      else
-        local run_cmd = cmd.interpret()
-        if run_cmd then
-          run_command = run_cmd.compiler
-          if run_cmd.arg and #run_cmd.arg > 0 then
-            run_command = run_command .. " " .. table.concat(run_cmd.arg, " ")
-          end
-        end
-      end
-
-      if state.cmd_args then
-        run_command = run_command .. " " .. state.cmd_args
-      end
-
-      if state.data_file then
-        run_command = run_command .. " < " .. state.data_file
-      end
-
-      state.command_cache.run_cmd = run_command
+    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
+      open_quickfix()
+      return
     end
 
-    handler.run(run_command)
+    if not actions.compile() then return end
+
+    handler.run(cmd.run())
+  end
+
+  actions.open_quickfix = function()
+    open_quickfix()
   end
 
   if state:has_type("compiled") then
@@ -160,10 +133,6 @@ M.create = function(state, cmd)
         state.utils.open(state.asm_file, state.utils.read_file(state.asm_file), "asm")
       end
     end
-  end
-
-  actions.open_quickfix = function()
-    open_quickfix()
   end
 
   return actions
