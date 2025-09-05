@@ -118,9 +118,9 @@ M.create = function(state, cmd)
       return
     end
 
-    if not actions.compile() then return end
-
-    handler.run(cmd.run())
+    if actions.compile() then
+      handler.run(cmd.run())
+    end
   end
 
   actions.open_quickfix = function()
