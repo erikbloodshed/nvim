@@ -51,9 +51,7 @@ M.create = function(state, cmd)
 
     vim.ui.select(files, {
       prompt = "Current: " .. (state:get_data_filename() or "None"),
-      format_item = function(item)
-        return state.fn.fnamemodify(item, ':t')
-      end,
+      format_item = function(item) return state.fn.fnamemodify(item, ':t') end,
     }, function(choice)
       if choice then
         state:set_data_file(choice)

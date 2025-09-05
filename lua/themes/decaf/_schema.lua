@@ -369,7 +369,7 @@ function M.get(c, o)
     ["@lsp.typemod.variable.defaultLibrary"] = {},
     ["@lsp.typemod.variable.injected"] = { link = "@variable" },
 
-    -- Python
+    ["@lsp.typemod.variable.readonly.cpp"] = { link = "Constant" },
     ["@lsp.type.namespace.python"] = { link = "StorageClass" }, -- }}}
     -- {{{ Neotree
     NeoTreeDirectoryName = { link = "Directory" },

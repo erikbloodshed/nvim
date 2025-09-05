@@ -2,33 +2,24 @@ local execute = require("runner.process").execute
 
 local M = {}
 
--- Memoized buffer hash calculation
 local current_buffer_hash = nil
 local current_buffer_changedtick = nil
 
 local function get_buffer_hash()
   local changedtick = vim.api.nvim_buf_get_changedtick(0)
 
-  -- Return cached hash if buffer hasn't changed
   if current_buffer_hash and current_buffer_changedtick == changedtick then
     return current_buffer_hash
   end
 
-  -- Calculate new hash
   local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
   local content = table.concat(lines, "\n")
   current_buffer_hash = vim.fn.sha256(content)
   current_buffer_changedtick = changedtick
-
   return current_buffer_hash
 end
 
 M.translate = function(state, key, command)
-  -- No command provided (may happen with interpreted languages)
-  if not command then
-    return true
-  end
-
   local buffer_hash = get_buffer_hash()
   local cached_hash = state:get_hash(key)
 
