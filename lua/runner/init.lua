@@ -1,9 +1,6 @@
 local M = {}
 
 local function validate_config(config)
-  assert(config, "Configuration is required")
-  assert(config.type, "Language type must be specified")
-
   local has_type = function(t) return config.type == t end
 
   if has_type("compiled") or has_type("assembled") then

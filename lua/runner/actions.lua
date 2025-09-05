@@ -129,14 +129,16 @@ M.create = function(state, cmd)
       return
     end
 
+    if not actions.compile() then
+      return
+    end
+
     local run_command = state.command_cache.run_cmd
 
     if not run_command then
-      if not actions.compile() then return end
-
       if state:has_type("compiled") or state:has_type("assembled") then
         run_command = state.exe_file
-      elseif state:has_type("interpreted") then
+      else
         local run_cmd = cmd.interpret()
         if run_cmd then
           run_command = run_cmd.compiler

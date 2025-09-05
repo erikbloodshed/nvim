@@ -1,5 +1,67 @@
 local M = {}
 
+-- Helper function to create restricted tables
+local function create_restricted_table(allowed_keys, initial_values)
+  local restricted = initial_values or {}
+  local allowed_set = {}
+
+  -- Create a set for O(1) lookup
+  for _, key in ipairs(allowed_keys) do
+    allowed_set[key] = true
+  end
+
+  local mt = {
+    __index = function(t, key)
+      if not allowed_set[key] then
+        error("Invalid key: " .. tostring(key) .. ". Allowed keys: " .. table.concat(allowed_keys, ", "))
+      end
+      return rawget(t, key)
+    end,
+
+    __newindex = function(t, key, value)
+      if not allowed_set[key] then
+        error("Invalid key: " .. tostring(key) .. ". Allowed keys: " .. table.concat(allowed_keys, ", "))
+      end
+      rawset(t, key, value)
+    end
+  }
+
+  return setmetatable(restricted, mt)
+end
+
+-- Helper function to validate keymap entries
+local function validate_keymap(keymap)
+  local allowed_keymap_keys = { "key", "action", "mode", "desc" }
+  return create_restricted_table(allowed_keymap_keys, keymap)
+end
+
+-- Helper function to validate filetype config
+local function validate_filetype_config(config)
+  local allowed_filetype_keys = {
+    "type", "compiler", "fallback_flags", "response_file",
+    "data_dir_name", "output_directory", "linker", "linker_flags"
+  }
+  local restricted_config = create_restricted_table(allowed_filetype_keys, config)
+
+  -- Add special validation for 'type' field values
+  if restricted_config.type then
+    local allowed_types = { "compiled", "assembled", "interpreted" }
+    local valid_type = false
+    for _, allowed_type in ipairs(allowed_types) do
+      if restricted_config.type == allowed_type then
+        valid_type = true
+        break
+      end
+    end
+    if not valid_type then
+      error("Invalid type value: " ..
+      tostring(restricted_config.type) .. ". Allowed values: " .. table.concat(allowed_types, ", "))
+    end
+  end
+
+  return restricted_config
+end
+
 M.init = function(user_config)
   local defaults = {
     keymaps = {
@@ -62,6 +124,26 @@ M.init = function(user_config)
     }
   }
 
+  -- Validate user_config structure if provided
+  if user_config then
+    local allowed_top_level_keys = { "keymaps", "filetype" }
+    user_config = create_restricted_table(allowed_top_level_keys, user_config)
+
+    -- Validate keymap entries if they exist
+    if user_config.keymaps then
+      for i, keymap in ipairs(user_config.keymaps) do
+        user_config.keymaps[i] = validate_keymap(keymap)
+      end
+    end
+
+    -- Validate filetype configurations if they exist
+    if user_config.filetype then
+      for ft, config in pairs(user_config.filetype) do
+        user_config.filetype[ft] = validate_filetype_config(config)
+      end
+    end
+  end
+
   local ft = vim.api.nvim_get_option_value("filetype", { buf = 0 })
 
   if not defaults.filetype[ft] then
@@ -80,6 +162,14 @@ M.init = function(user_config)
   if user_config and user_config.keymaps then
     keymaps = vim.tbl_deep_extend("force", keymaps, user_config.keymaps)
   end
+
+  -- Validate the final config structure
+  local allowed_final_config_keys = {
+    "type", "compiler", "fallback_flags", "response_file",
+    "data_dir_name", "output_directory", "linker", "linker_flags",
+    "keymaps", "filetype"
+  }
+  config = create_restricted_table(allowed_final_config_keys, config)
 
   config.keymaps = keymaps
   config.filetype = ft

@@ -34,6 +34,7 @@ function State.new(config)
       assemble = nil,
       link = nil,
     },
+
     command_cache = {
       compile_cmd = nil,
       link_cmd = nil,
