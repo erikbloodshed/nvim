@@ -27,7 +27,6 @@ local uv, fn = vim.uv, vim.fn
 local DEFAULT_CONFIG = {
   TIMEOUT_MS = 30000,             -- Default timeout: 30 seconds
   STDERR_CHUNK_THRESHOLD = 16384, -- Buffer size threshold for stderr (16KB)
-  STDERR_INITIAL_CAPACITY = 16    -- Initial table capacity for stderr
 }
 
 -- Signal constant
@@ -89,7 +88,7 @@ local ResourceManager = {
 -- Initialize stderr handler
 local function init_stderr_handler()
   local length = 0
-  local builder = table.new and table.new(DEFAULT_CONFIG.STDERR_INITIAL_CAPACITY, 0) or {}
+  local builder = {}
   return {
     add = function(data)
       if data then
