@@ -23,16 +23,13 @@ Notes:
 ]]
 local uv, fn = vim.uv, vim.fn
 
--- Configuration constants
 local DEFAULT_CONFIG = {
-  TIMEOUT_MS = 30000,             -- Default timeout: 30 seconds
-  STDERR_CHUNK_THRESHOLD = 16384, -- Buffer size threshold for stderr (16KB)
+  TIMEOUT_MS = 30000,
+  STDERR_CHUNK_THRESHOLD = 16384,
 }
 
--- Signal constant
 local SIGTERM = 15
 
--- Error messages
 local ERROR_MESSAGES = {
   invalid_cmd_table = 'Invalid command: expected table with "compiler" and "arg" fields',
   invalid_compiler = 'Invalid command: "compiler" must be a non-empty string',
