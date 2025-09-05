@@ -74,61 +74,57 @@ M.create = function(state)
   }
 
   local commands = {}
-
+  -- Handle regular commands with the existing simple loop
   for _, spec in ipairs(specs) do
     if state:has_type(spec.type) then
       commands[spec.name] = function()
         return cached(spec.name .. "_cmd", function()
-          -- Handle special run command logic
-          if spec.name == "run" then
-            local resolved_args = {}
-            for _, arg in ipairs(spec.args) do
-              resolved_args[#resolved_args + 1] = state[arg] or arg
-            end
-
-            local cmd_parts = { state[spec.tool] }
-
-            -- Add flags
-            if spec.flags and state[spec.flags] then
-              if type(state[spec.flags]) == "table" then
-                vim.list_extend(cmd_parts, state[spec.flags])
-              else
-                table.insert(cmd_parts, state[spec.flags])
-              end
-            end
-
-            -- Add resolved args
-            vim.list_extend(cmd_parts, resolved_args)
-
-            -- Add extra flags (for interpreted languages)
-            if spec.extra_flags and state[spec.extra_flags] then
-              table.insert(cmd_parts, state[spec.extra_flags])
-            end
-
-            local base_cmd = table.concat(cmd_parts, " ")
-
-            -- Add input redirection if data file exists
-            if spec.input_file and state[spec.input_file] then
-              base_cmd = base_cmd .. " < " .. state[spec.input_file]
-            end
-
-            return base_cmd
-          else
-            -- Regular command logic
-            local resolved_args = {}
-            for _, arg in ipairs(spec.args) do
-              resolved_args[#resolved_args + 1] = state[arg] or arg
-            end
-
-            return state:make_cmd(
-              state[spec.tool],
-              state[spec.flags],
-              unpack(resolved_args)
-            )
+          local resolved_args = {}
+          for _, arg in ipairs(spec.args) do
+            resolved_args[#resolved_args + 1] = state[arg] or arg
           end
+
+          return state:make_cmd(
+            state[spec.tool],
+            state[spec.flags],
+            unpack(resolved_args)
+          )
         end)
       end
     end
+  end
+
+  -- Add run command separately - much cleaner!
+  commands.run = function()
+    return cached("run_cmd", function()
+      local parts = {}
+
+      if state:has_type("compiled") or state:has_type("assembled") then
+        -- Just run the executable
+        table.insert(parts, state.exe_file)
+      else
+        -- Use interpreter
+        table.insert(parts, state.compiler)
+        if state.compiler_flags then
+          vim.list_extend(parts, state.compiler_flags)
+        end
+        table.insert(parts, state.src_file)
+      end
+
+      -- Add command arguments
+      if state.cmd_args then
+        table.insert(parts, state.cmd_args)
+      end
+
+      local cmd = table.concat(parts, " ")
+
+      -- Add input redirection
+      if state.data_file then
+        cmd = cmd .. " < " .. state.data_file
+      end
+
+      return cmd
+    end)
   end
 
   return commands
