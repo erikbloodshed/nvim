@@ -1,4 +1,5 @@
 local execute = require("runner.process").execute
+local api, fn = vim.api, vim.fn
 
 local M = {}
 
@@ -6,16 +7,16 @@ local current_buffer_hash = nil
 local current_buffer_changedtick = nil
 
 local function get_buffer_hash()
-  local changedtick = vim.api.nvim_buf_get_changedtick(0)
+  local changedtick = api.nvim_buf_get_changedtick(0)
 
   if current_buffer_hash and current_buffer_changedtick == changedtick then
     return current_buffer_hash
   end
 
-  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, true)
-  local content = table.concat(lines, "\n")
-  current_buffer_hash = vim.fn.sha256(content)
+  local lines = api.nvim_buf_get_lines(0, 0, -1, true)
+  current_buffer_hash = fn.sha256(table.concat(lines, "\n"))
   current_buffer_changedtick = changedtick
+
   return current_buffer_hash
 end
 
@@ -45,18 +46,10 @@ M.translate = function(state, key, command)
 end
 
 M.run = function(cmd)
-  if not cmd then
-    vim.notify("No run command available for this language type", vim.log.levels.ERROR)
-    return
-  end
-
   vim.cmd("ToggleTerm")
-
-  local buf = vim.api.nvim_get_current_buf()
-  local job_id = vim.api.nvim_buf_get_var(buf, "terminal_job_id")
-
+  local job_id = api.nvim_buf_get_var(api.nvim_get_current_buf(), "terminal_job_id")
   vim.defer_fn(function()
-    vim.fn.chansend(job_id, cmd .. "\n")
+    fn.chansend(job_id, cmd .. "\n")
   end, 75)
 end
 

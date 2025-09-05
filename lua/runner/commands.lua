@@ -1,6 +1,5 @@
 local M = {}
 
--- Hoist profiles (not rebuilt every call)
 local profiles = {
   compiled = {
     {
@@ -10,15 +9,13 @@ local profiles = {
       args = { "-o", "exe_file", "src_file" }
     },
     {
-      name =
-      "show_assembly",
+      name = "show_assembly",
       tool = "compiler",
       flags = "compiler_flags",
       args = { "-c", "-S", "-o", "asm_file", "src_file" }
     },
     {
-      name =
-      "run",
+      name = "run",
       tool = "exe_file",
       cmd_args = "cmd_args",
       input_redirect = "data_file"
@@ -44,7 +41,6 @@ local profiles = {
       input_redirect = "data_file"
     },
   },
-
   interpreted = {
     {
       name = "run",
@@ -57,7 +53,6 @@ local profiles = {
   },
 }
 
--- Lightweight cache
 local function get_cached(cache, key, builder)
   local val = cache[key]
   if val ~= nil then return val end

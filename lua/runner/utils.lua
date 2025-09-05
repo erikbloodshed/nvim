@@ -1,4 +1,6 @@
 local uv = vim.uv
+local api = vim.api
+local set_option_value = api.nvim_set_option_value
 
 local M = {}
 
@@ -96,11 +98,11 @@ M.open = function(title, lines, ft)
 
   local width = math.min(max_line_length + 4, math.floor(vim.o.columns * 0.8))
   local height = math.min(#lines, math.floor(vim.o.lines * 0.8))
-  local buf = vim.api.nvim_create_buf(false, true)
+  local buf = api.nvim_create_buf(false, true)
 
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-  vim.api.nvim_open_win(buf, true, {
+  api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,
     height = height,
@@ -112,11 +114,11 @@ M.open = function(title, lines, ft)
     title_pos = "center",
   })
 
-  vim.api.nvim_set_option_value("buftype", "nofile", { scope = "local", buf = buf })
-  vim.api.nvim_set_option_value("bufhidden", "wipe", { scope = "local", buf = buf })
-  vim.api.nvim_set_option_value("swapfile", false, { scope = "local", buf = buf })
-  vim.api.nvim_set_option_value("filetype", ft, { scope = "local", buf = buf })
-  vim.api.nvim_set_option_value("modifiable", false, { scope = "local", buf = buf })
+  set_option_value("buftype", "nofile", { scope = "local", buf = buf })
+  set_option_value("bufhidden", "wipe", { scope = "local", buf = buf })
+  set_option_value("swapfile", false, { scope = "local", buf = buf })
+  set_option_value("filetype", ft, { scope = "local", buf = buf })
+  set_option_value("modifiable", false, { scope = "local", buf = buf })
 
   vim.keymap.set("n", "q", vim.cmd.close, { buffer = buf, noremap = true, nowait = true, silent = true })
 
