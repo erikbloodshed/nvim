@@ -1,130 +1,128 @@
 local M = {}
 
-M.create = function(state)
-  local function cached(key, build_fn)
-    local cache = state.command_cache
-    if cache[key] then return cache[key] end
-    local cmd = build_fn()
-    cache[key] = cmd
-    return cmd
-  end
-
-  local specs = {
+-- Hoist profiles (not rebuilt every call)
+local profiles = {
+  compiled = {
     {
       name = "compile",
-      type = "compiled",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-o", "exe_file", "src_file" },
+      args = { "-o", "exe_file", "src_file" }
     },
     {
-      name = "show_assembly",
-      type = "compiled",
+      name =
+      "show_assembly",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-c", "-S", "-o", "asm_file", "src_file" },
+      args = { "-c", "-S", "-o", "asm_file", "src_file" }
     },
+    {
+      name =
+      "run",
+      tool = "exe_file",
+      cmd_args = "cmd_args",
+      input_redirect = "data_file"
+    },
+  },
+  assembled = {
     {
       name = "compile",
-      type = "assembled",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-o", "obj_file", "src_file" },
+      args = { "-o", "obj_file", "src_file" }
     },
     {
       name = "link",
-      type = "assembled",
       tool = "linker",
       flags = "linker_flags",
-      args = { "-o", "exe_file", "obj_file" },
-    },
-    {
-      name = "interpret",
-      type = "interpreted",
-      tool = "compiler",
-      flags = "compiler_flags",
-      args = { "src_file" },
-    },
-    -- New run specs
-    {
-      name = "run",
-      type = "compiled",
-      tool = "exe_file",        -- Use the executable directly
-      flags = "cmd_args",       -- Use command args as flags
-      args = {},
-      input_file = "data_file", -- Special field for input redirection
+      args = { "-o", "exe_file", "obj_file" }
     },
     {
       name = "run",
-      type = "assembled",
       tool = "exe_file",
-      flags = "cmd_args",
-      args = {},
-      input_file = "data_file",
+      cmd_args = "cmd_args",
+      input_redirect = "data_file"
     },
+  },
+
+  interpreted = {
     {
       name = "run",
-      type = "interpreted",
       tool = "compiler",
       flags = "compiler_flags",
       args = { "src_file" },
-      extra_flags = "cmd_args", -- Additional args after the main command
-      input_file = "data_file",
+      cmd_args = "cmd_args",
+      input_redirect = "data_file"
     },
-  }
+  },
+}
 
+-- Lightweight cache
+local function get_cached(cache, key, builder)
+  local val = cache[key]
+  if val ~= nil then return val end
+  val = builder()
+  cache[key] = val
+  return val
+end
+
+M.create = function(state)
+  local cache = state.command_cache
   local commands = {}
-  -- Handle regular commands with the existing simple loop
-  for _, spec in ipairs(specs) do
-    if state:has_type(spec.type) then
+
+  for _, spec in ipairs(profiles[state.type] or {}) do
+    local key = spec.name .. "_cmd"
+
+    if spec.name == "run" then
+      -- Run commands: direct string concatenation
       commands[spec.name] = function()
-        return cached(spec.name .. "_cmd", function()
-          local resolved_args = {}
-          for _, arg in ipairs(spec.args) do
-            resolved_args[#resolved_args + 1] = state[arg] or arg
+        return get_cached(cache, key, function()
+          local cmd = state[spec.tool]
+
+          -- flags
+          local flags = spec.flags and state[spec.flags]
+          if flags and #flags > 0 then
+            cmd = cmd .. " " .. table.concat(flags, " ")
           end
 
-          return state:make_cmd(
-            state[spec.tool],
-            state[spec.flags],
-            unpack(resolved_args)
-          )
+          -- args
+          local args = spec.args
+          if args then
+            for i = 1, #args do
+              local arg = args[i]
+              cmd = cmd .. " " .. (state[arg] or arg)
+            end
+          end
+
+          -- cmd_args (string blob)
+          local extra = spec.cmd_args and state[spec.cmd_args]
+          if extra and extra ~= "" then
+            cmd = cmd .. " " .. extra
+          end
+
+          -- input redirection
+          local infile = spec.input_redirect and state[spec.input_redirect]
+          if infile then
+            cmd = cmd .. " < " .. infile
+          end
+
+          return cmd
+        end)
+      end
+    else
+      commands[spec.name] = function()
+        return get_cached(cache, key, function()
+          local resolved_args = {}
+          local args = spec.args
+          if args then
+            for i = 1, #args do
+              resolved_args[i] = state[args[i]] or args[i]
+            end
+          end
+          return state:make_cmd(state[spec.tool], state[spec.flags], unpack(resolved_args))
         end)
       end
     end
-  end
-
-  -- Add run command separately - much cleaner!
-  commands.run = function()
-    return cached("run_cmd", function()
-      local parts = {}
-
-      if state:has_type("compiled") or state:has_type("assembled") then
-        -- Just run the executable
-        table.insert(parts, state.exe_file)
-      else
-        -- Use interpreter
-        table.insert(parts, state.compiler)
-        if state.compiler_flags then
-          vim.list_extend(parts, state.compiler_flags)
-        end
-        table.insert(parts, state.src_file)
-      end
-
-      -- Add command arguments
-      if state.cmd_args then
-        table.insert(parts, state.cmd_args)
-      end
-
-      local cmd = table.concat(parts, " ")
-
-      -- Add input redirection
-      if state.data_file then
-        cmd = cmd .. " < " .. state.data_file
-      end
-
-      return cmd
-    end)
   end
 
   return commands
