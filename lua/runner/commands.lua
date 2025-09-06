@@ -110,7 +110,7 @@ M.create = function(state)
               resolved_args[i] = state[args[i]] or args[i]
             end
           end
-          return state:make_cmd(state[spec.tool], state[spec.flags], unpack(resolved_args))
+          return state:make_cmd(state[spec.tool], state[spec.flags], resolved_args)
         end)
       end
     end

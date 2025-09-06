@@ -90,10 +90,10 @@ function State:clear_cache(cache_key)
 end
 
 -- Command building method
-function State:make_cmd(tool, flags, ...)
+function State:make_cmd(tool, flags, args)
   return {
     compiler = tool,
-    arg = vim.list_extend(vim.list_extend({}, flags or {}), { ... }),
+    arg = vim.list_extend(vim.list_extend({}, flags or {}), args or {}),
     timeout = self.timeout,
     kill_delay = self.kill_delay
   }
@@ -112,6 +112,12 @@ end
 function State:set_compiler_flags(flags)
   self.compiler_flags = flags
   local cache_type = self:invalidate_cache()
+  if self:has_type("compiled") then
+    self:set_hash("compile", nil)
+  elseif self:has_type("assembled") then
+    self:set_hash("compile", nil)
+    self:set_hash("link", nil)
+  end
   return cache_type
 end
 
