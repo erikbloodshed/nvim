@@ -40,24 +40,18 @@ function State:has_type(type_name)
   return self.type == type_name
 end
 
-function State:clear_cache(cache_key)
-  if cache_key then
-    self.command_cache[cache_key] = nil
-  end
-end
-
 function State:invalidate_cache()
-  self:clear_cache("run_cmd")
+  self.command_cache.run_cmd = nil
 
   if self:has_type("interpreted") then
     return "interpreted"
   end
 
-  self:clear_cache("compile_cmd")
-  self:clear_cache("link_cmd")
+  self.command_cache.compile_cmd = nil
+  self.command_cache.link_cmd = nil
 
   if self:has_type("compiled") then
-    self:clear_cache("show_assembly_cmd")
+    self.command_cache.show_assembly_cmd = nil
   end
 
   return "compiled"
@@ -71,15 +65,8 @@ function State:get_cached_command(key, builder)
   return val
 end
 
-function State:make_cmd(tool, flags, args)
-  return {
-    compiler = tool,
-    arg = vim.list_extend(vim.list_extend({}, flags or {}), args or {}),
-  }
-end
-
 function State:get_buffer_hash()
-  local changedtick = self.api.nvim_buf_get_changedtick(0)
+  local changedtick = vim.b.changedtick
 
   if self.buffer_cache.hash and self.buffer_cache.changedtick == changedtick then
     return self.buffer_cache.hash
@@ -92,75 +79,6 @@ function State:get_buffer_hash()
   return self.buffer_cache.hash
 end
 
-function State:set_compiler_flags(flags)
-  self.compiler_flags = flags
-  local cache_type = self:invalidate_cache()
-  return cache_type
-end
-
-function State:set_cmd_args(args)
-  self.cmd_args = args
-  self:clear_cache("run_cmd")
-end
-
-function State:set_data_file(filepath)
-  self.data_file = filepath
-  self:clear_cache("run_cmd")
-end
-
-function State:remove_data_file()
-  self.data_file = nil
-  self:clear_cache("run_cmd")
-end
-
--- File information methods
-function State:get_src_filename()
-  return self.fn.fnamemodify(self.src_file, ':t')
-end
-
-function State:get_data_filename()
-  return self.data_file and self.fn.fnamemodify(self.data_file, ':t') or nil
-end
-
-function State:get_date_modified()
-  return self.utils.get_date_modified(self.src_file)
-end
-
--- Build information method
-function State:get_build_info()
-  local flags = table.concat(self.compiler_flags or {}, " ")
-  local lines = {
-    "Filename          : " .. self:get_src_filename(),
-    "Filetype          : " .. vim.bo.filetype,
-    "Language Type     : " .. self.type,
-  }
-
-  if self:has_type("compiled") or self:has_type("assembled") then
-    lines[#lines + 1] = "Compiler          : " .. (self.compiler or "None")
-    lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
-    lines[#lines + 1] = "Output Directory  : " .. (self.output_directory == "" and "None" or self.output_directory)
-  end
-
-  if self:has_type("assembled") then
-    lines[#lines + 1] = "Linker            : " .. (self.linker or "None")
-    lines[#lines + 1] = "Linker Flags      : " .. table.concat(self.linker_flags or {}, " ")
-  end
-
-  if self:has_type("interpreted") then
-    lines[#lines + 1] = "Run Command       : " .. (self.compiler or "None")
-  end
-
-  vim.list_extend(lines, {
-    "Data Directory    : " .. (self.data_path or "Not Found"),
-    "Data File In Use  : " .. (self:get_data_filename() or "None"),
-    "Command Arguments : " .. (self.cmd_args or "None"),
-    "Date Modified     : " .. self:get_date_modified(),
-  })
-
-  return lines
-end
-
--- Public interface
 M.init = function(config)
   return State:init(config)
 end

@@ -14,8 +14,8 @@ M.create = function(state, cmd)
     }, function(flags_str)
       if flags_str == nil then return end -- User cancelled
 
-      local flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
-      local cache_type = state:set_compiler_flags(flags)
+      state.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
+      local cache_type = state:invalidate_cache()
 
       local msg = cache_type == "interpreted" and "Interpreter flags set and cache cleared."
         or "Compiler flags set and cache cleared."
@@ -28,10 +28,9 @@ M.create = function(state, cmd)
       prompt = "Enter command-line arguments: ",
       default = state.cmd_args or ""
     }, function(args)
-      if args == nil then return end -- User cancelled
-
-      state:set_cmd_args(args ~= "" and args or nil)
-
+      if args == nil then return end
+      state.cmd_args = args ~= "" and args or nil
+        state.command_cache.run_cmd = nil
       local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
       vim.notify(msg, log_levels.INFO)
     end)
@@ -50,18 +49,19 @@ M.create = function(state, cmd)
     end
 
     vim.ui.select(files, {
-      prompt = "Current: " .. (state:get_data_filename() or "None"),
+      prompt = "Current: " .. (state.data_file or "None"),
       format_item = function(item) return state.fn.fnamemodify(item, ':t') end,
     }, function(choice)
       if choice then
-        state:set_data_file(choice)
+        state.data_file = choice
+        state.command_cache.run_cmd = nil
         vim.notify("Data file set to: " .. state.fn.fnamemodify(choice, ':t'), log_levels.INFO)
       end
     end)
   end
 
   actions.remove_data_file = function()
-    local current_file = state:get_data_filename()
+    local current_file = state.data_file
     if not current_file then
       vim.notify("No data file is currently set", log_levels.WARN)
       return
@@ -71,14 +71,43 @@ M.create = function(state, cmd)
       prompt = "Remove data file (" .. current_file .. ")?",
     }, function(choice)
       if choice == "Yes" then
-        state:remove_data_file()
+        state.data_file = nil
+        state.command_cache.run_cmd = nil
         vim.notify("Data file removed", log_levels.INFO)
       end
     end)
   end
 
   actions.get_build_info = function()
-    local lines = state:get_build_info()
+    local flags = table.concat(state.compiler_flags or {}, " ")
+    local lines = {
+      "Filename          : " .. state.fn.fnamemodify(state.src_file, ':t'),
+      "Filetype          : " .. vim.bo.filetype,
+      "Language Type     : " .. state.type,
+    }
+
+    if state:has_type("compiled") or state:has_type("assembled") then
+      lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
+      lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
+      lines[#lines + 1] = "Output Directory  : " .. (state.output_directory == "" and "None" or state.output_directory)
+    end
+
+    if state:has_type("assembled") then
+      lines[#lines + 1] = "Linker            : " .. (state.linker or "None")
+      lines[#lines + 1] = "Linker Flags      : " .. table.concat(state.linker_flags or {}, " ")
+    end
+
+    if state:has_type("interpreted") then
+      lines[#lines + 1] = "Run Command       : " .. (state.compiler or "None")
+    end
+
+    vim.list_extend(lines, {
+      "Data Directory    : " .. (state.data_path or "Not Found"),
+      "Data File In Use  : " .. (state.data_file and state.fn.fnamemodify(state.data_file, ':t') or "None"),
+      "Command Arguments : " .. (state.cmd_args or "None"),
+      "Date Modified     : " .. state.utils.get_date_modified(state.src_file),
+    })
+
     local ns_id = state.api.nvim_create_namespace("build_info_highlight")
     local buf_id = state.utils.open("Build Info", lines, "text")
 
