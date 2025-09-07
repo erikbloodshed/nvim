@@ -103,23 +103,21 @@ M.create = function(state, cmd)
 
     local buffer_hash = state:get_buffer_hash()
 
-    -- Compile step with cache check
-    if state:get_hash("compile") == buffer_hash then
+    if state.hash_tbl["compile"] == buffer_hash then
       vim.notify("Source code is already processed for compile.", vim.log.levels.WARN)
     else
       local success = handler.translate("compile", cmd.compile())
       if not success then return false end
-      state:set_hash("compile", buffer_hash)
+      state.hash_tbl["compile"] = buffer_hash
     end
 
-    -- Link step with cache check
     if state:has_type("assembled") then
-      if state:get_hash("link") == buffer_hash then
+      if state.hash_tbl["link"] == buffer_hash then
         vim.notify("Source code is already processed for link.", vim.log.levels.WARN)
       else
         local success = handler.translate("link", cmd.link())
         if not success then return false end
-        state:set_hash("link", buffer_hash)
+        state.hash_tbl["link"] = buffer_hash
       end
     end
 
@@ -148,13 +146,12 @@ M.create = function(state, cmd)
       local buffer_hash = state:get_buffer_hash()
       local success = true
 
-      -- Assemble step with cache check
-      if state:get_hash("assemble") == buffer_hash then
+      if state.hash_tbl["assemble"] == buffer_hash then
         vim.notify("Source code is already processed for assemble.", vim.log.levels.WARN)
       else
         success = handler.translate("assemble", cmd.show_assembly())
         if success then
-          state:set_hash("assemble", buffer_hash)
+          state.hash_tbl["assemble"] = buffer_hash
         end
       end
 

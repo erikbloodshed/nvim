@@ -3,11 +3,11 @@ local M = {}
 local State = {}
 State.__index = State
 
-function State.new(config)
+function State:init(config)
   local api, fn = vim.api, vim.fn
   local utils = require("runner.utils")
 
-  local self = setmetatable({
+  self = setmetatable({
     src_file = api.nvim_buf_get_name(0),
     type = config.type,
     compiler = config.compiler,
@@ -19,32 +19,15 @@ function State.new(config)
     data_file = nil,
     cmd_args = nil,
 
-    -- Internal dependencies
     api = api,
     fn = fn,
     utils = utils,
 
-    -- Caching structures
-    hash_tbl = {
-      compile = nil,
-      assemble = nil,
-      link = nil,
-    },
+    hash_tbl = {},
+    buffer_cache = {},
+    command_cache = {},
+  }, self)
 
-    buffer_cache = {
-      hash = nil,
-      changedtick = nil,
-    },
-
-    command_cache = {
-      compile_cmd = nil,
-      link_cmd = nil,
-      show_assembly_cmd = nil,
-      run_cmd = nil,
-    },
-  }, State)
-
-  -- Computed properties
   self.src_basename = fn.fnamemodify(self.src_file, ":t:r")
   self.exe_file = self.output_directory .. self.src_basename
   self.asm_file = self.exe_file .. ".s"
@@ -53,7 +36,6 @@ function State.new(config)
   return self
 end
 
--- Type checking method
 function State:has_type(type_name)
   return self.type == type_name
 end
@@ -64,7 +46,6 @@ function State:clear_cache(cache_key)
   end
 end
 
--- Cache management methods
 function State:invalidate_cache()
   self:clear_cache("run_cmd")
 
@@ -111,15 +92,6 @@ function State:get_buffer_hash()
   return self.buffer_cache.hash
 end
 
-function State:get_hash(key)
-  return self.hash_tbl[key]
-end
-
-function State:set_hash(key, value)
-  self.hash_tbl[key] = value
-end
-
--- Configuration methods
 function State:set_compiler_flags(flags)
   self.compiler_flags = flags
   local cache_type = self:invalidate_cache()
@@ -190,7 +162,7 @@ end
 
 -- Public interface
 M.init = function(config)
-  return State.new(config)
+  return State:init(config)
 end
 
 return M
