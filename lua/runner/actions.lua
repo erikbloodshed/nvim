@@ -101,12 +101,26 @@ M.create = function(state, cmd)
       return true
     end
 
-    local success = handler.translate(state, "compile", cmd.compile())
-    if not success then return false end
+    local buffer_hash = state:get_buffer_hash()
 
-    if state:has_type("assembled") then
-      success = handler.translate(state, "link", cmd.link())
+    -- Compile step with cache check
+    if state:get_hash("compile") == buffer_hash then
+      vim.notify("Source code is already processed for compile.", vim.log.levels.WARN)
+    else
+      local success = handler.translate("compile", cmd.compile())
       if not success then return false end
+      state:set_hash("compile", buffer_hash)
+    end
+
+    -- Link step with cache check
+    if state:has_type("assembled") then
+      if state:get_hash("link") == buffer_hash then
+        vim.notify("Source code is already processed for link.", vim.log.levels.WARN)
+      else
+        local success = handler.translate("link", cmd.link())
+        if not success then return false end
+        state:set_hash("link", buffer_hash)
+      end
     end
 
     return true
@@ -129,7 +143,22 @@ M.create = function(state, cmd)
 
   if state:has_type("compiled") then
     actions.show_assembly = function()
-      if cmd.show_assembly and handler.translate(state, "assemble", cmd.show_assembly()) then
+      if not cmd.show_assembly then return end
+
+      local buffer_hash = state:get_buffer_hash()
+      local success = true
+
+      -- Assemble step with cache check
+      if state:get_hash("assemble") == buffer_hash then
+        vim.notify("Source code is already processed for assemble.", vim.log.levels.WARN)
+      else
+        success = handler.translate("assemble", cmd.show_assembly())
+        if success then
+          state:set_hash("assemble", buffer_hash)
+        end
+      end
+
+      if success then
         state.utils.open(state.asm_file, state.utils.read_file(state.asm_file), "asm")
       end
     end

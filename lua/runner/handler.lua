@@ -2,18 +2,10 @@ local execute = require("runner.process").execute
 
 local M = {}
 
-M.translate = function(state, key, command)
-  local buffer_hash = state:get_buffer_hash()
-
-  if state:get_hash(key) == buffer_hash then
-    vim.notify("Source code is already processed for " .. key .. ".", vim.log.levels.WARN)
-    return true
-  end
-
+M.translate = function(key, command)
   local result = execute(command)
 
   if result.code == 0 then
-    state:set_hash(key, buffer_hash)
     local action_name = key:sub(1, 1):upper() .. key:sub(2)
     vim.notify(action_name .. " successful with exit code " .. result.code .. ".",
       vim.log.levels.INFO)
