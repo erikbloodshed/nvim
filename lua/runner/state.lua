@@ -8,7 +8,6 @@ function State.new(config)
   local utils = require("runner.utils")
 
   local self = setmetatable({
-    filetype = config.filetype,
     src_file = api.nvim_buf_get_name(0),
     type = config.type,
     compiler = config.compiler,
@@ -19,7 +18,6 @@ function State.new(config)
     data_path = utils.get_data_path(config.data_dir_name),
     data_file = nil,
     cmd_args = nil,
-    keymaps = config.keymaps,
 
     -- Internal dependencies
     api = api,
@@ -33,17 +31,17 @@ function State.new(config)
       link = nil,
     },
 
+    buffer_cache = {
+      hash = nil,
+      changedtick = nil,
+    },
+
     command_cache = {
       compile_cmd = nil,
       link_cmd = nil,
       show_assembly_cmd = nil,
-      interpret_cmd = nil,
       run_cmd = nil,
     },
-
-    -- Configuration
-    timeout = 15000,
-    kill_delay = 3000,
   }, State)
 
   -- Computed properties
@@ -60,46 +58,51 @@ function State:has_type(type_name)
   return self.type == type_name
 end
 
+function State:clear_cache(cache_key)
+  if cache_key then
+    self.command_cache[cache_key] = nil
+  end
+end
+
 -- Cache management methods
 function State:invalidate_cache()
-  self.command_cache.run_cmd = nil
+  self:clear_cache("run_cmd")
 
   if self:has_type("interpreted") then
-    self.command_cache.interpret_cmd = nil
     return "interpreted"
   end
 
-  self.command_cache.compile_cmd = nil
-  self.command_cache.link_cmd = nil
+  self:clear_cache("compile_cmd")
+  self:clear_cache("link_cmd")
 
   if self:has_type("compiled") then
-    self.command_cache.show_assembly_cmd = nil
+    self:clear_cache("show_assembly_cmd")
   end
 
   return "compiled"
 end
 
-function State:clear_cache(cache_key)
-  if cache_key then
-    self.command_cache[cache_key] = nil
-  else
-    for key in pairs(self.command_cache) do
-      self.command_cache[key] = nil
-    end
-  end
-end
-
--- Command building method
 function State:make_cmd(tool, flags, args)
   return {
     compiler = tool,
     arg = vim.list_extend(vim.list_extend({}, flags or {}), args or {}),
-    timeout = self.timeout,
-    kill_delay = self.kill_delay
   }
 end
 
--- Hash management methods
+function State:get_buffer_hash()
+  local changedtick = self.api.nvim_buf_get_changedtick(0)
+
+  if self.buffer_cache.hash and self.buffer_cache.changedtick == changedtick then
+    return self.buffer_cache.hash
+  end
+
+  local lines = self.api.nvim_buf_get_lines(0, 0, -1, true)
+  self.buffer_cache.hash = self.fn.sha256(table.concat(lines, "\n"))
+  self.buffer_cache.changedtick = changedtick
+
+  return self.buffer_cache.hash
+end
+
 function State:get_hash(key)
   return self.hash_tbl[key]
 end
@@ -112,12 +115,6 @@ end
 function State:set_compiler_flags(flags)
   self.compiler_flags = flags
   local cache_type = self:invalidate_cache()
-  if self:has_type("compiled") then
-    self:set_hash("compile", nil)
-  elseif self:has_type("assembled") then
-    self:set_hash("compile", nil)
-    self:set_hash("link", nil)
-  end
   return cache_type
 end
 
@@ -154,7 +151,7 @@ function State:get_build_info()
   local flags = table.concat(self.compiler_flags or {}, " ")
   local lines = {
     "Filename          : " .. self:get_src_filename(),
-    "Filetype          : " .. self.filetype,
+    "Filetype          : " .. vim.bo.filetype,
     "Language Type     : " .. self.type,
   }
 

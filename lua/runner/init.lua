@@ -1,18 +1,20 @@
 local M = {}
 
 M.setup = function(cfg)
-  local config = require("runner.config").init(cfg)
+  local defaults = require("runner.config")
+  local ft = vim.bo.filetype
+  local config = vim.tbl_deep_extend('force', defaults.filetype[ft], cfg.filetype[ft] or {})
 
   if not config then
-    vim.notify("No runner configuration for filetype: " ..
-      vim.api.nvim_get_option_value("filetype", { buf = 0 }), vim.log.levels.WARN)
+    vim.notify("No runner configuration for filetype: " .. ft, vim.log.levels.WARN)
     return {}
   end
 
   local state = require("runner.state").init(config)
+
   local commands = require("runner.commands").create(state)
   local actions = require("runner.actions").create(state, commands)
-  local keymaps = state.keymaps
+  local keymaps = vim.tbl_deep_extend('force', defaults.keymaps, cfg.keymaps or {})
   local map = vim.keymap.set
 
   for _, m in ipairs(keymaps) do
