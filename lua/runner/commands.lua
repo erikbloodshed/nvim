@@ -53,16 +53,7 @@ local profiles = {
   },
 }
 
-local function get_cached(cache, key, builder)
-  local val = cache[key]
-  if val ~= nil then return val end
-  val = builder()
-  cache[key] = val
-  return val
-end
-
 M.create = function(state)
-  local cache = state.command_cache
   local type = profiles[state.type]
   local commands = {}
 
@@ -71,7 +62,7 @@ M.create = function(state)
 
     if spec.name == "run" then
       commands[spec.name] = function()
-        return get_cached(cache, key, function()
+        return state:get_cached(key, function()
           local cmd = state[spec.tool]
 
           local flags = spec.flags and state[spec.flags]
@@ -102,7 +93,7 @@ M.create = function(state)
       end
     else
       commands[spec.name] = function()
-        return get_cached(cache, key, function()
+        return state:get_cached(key, function()
           local resolved_args = {}
           local args = spec.args
           if args then

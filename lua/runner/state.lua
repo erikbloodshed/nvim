@@ -82,6 +82,14 @@ function State:invalidate_cache()
   return "compiled"
 end
 
+function State:get_cached(key, builder)
+  local val = self.command_cache[key]
+  if val ~= nil then return val end
+  val = builder()
+  self.command_cache[key] = val
+  return val
+end
+
 function State:make_cmd(tool, flags, args)
   return {
     compiler = tool,
