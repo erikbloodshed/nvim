@@ -11,7 +11,6 @@ M.setup = function(cfg)
   end
 
   local state = require("runner.state").init(config)
-
   local commands = require("runner.commands").create(state)
   local actions = require("runner.actions").create(state, commands)
   local keymaps = vim.tbl_deep_extend('force', defaults.keymaps, cfg.keymaps or {})

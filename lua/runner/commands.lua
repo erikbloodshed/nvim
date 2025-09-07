@@ -53,57 +53,46 @@ local profiles = {
   },
 }
 
+local function build_command(state, spec)
+  local cmd = state[spec.tool]
+  local parts = { cmd }
+
+  if spec.flags and state[spec.flags] and #state[spec.flags] > 0 then
+    vim.list_extend(parts, state[spec.flags])
+  end
+
+  if spec.args then
+    for _, arg in ipairs(spec.args) do
+      table.insert(parts, state[arg] or arg)
+    end
+  end
+
+  if spec.cmd_args and state[spec.cmd_args] and state[spec.cmd_args] ~= "" then
+    table.insert(parts, state[spec.cmd_args])
+  end
+
+  if spec.input_redirect and state[spec.input_redirect] then
+    table.insert(parts, "< " .. state[spec.input_redirect])
+  end
+
+  if spec.name == "run" then
+    return table.concat(parts, " ")
+  else
+    return state:make_cmd(cmd, spec.flags and state[spec.flags],
+      spec.args and vim.tbl_map(function(arg) return state[arg] or arg end, spec.args))
+  end
+end
+
 M.create = function(state)
-  local type = profiles[state.type]
   local commands = {}
+  local type_specs = profiles[state.type] or {}
 
-  for _, spec in ipairs(type or {}) do
+  for _, spec in ipairs(type_specs) do
     local key = spec.name .. "_cmd"
-
-    if spec.name == "run" then
-      commands[spec.name] = function()
-        return state:get_cached(key, function()
-          local cmd = state[spec.tool]
-
-          local flags = spec.flags and state[spec.flags]
-          if flags and #flags > 0 then
-            cmd = cmd .. " " .. table.concat(flags, " ")
-          end
-
-          local args = spec.args
-          if args then
-            for i = 1, #args do
-              local arg = args[i]
-              cmd = cmd .. " " .. (state[arg] or arg)
-            end
-          end
-
-          local extra = spec.cmd_args and state[spec.cmd_args]
-          if extra and extra ~= "" then
-            cmd = cmd .. " " .. extra
-          end
-
-          local infile = spec.input_redirect and state[spec.input_redirect]
-          if infile then
-            cmd = cmd .. " < " .. infile
-          end
-
-          return cmd
-        end)
-      end
-    else
-      commands[spec.name] = function()
-        return state:get_cached(key, function()
-          local resolved_args = {}
-          local args = spec.args
-          if args then
-            for i = 1, #args do
-              resolved_args[i] = state[args[i]] or args[i]
-            end
-          end
-          return state:make_cmd(state[spec.tool], state[spec.flags], resolved_args)
-        end)
-      end
+    commands[spec.name] = function()
+      return state:get_cached_command(key, function()
+        return build_command(state, spec)
+      end)
     end
   end
 
