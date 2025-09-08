@@ -13,7 +13,7 @@ M.create = function(state, cmd)
     if state.hash_tbl[k] and state.hash_tbl[k] == h then
       notify(string.format("Source code is already processed for %s.", k), log_levels.WARN)
     else
-      status = handler.translate(k, c)
+      status = handler.translate(c)
       state.hash_tbl[k] = status and h or nil
     end
 

@@ -1,11 +1,10 @@
 local M = {}
 
-M.translate = function(key, command)
+M.translate = function(command)
   local result = vim.system(command):wait()
 
   if result.code == 0 then
-    local action_name = key:sub(1, 1):upper() .. key:sub(2)
-    vim.notify(action_name .. " successful with exit code " .. result.code .. ".", vim.log.levels.INFO)
+    vim.notify(string.format("Compilation successful with exit code %s.", result.code), vim.log.levels.INFO)
     return true
   end
 
