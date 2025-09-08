@@ -62,9 +62,8 @@ local function build_command(state, spec)
   end
 
   if spec.args then
-    for _, arg in ipairs(spec.args) do
-      table.insert(parts, state[arg] or arg)
-    end
+    local resolved_args = vim.tbl_map(function(arg) return state[arg] or arg end, spec.args)
+    vim.list_extend(parts, resolved_args)
   end
 
   if spec.cmd_args and state[spec.cmd_args] and state[spec.cmd_args] ~= "" then
@@ -76,14 +75,11 @@ local function build_command(state, spec)
   end
 
   if spec.name == "run" then
+    -- For run commands, return as shell command string (for terminal execution)
     return table.concat(parts, " ")
   else
-    local flags = spec.flags and state[spec.flags] or {}
-    local args = spec.args and vim.tbl_map(function(arg) return state[arg] or arg end, spec.args) or {}
-    return {
-      compiler = cmd,
-      arg = vim.list_extend(vim.list_extend({}, flags), args)
-    }
+    -- For compile/link commands, return as list for process.execute()
+    return parts
   end
 end
 
