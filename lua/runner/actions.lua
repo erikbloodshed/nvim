@@ -4,6 +4,19 @@ local log_levels = vim.log.levels
 local api, fn, notify = vim.api, vim.fn, vim.notify
 local utils = require("runner.utils")
 
+local process = function(s, h, k, c)
+  local status = true
+
+  if s.hash_tbl[k] and s.hash_tbl[k] == h then
+    notify(string.format("Source code is already processed for {}.", k), vim.log.levels.WARN)
+  else
+    status = handler.translate("compile", c)
+    s.hash_tbl["compile"] = status and h or nil
+  end
+
+  return status
+end
+
 local M = {}
 
 M.create = function(state, cmd)
@@ -21,6 +34,7 @@ M.create = function(state, cmd)
       local msg = state.type == "interpreted" and "Interpreter flags set and cache cleared."
         or "Compiler flags set and cache cleared."
       notify(msg, log_levels.INFO)
+      state.command_cache.run_cmd = nil
     end)
   end
 
@@ -33,6 +47,7 @@ M.create = function(state, cmd)
       state.cmd_args = args ~= "" and args or nil
       local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
       notify(msg, log_levels.INFO)
+      state.command_cache.run_cmd = nil
     end)
   end
 
@@ -54,8 +69,8 @@ M.create = function(state, cmd)
     }, function(choice)
       if choice then
         state.data_file = choice
-        state.command_cache.run_cmd = nil
         notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
+        state.command_cache.run_cmd = nil
       end
     end)
   end
@@ -72,8 +87,8 @@ M.create = function(state, cmd)
     }, function(choice)
       if choice == "Yes" then
         state.data_file = nil
-        state.command_cache.run_cmd = nil
         notify("Data file removed", log_levels.INFO)
+        state.command_cache.run_cmd = nil
       end
     end)
   end
@@ -129,22 +144,10 @@ M.create = function(state, cmd)
     if lang_type == "interpreted" then return true end
 
     local buffer_hash = state:get_buffer_hash()
-    local success = true
-
-    if state.hash_tbl["compile"] and state.hash_tbl["compile"] == buffer_hash then
-      notify("Source code is already processed for compile.", vim.log.levels.WARN)
-    else
-      success = handler.translate("compile", cmd.compile())
-      state.hash_tbl["compile"] = success and buffer_hash or nil
-    end
+    local success = process(state, buffer_hash, "compile", cmd.compile())
 
     if lang_type == "assembled" and success then
-      if state.hash_tbl["link"] and state.hash_tbl["link"] == buffer_hash then
-        notify("Source code is already processed for link.", vim.log.levels.WARN)
-      else
-        success = handler.translate("link", cmd.link())
-        state.hash_tbl["link"] = success and buffer_hash or nil
-      end
+      success = process(state, buffer_hash, "link", cmd.link())
     end
 
     return success
@@ -160,15 +163,7 @@ M.create = function(state, cmd)
     end
 
     local buffer_hash = state:get_buffer_hash()
-    local success = true
-
-    if state.hash_tbl["assemble"] == buffer_hash then
-      notify("Source code is already processed for assemble.", vim.log.levels.WARN)
-    else
-      success = handler.translate("assemble", cmd.show_assembly())
-      state.hash_tbl["assemble"] = success and buffer_hash or nil
-    end
-
+    local success = process(state, buffer_hash, "assemble", cmd.show_assembly())
     if success then
       utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
     end
