@@ -20,6 +20,8 @@ function State:init(config)
     command_cache = {},
   }, State)
 
+  self.default_cflags = vim.deepcopy(self.compiler_flags)
+
   if lang_type ~= "interpreted" then
     self.src_basename = fn.fnamemodify(self.src_file, ":t:r")
     self.output_directory = config.output_directory or ""
@@ -82,7 +84,8 @@ function State:get_buffer_hash()
 end
 
 function State:set_compiler_flags(flags_str)
-  self.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
+  self.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true })
+    or self.default_cflags
   self:invalidate_build_cache()
 end
 
