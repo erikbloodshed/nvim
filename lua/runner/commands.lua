@@ -53,13 +53,6 @@ local profiles = {
   },
 }
 
-local make_cmd = function(tool, flags, args)
-  return {
-    compiler = tool,
-    arg = vim.list_extend(vim.list_extend({}, flags or {}), args or {}),
-  }
-end
-
 local function build_command(state, spec)
   local cmd = state[spec.tool]
   local parts = { cmd }
@@ -85,8 +78,12 @@ local function build_command(state, spec)
   if spec.name == "run" then
     return table.concat(parts, " ")
   else
-    return make_cmd(cmd, spec.flags and state[spec.flags],
-      spec.args and vim.tbl_map(function(arg) return state[arg] or arg end, spec.args))
+    local flags = spec.flags and state[spec.flags] or {}
+    local args = spec.args and vim.tbl_map(function(arg) return state[arg] or arg end, spec.args) or {}
+    return {
+      compiler = cmd,
+      arg = vim.list_extend(vim.list_extend({}, flags), args)
+    }
   end
 end
 
