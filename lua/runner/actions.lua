@@ -4,31 +4,77 @@ local log_levels = vim.log.levels
 local api, fn, notify = vim.api, vim.fn, vim.notify
 local utils = require("runner.utils")
 
-local process = function(s, h, k, c)
-  local status = true
-
-  if s.hash_tbl[k] and s.hash_tbl[k] == h then
-    notify(string.format("Source code is already processed for {}.", k), vim.log.levels.WARN)
-  else
-    status = handler.translate("compile", c)
-    s.hash_tbl["compile"] = status and h or nil
-  end
-
-  return status
-end
-
 local M = {}
 
 M.create = function(state, cmd)
+  local process_with_cache = function(h, k, c)
+    local status = true
+
+    if state.hash_tbl[k] and state.hash_tbl[k] == h then
+      notify(string.format("Source code is already processed for {}.", k), vim.log.levels.WARN)
+    else
+      status = handler.translate(k, c)
+      state.hash_tbl[k] = status and h or nil
+    end
+
+    return status
+  end
+
   local lang_type = state.type
   local actions = {}
+
+  actions.compile = function()
+    vim.cmd("silent! update")
+
+    if lang_type == "interpreted" then return true end
+
+    local buffer_hash = state:get_buffer_hash()
+    local success = process_with_cache(buffer_hash, "compile", cmd.compile())
+
+    if lang_type == "assembled" and success then
+      success = process_with_cache(buffer_hash, "link", cmd.link())
+    end
+
+    return success
+  end
+
+  actions.show_assembly = function()
+    if not cmd.show_assembly then return end
+    vim.cmd("silent! update")
+
+    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
+      open_quickfix()
+      return
+    end
+
+    local buffer_hash = state:get_buffer_hash()
+    local success = process_with_cache(buffer_hash, "assemble", cmd.show_assembly())
+    if success then
+      utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
+    end
+  end
+
+  actions.run = function()
+    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
+      open_quickfix()
+      return
+    end
+
+    if actions.compile() then
+      handler.run(cmd.run())
+    end
+  end
+
+  actions.open_quickfix = function()
+    open_quickfix()
+  end
 
   actions.set_compiler_flags = function()
     vim.ui.input({
       prompt = "Enter compiler flags: ",
       default = table.concat(state.compiler_flags or {}, " ")
     }, function(flags_str)
-      if flags_str == nil then return end -- User cancelled
+      if flags_str == nil then return end
       state.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
       state:invalidate_cmd_cache()
       local msg = state.type == "interpreted" and "Interpreter flags set and cache cleared."
@@ -136,52 +182,6 @@ M.create = function(state, cmd)
         })
       end
     end
-  end
-
-  actions.compile = function()
-    vim.cmd("silent! update")
-
-    if lang_type == "interpreted" then return true end
-
-    local buffer_hash = state:get_buffer_hash()
-    local success = process(state, buffer_hash, "compile", cmd.compile())
-
-    if lang_type == "assembled" and success then
-      success = process(state, buffer_hash, "link", cmd.link())
-    end
-
-    return success
-  end
-
-  actions.show_assembly = function()
-    if not cmd.show_assembly then return end
-    vim.cmd("silent! update")
-
-    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-      open_quickfix()
-      return
-    end
-
-    local buffer_hash = state:get_buffer_hash()
-    local success = process(state, buffer_hash, "assemble", cmd.show_assembly())
-    if success then
-      utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
-    end
-  end
-
-  actions.run = function()
-    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-      open_quickfix()
-      return
-    end
-
-    if actions.compile() then
-      handler.run(cmd.run())
-    end
-  end
-
-  actions.open_quickfix = function()
-    open_quickfix()
   end
 
   return actions
