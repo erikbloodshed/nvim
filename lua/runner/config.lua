@@ -18,7 +18,7 @@ return {
       fallback_flags = { "-std=c23", "-O2" },
       response_file = nil,
       data_dir_name = "dat",
-      output_directory = "/tmp/",
+      output_directory = "/tmp",
     },
 
     cpp = {
@@ -27,7 +27,7 @@ return {
       fallback_flags = { "-std=c++20", "-O2" },
       response_file = nil,
       data_dir_name = "dat",
-      output_directory = "/tmp/",
+      output_directory = "/tmp",
     },
 
     asm = {
@@ -38,7 +38,7 @@ return {
       linker = "ld",
       linker_flags = { "-m", "elf_x86_64" },
       data_dir_name = "dat",
-      output_directory = "/tmp/",
+      output_directory = "/tmp",
     },
 
     python = {
