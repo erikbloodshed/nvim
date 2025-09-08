@@ -11,7 +11,7 @@ M.create = function(state, cmd)
     local status = true
 
     if state.hash_tbl[k] and state.hash_tbl[k] == h then
-      notify(string.format("Source code is already processed for {}.", k), vim.log.levels.WARN)
+      notify(string.format("Source code is already processed for %s.", k), log_levels.WARN)
     else
       status = handler.translate(k, c)
       state.hash_tbl[k] = status and h or nil
@@ -75,12 +75,10 @@ M.create = function(state, cmd)
       default = table.concat(state.compiler_flags or {}, " ")
     }, function(flags_str)
       if flags_str == nil then return end
-      state.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
-      state:invalidate_cmd_cache()
+      state:set_compiler_flags(flags_str)
       local msg = state.type == "interpreted" and "Interpreter flags set and cache cleared."
         or "Compiler flags set and cache cleared."
       notify(msg, log_levels.INFO)
-      state.command_cache.run_cmd = nil
     end)
   end
 
@@ -90,10 +88,9 @@ M.create = function(state, cmd)
       default = state.cmd_args or ""
     }, function(args)
       if args == nil then return end
-      state.cmd_args = args ~= "" and args or nil
+      state:set_cmd_args(args)
       local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
       notify(msg, log_levels.INFO)
-      state.command_cache.run_cmd = nil
     end)
   end
 
@@ -114,9 +111,8 @@ M.create = function(state, cmd)
       format_item = function(item) return fn.fnamemodify(item, ':t') end,
     }, function(choice)
       if choice then
-        state.data_file = choice
+        state:set_data_file(choice)
         notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
-        state.command_cache.run_cmd = nil
       end
     end)
   end
@@ -132,9 +128,8 @@ M.create = function(state, cmd)
       prompt = "Remove data file (" .. current_file .. ")?",
     }, function(choice)
       if choice == "Yes" then
-        state.data_file = nil
+        state:set_data_file(nil)
         notify("Data file removed", log_levels.INFO)
-        state.command_cache.run_cmd = nil
       end
     end)
   end

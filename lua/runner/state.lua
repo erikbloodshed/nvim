@@ -39,13 +39,18 @@ function State:init(config)
   return self
 end
 
-function State:invalidate_cmd_cache()
+function State:invalidate_run_cache()
   self.command_cache.run_cmd = nil
-  self.buffer_cache.hash = nil
+end
+
+function State:invalidate_build_cache()
+  self:invalidate_run_cache()
   self.hash_tbl = {}
 
   local lang_type = self.type
-  if lang_type == "interpreted" then return end
+  if lang_type == "interpreted" then
+    return
+  end
 
   self.command_cache.compile_cmd = nil
   self.command_cache.link_cmd = nil
@@ -74,6 +79,21 @@ function State:get_buffer_hash()
   self.buffer_cache.changedtick = changedtick
 
   return self.buffer_cache.hash
+end
+
+function State:set_compiler_flags(flags_str)
+  self.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
+  self:invalidate_build_cache()
+end
+
+function State:set_cmd_args(args)
+  self.cmd_args = args ~= "" and args or nil
+  self:invalidate_run_cache()
+end
+
+function State:set_data_file(filepath)
+  self.data_file = filepath
+  self:invalidate_run_cache()
 end
 
 M.init = function(config)
