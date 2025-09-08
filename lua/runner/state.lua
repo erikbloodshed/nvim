@@ -39,8 +39,10 @@ function State:init(config)
   return self
 end
 
-function State:invalidate_cache()
+function State:invalidate_cmd_cache()
   self.command_cache.run_cmd = nil
+  self.buffer_cache.hash = nil
+  self.hash_tbl = {}
 
   local lang_type = self.type
   if lang_type == "interpreted" then return end

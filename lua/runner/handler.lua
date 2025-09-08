@@ -8,12 +8,13 @@ return {
       local action_name = key:sub(1, 1):upper() .. key:sub(2)
       vim.notify(action_name .. " successful with exit code " .. result.code .. ".", vim.log.levels.INFO)
       return true
-    else
-      if result.stderr and result.stderr ~= "" then
-        vim.notify(result.stderr, vim.log.levels.ERROR)
-      end
-      return false
     end
+
+    if result.stderr and result.stderr ~= "" then
+      vim.notify(result.stderr, vim.log.levels.ERROR)
+    end
+
+    return false
   end,
 
   run = function(cmd)

@@ -17,7 +17,7 @@ M.create = function(state, cmd)
     }, function(flags_str)
       if flags_str == nil then return end -- User cancelled
       state.compiler_flags = flags_str ~= "" and vim.split(flags_str, "%s+", { trimempty = true }) or {}
-      state:invalidate_cache()
+      state:invalidate_cmd_cache()
       local msg = state.type == "interpreted" and "Interpreter flags set and cache cleared."
         or "Compiler flags set and cache cleared."
       notify(msg, log_levels.INFO)
@@ -31,7 +31,6 @@ M.create = function(state, cmd)
     }, function(args)
       if args == nil then return end
       state.cmd_args = args ~= "" and args or nil
-      state.command_cache.run_cmd = nil
       local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
       notify(msg, log_levels.INFO)
     end)
@@ -132,25 +131,19 @@ M.create = function(state, cmd)
     local buffer_hash = state:get_buffer_hash()
     local success = true
 
-    if state.hash_tbl["compile"] == buffer_hash then
+    if state.hash_tbl["compile"] and state.hash_tbl["compile"] == buffer_hash then
       notify("Source code is already processed for compile.", vim.log.levels.WARN)
     else
       success = handler.translate("compile", cmd.compile())
-      if success then
-        state.hash_tbl["compile"] = buffer_hash
-      end
+      state.hash_tbl["compile"] = success and buffer_hash or nil
     end
 
-    if not success then return false end
-
-    if lang_type == "assembled" then
-      if state.hash_tbl["link"] == buffer_hash then
+    if lang_type == "assembled" and success then
+      if state.hash_tbl["link"] and state.hash_tbl["link"] == buffer_hash then
         notify("Source code is already processed for link.", vim.log.levels.WARN)
       else
         success = handler.translate("link", cmd.link())
-        if success then
-          state.hash_tbl["link"] = buffer_hash
-        end
+        state.hash_tbl["link"] = success and buffer_hash or nil
       end
     end
 
@@ -173,9 +166,7 @@ M.create = function(state, cmd)
       notify("Source code is already processed for assemble.", vim.log.levels.WARN)
     else
       success = handler.translate("assemble", cmd.show_assembly())
-      if success then
-        state.hash_tbl["assemble"] = buffer_hash
-      end
+      state.hash_tbl["assemble"] = success and buffer_hash or nil
     end
 
     if success then
