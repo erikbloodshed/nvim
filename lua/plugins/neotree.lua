@@ -1,5 +1,6 @@
 return {
   "nvim-neo-tree/neo-tree.nvim",
+
   keys = {
     {
       "<leader>ef",
@@ -31,11 +32,11 @@ return {
   },
 
   config = function()
-    local api = vim.api
-    local opt = vim.opt
-
+    local api, opt = vim.api, vim.opt
     local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
+
     opt.guicursor:append("a:Cursor/lCursor")
+
     local function hide_cursor()
       api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
     end
