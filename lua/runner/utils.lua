@@ -2,11 +2,11 @@ local api, fn, uv = vim.api, vim.fn, vim.uv
 local set, notify, log = api.nvim_set_option_value, vim.notify, vim.log.levels
 local M = {}
 
-local find_upward = function(name, find_type)
+local find_upward = function(name, ftype)
   if name then
     local path = vim.fs.find(name, {
       upward = true,
-      type = find_type,
+      type = ftype,
       path = fn.expand("%:p:h"),
       stop = fn.expand("~")
     })[1]
@@ -15,8 +15,8 @@ local find_upward = function(name, find_type)
   return nil
 end
 
-M.get_response_file = function(filename)
-  local path = find_upward(filename, "file")
+M.get_response_file = function(fname)
+  local path = find_upward(fname, "file")
   if path then
     return { "@" .. path }
   end
@@ -123,8 +123,8 @@ M.open = function(title, lines, ft)
   return buf
 end
 
-M.get_date_modified = function(filepath)
-  local file_stats = uv.fs_stat(filepath)
+M.get_date_modified = function(f_path)
+  local file_stats = uv.fs_stat(f_path)
   if file_stats then
     return os.date("%Y-%B-%d %H:%M:%S", file_stats.mtime.sec)
   else
@@ -132,10 +132,10 @@ M.get_date_modified = function(filepath)
   end
 end
 
-M.read_file = function(filepath)
-  local f = io.open(filepath, "r")
+M.read_file = function(f_path)
+  local f = io.open(f_path, "r")
 
-  if not f then return nil, "Could not open file: " .. filepath end
+  if not f then return nil, "Could not open file: " .. f_path end
   local content = {}
   for line in f:lines() do table.insert(content, line) end
   f:close()
@@ -173,7 +173,5 @@ M.has_errors = function()
   end
   return false
 end
-
-
 
 return M

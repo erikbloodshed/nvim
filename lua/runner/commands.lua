@@ -78,19 +78,19 @@ local function build_command(state, spec)
 end
 
 M.create = function(state)
-  local commands = {}
-  local type_specs = profiles[state.type] or {}
+  local cmds = {}
+  local specs = profiles[state.type] or {}
 
-  for _, spec in ipairs(type_specs) do
+  for _, spec in ipairs(specs) do
     local key = spec.name .. "_cmd"
-    commands[spec.name] = function()
+    cmds[spec.name] = function()
       return state:get_cached_command(key, function()
         return build_command(state, spec)
       end)
     end
   end
 
-  return commands
+  return cmds
 end
 
 return M
