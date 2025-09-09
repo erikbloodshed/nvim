@@ -1,6 +1,14 @@
 local api, lsp = vim.api, vim.lsp
 local diagnostic, keyset, autocmd = vim.diagnostic, vim.keymap.set, api.nvim_create_autocmd
 
+vim.lsp.config("*", {
+  capabilities = {
+    general = {
+      positionEncodings = { "utf-16" },
+    },
+  },
+})
+
 lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {

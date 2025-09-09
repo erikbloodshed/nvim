@@ -6,7 +6,6 @@ return {
     "--completion-style=bundled",
     "--function-arg-placeholders=0",
     "--header-insertion=never",
-    "--offset-encoding=utf-16"
   },
 
   root_markers = { ".clangd" },
@@ -20,10 +19,4 @@ return {
       }
     },
   },
-
-  on_init = function(client, init_result)
-    if init_result.offsetEncoding then
-      client.offset_encoding = init_result.offsetEncoding
-    end
-  end
 }
