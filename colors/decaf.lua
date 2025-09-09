@@ -1,1 +1,1 @@
-require("themes.decaf").load()
+require("decaf").load()
