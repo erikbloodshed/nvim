@@ -87,7 +87,7 @@ M.create = function(state, cmd)
       return
     end
 
-    local files = utils.scan_dir(state.data_path)
+    local files = utils.get_files(state.data_path)
     if vim.tbl_isempty(files) then
       notify("No files found in data directory: " .. state.data_path, log.WARN)
       return

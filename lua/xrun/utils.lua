@@ -29,72 +29,43 @@ M.get_data_path = function(dirname)
 end
 
 
-M.scan_dir = function(dir)
+M.get_files = function(dir)
   if not dir or dir == "" then
-    vim.notify("Invalid directory path", log.WARN)
     return {}
   end
 
   local stat = uv.fs_stat(dir)
   if not stat or stat.type ~= "directory" then
-    vim.notify("Directory not found or is not a directory: " .. dir, log.WARN)
     return {}
   end
 
-  local result = {}
-
-  local iter, err = vim.fs.dir(dir, {})
+  local files = {}
+  local iter = vim.fs.dir(dir, {})
   if not iter then
-    local msg = "Failed to scan directory: " .. dir
-    if err then
-      msg = msg .. " (" .. err .. ")"
-    end
-    vim.notify(msg, log.ERROR)
     return {}
   end
 
-  local result_count = 0
   for path, entry_type in iter do
     if entry_type == "file" then
-      local full_path = vim.fs.joinpath(dir, path)
-      result_count = result_count + 1
-      result[result_count] = full_path
+      table.insert(files, vim.fs.joinpath(dir, path))
     end
   end
 
-  if result_count > 0 then
-    if result_count > 1000 then
-      local lower_cache = {}
-      local function get_lower(str)
-        local lower = lower_cache[str]
-        if not lower then
-          lower = string.lower(str)
-          lower_cache[str] = lower
-        end
-        return lower
-      end
+  table.sort(files, function(a, b)
+    return string.lower(a) < string.lower(b)
+  end)
 
-      table.sort(result, function(a, b)
-        return get_lower(a) < get_lower(b)
-      end)
-    else
-      table.sort(result, function(a, b)
-        return string.lower(a) < string.lower(b)
-      end)
-    end
-  end
-
-  return result
+  return files
 end
 
 M.open = function(title, lines, ft)
-  local max_line_length = 0
+  local max_length = 0
 
   for _, line in ipairs(lines) do
-    max_line_length = math.max(max_line_length, #line)
+    max_length = math.max(max_length, #line)
   end
 
-  local width = math.min(max_line_length + 4, math.floor(vim.o.columns * 0.8))
+  local width = math.min(max_length + 4, math.floor(vim.o.columns * 0.8))
   local height = math.min(#lines, math.floor(vim.o.lines * 0.8))
   local buf = api.nvim_create_buf(false, true)
 
