@@ -15,6 +15,5 @@ require("core.options")
 require("core.lazy")
 require("core.lsp")
 require("core.autocmds")
-require("picker")
 
 vim.cmd.colorscheme("decaf")
