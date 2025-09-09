@@ -9,6 +9,7 @@ return {
         diagnosticMode = "openFilesOnly",
         typeCheckingMode = "standard",
       },
+      disableTaggedHints = true,
     },
   },
 }

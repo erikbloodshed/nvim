@@ -6,6 +6,7 @@ return {
     "--completion-style=bundled",
     "--function-arg-placeholders=0",
     "--header-insertion=never",
+    "--offset-encoding=utf-16"
   },
 
   root_markers = { ".clangd" },
