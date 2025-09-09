@@ -77,7 +77,8 @@ M.create = function(state, cmd)
     }, function(args)
       if args == nil then return end
       state:set_cmd_args(args)
-      notify(args ~= "" and "Command arguments set" or "Command arguments cleared", log.INFO)
+      local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
+      notify(msg, log.INFO)
     end)
   end
 
@@ -99,7 +100,7 @@ M.create = function(state, cmd)
     }, function(choice)
       if choice then
         state:set_data_file(choice)
-        notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log.INFO)
+        notify("Data file set to: " .. choice, log.WARN)
       end
     end)
   end
@@ -110,15 +111,8 @@ M.create = function(state, cmd)
       notify("No data file is currently set", log.WARN)
       return
     end
-
-    vim.ui.select({ "Yes", "No" }, {
-      prompt = "Remove data file (" .. current_file .. ")?",
-    }, function(choice)
-      if choice == "Yes" then
-        state:set_data_file(nil)
-        notify("Data file removed", log.INFO)
-      end
-    end)
+    state:set_data_file(nil)
+    notify(string.format("Data file '%s' removed", current_file), log.WARN)
   end
 
   actions.get_build_info = function()
