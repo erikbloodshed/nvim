@@ -49,15 +49,14 @@ function State:invalidate_build_cache()
   self:invalidate_run_cache()
   self.hash_tbl = {}
 
-  local lang_type = self.type
-  if lang_type == "interpreted" then
+  if self.type == "interpreted" then
     return
   end
 
   self.command_cache.compile_cmd = nil
   self.command_cache.link_cmd = nil
 
-  if lang_type == "compiled" then
+  if self.type == "compiled" then
     self.command_cache.show_assembly_cmd = nil
   end
 end

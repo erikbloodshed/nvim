@@ -118,31 +118,31 @@ M.create = function(state, cmd)
   actions.get_build_info = function()
     local flags = table.concat(state.compiler_flags or {}, " ")
     local lines = {
-      "Filename          : " .. fn.fnamemodify(state.src_file, ':t'),
-      "Filetype          : " .. vim.bo.filetype,
-      "Language Type     : " .. lang_type,
+      "Filename      : " .. fn.fnamemodify(state.src_file, ':t'),
+      "Filetype      : " .. vim.bo.filetype,
+      "Language Type : " .. lang_type,
+      "Date Modified : " .. utils.get_date_modified(state.src_file),
     }
 
     if lang_type == "compiled" or lang_type == "assembled" then
-      lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
-      lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
-      lines[#lines + 1] = "Output Directory  : " .. (state.outdir == "" and "None" or state.outdir)
+      lines[#lines + 1] = "Compiler      : " .. (state.compiler or "None")
+      lines[#lines + 1] = "Flags         : " .. (flags == "" and "None" or flags)
+      lines[#lines + 1] = "Output Dir    : " .. (state.outdir == "" and "None" or state.outdir)
     end
 
     if lang_type == "assembled" then
-      lines[#lines + 1] = "Linker            : " .. (state.linker or "None")
-      lines[#lines + 1] = "Linker Flags      : " .. table.concat(state.linker_flags or {}, " ")
+      lines[#lines + 1] = "Linker        : " .. (state.linker or "None")
+      lines[#lines + 1] = "Linker Flags  : " .. table.concat(state.linker_flags or {}, " ")
     end
 
     if lang_type == "interpreted" then
-      lines[#lines + 1] = "Run Command       : " .. (state.compiler or "None")
+      lines[#lines + 1] = "Interpreter   : " .. (state.compiler or "None")
     end
 
     vim.list_extend(lines, {
-      "Data Directory    : " .. (state.data_path or "Not Found"),
-      "Data File In Use  : " .. (state.data_file and fn.fnamemodify(state.data_file, ':t') or "None"),
-      "Command Arguments : " .. (state.cmd_args or "None"),
-      "Date Modified     : " .. utils.get_date_modified(state.src_file),
+      "Data Dir      : " .. (state.data_path or "Not Found"),
+      "Data File     : " .. (state.data_file and fn.fnamemodify(state.data_file, ':t') or "None"),
+      "Arguments     : " .. (state.cmd_args or "None"),
     })
 
     local ns_id = api.nvim_create_namespace("build_info_highlight")

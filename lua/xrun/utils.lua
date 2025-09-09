@@ -65,7 +65,7 @@ M.open = function(title, lines, ft)
     max_length = math.max(max_length, #line)
   end
 
-  local width = math.min(max_length + 4, math.floor(vim.o.columns * 0.8))
+  local width = math.min(max_length, math.floor(vim.o.columns * 0.8))
   local height = math.min(#lines, math.floor(vim.o.lines * 0.8))
   local buf = api.nvim_create_buf(false, true)
 
