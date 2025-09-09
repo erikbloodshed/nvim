@@ -1,7 +1,7 @@
 local M = {}
 
 M.setup = function(cfg)
-  local defaults = require("runner.config")
+  local defaults = require("xrun.config")
   local ft = vim.bo.filetype
   local config = vim.tbl_deep_extend('force', defaults.filetype[ft], cfg.filetype[ft] or {})
 
@@ -10,9 +10,9 @@ M.setup = function(cfg)
     return {}
   end
 
-  local state = require("runner.state").init(config)
-  local commands = require("runner.commands").create(state)
-  local actions = require("runner.actions").create(state, commands)
+  local state = require("xrun.state").init(config)
+  local commands = require("xrun.commands").create(state)
+  local actions = require("xrun.actions").create(state, commands)
   local keymaps = vim.tbl_deep_extend('force', defaults.keymaps, cfg.keymaps or {})
   local map = vim.keymap.set
 

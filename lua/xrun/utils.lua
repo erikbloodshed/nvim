@@ -168,7 +168,7 @@ end
 
 M.has_errors = function()
   if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-    require("runner.diagnostics").open_quickfixlist()
+    require("xrun.diagnostics").open_quickfixlist()
     return true
   end
   return false

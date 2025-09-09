@@ -1,5 +1,5 @@
 local api, fn, log, notify = vim.api, vim.fn, vim.log.levels, vim.notify
-local utils = require("runner.utils")
+local utils = require("xrun.utils")
 
 local M = {}
 
@@ -54,7 +54,7 @@ M.create = function(state, cmd)
   end
 
   actions.open_quickfix = function()
-    require("runner.diagnostics").open_quickfixlist()
+    require("xrun.diagnostics").open_quickfixlist()
   end
 
   actions.set_compiler_flags = function()

@@ -1,5 +1,5 @@
 local api, fn = vim.api, vim.fn
-local utils = require("runner.utils")
+local utils = require("xrun.utils")
 
 local M = {}
 

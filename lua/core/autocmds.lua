@@ -16,7 +16,7 @@ autocmd({ "Filetype" }, {
       vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
     end
 
-    require("runner").setup({
+    require("xrun").setup({
       filetype = {
         c = {
           response_file = ".compile_flags",
