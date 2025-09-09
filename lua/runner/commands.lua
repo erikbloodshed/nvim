@@ -6,7 +6,7 @@ local profiles = {
       name = "compile",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-o", "exe_file", "src_file" }
+      args = { "-o", "exe", "src_file" }
     },
     {
       name = "show_assembly",
@@ -16,9 +16,9 @@ local profiles = {
     },
     {
       name = "run",
-      tool = "exe_file",
+      tool = "exe",
       cmd_args = "cmd_args",
-      input_redirect = "data_file"
+      input_file = "data_file"
     },
   },
   assembled = {
@@ -32,13 +32,13 @@ local profiles = {
       name = "link",
       tool = "linker",
       flags = "linker_flags",
-      args = { "-o", "exe_file", "obj_file" }
+      args = { "-o", "exe", "obj_file" }
     },
     {
       name = "run",
-      tool = "exe_file",
+      tool = "exe",
       cmd_args = "cmd_args",
-      input_redirect = "data_file"
+      input_file = "data_file"
     },
   },
   interpreted = {
@@ -48,7 +48,7 @@ local profiles = {
       flags = "compiler_flags",
       args = { "src_file" },
       cmd_args = "cmd_args",
-      input_redirect = "data_file"
+      input_file = "data_file"
     },
   },
 }
@@ -70,17 +70,11 @@ local function build_command(state, spec)
     table.insert(parts, state[spec.cmd_args])
   end
 
-  if spec.input_redirect and state[spec.input_redirect] then
-    table.insert(parts, "< " .. state[spec.input_redirect])
+  if spec.input_file and state[spec.input_file] then
+    vim.list_extend(parts, { "<", state[spec.input_file] })
   end
 
-  if spec.name == "run" then
-    -- For run commands, return as shell command string (for terminal execution)
-    return table.concat(parts, " ")
-  else
-    -- For compile/link commands, return as list for process.execute()
-    return parts
-  end
+  return spec.name == "run" and table.concat(parts, " ") or parts
 end
 
 M.create = function(state)

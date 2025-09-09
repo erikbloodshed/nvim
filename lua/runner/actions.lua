@@ -1,20 +1,17 @@
-local handler = require("runner.handler")
-local open_quickfix = require("runner.diagnostics").open_quickfixlist
-local log_levels = vim.log.levels
-local api, fn, notify = vim.api, vim.fn, vim.notify
+local api, fn, log, notify = vim.api, vim.fn, vim.log.levels, vim.notify
 local utils = require("runner.utils")
 
 local M = {}
 
 M.create = function(state, cmd)
-  local process_with_cache = function(h, k, c)
+  local cache_proc = function(hash, key, command)
     local status = true
 
-    if state.hash_tbl[k] and state.hash_tbl[k] == h then
-      notify(string.format("Source code is already processed for %s.", k), log_levels.WARN)
+    if state.hash_tbl[key] and state.hash_tbl[key] == hash then
+      notify(string.format("Source code is already processed for %s.", key), log.WARN)
     else
-      status = handler.translate(c)
-      state.hash_tbl[k] = status and h or nil
+      status = utils.translate(command)
+      state.hash_tbl[key] = status and hash or nil
     end
 
     return status
@@ -29,10 +26,10 @@ M.create = function(state, cmd)
     if lang_type == "interpreted" then return true end
 
     local buffer_hash = state:get_buffer_hash()
-    local success = process_with_cache(buffer_hash, "compile", cmd.compile())
+    local success = cache_proc(buffer_hash, "compile", cmd.compile())
 
     if lang_type == "assembled" and success then
-      success = process_with_cache(buffer_hash, "link", cmd.link())
+      success = cache_proc(buffer_hash, "link", cmd.link())
     end
 
     return success
@@ -42,31 +39,22 @@ M.create = function(state, cmd)
     if not cmd.show_assembly then return end
     vim.cmd("silent! update")
 
-    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-      open_quickfix()
-      return
-    end
+    if utils.has_errors() then return end
 
     local buffer_hash = state:get_buffer_hash()
-    local success = process_with_cache(buffer_hash, "assemble", cmd.show_assembly())
+    local success = cache_proc(buffer_hash, "assemble", cmd.show_assembly())
     if success then
       utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
     end
   end
 
   actions.run = function()
-    if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-      open_quickfix()
-      return
-    end
-
-    if actions.compile() then
-      handler.run(cmd.run())
-    end
+    if utils.has_errors() then return end
+    if actions.compile() then utils.run(cmd.run()) end
   end
 
   actions.open_quickfix = function()
-    open_quickfix()
+    require("runner.diagnostics").open_quickfixlist()
   end
 
   actions.set_compiler_flags = function()
@@ -78,7 +66,7 @@ M.create = function(state, cmd)
       state:set_compiler_flags(flags_str)
       local msg = state.type == "interpreted" and "Interpreter flags set and cache cleared."
         or "Compiler flags set and cache cleared."
-      notify(msg, log_levels.INFO)
+      notify(msg, log.INFO)
     end)
   end
 
@@ -89,20 +77,19 @@ M.create = function(state, cmd)
     }, function(args)
       if args == nil then return end
       state:set_cmd_args(args)
-      local msg = args ~= "" and "Command arguments set" or "Command arguments cleared"
-      notify(msg, log_levels.INFO)
+      notify(args ~= "" and "Command arguments set" or "Command arguments cleared", log.INFO)
     end)
   end
 
   actions.add_data_file = function()
     if not state.data_path then
-      notify("Data directory not found", log_levels.ERROR)
+      notify("Data directory not found", log.ERROR)
       return
     end
 
     local files = utils.scan_dir(state.data_path)
     if vim.tbl_isempty(files) then
-      notify("No files found in data directory: " .. state.data_path, log_levels.WARN)
+      notify("No files found in data directory: " .. state.data_path, log.WARN)
       return
     end
 
@@ -112,7 +99,7 @@ M.create = function(state, cmd)
     }, function(choice)
       if choice then
         state:set_data_file(choice)
-        notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log_levels.INFO)
+        notify("Data file set to: " .. fn.fnamemodify(choice, ':t'), log.INFO)
       end
     end)
   end
@@ -120,7 +107,7 @@ M.create = function(state, cmd)
   actions.remove_data_file = function()
     local current_file = state.data_file
     if not current_file then
-      notify("No data file is currently set", log_levels.WARN)
+      notify("No data file is currently set", log.WARN)
       return
     end
 
@@ -129,7 +116,7 @@ M.create = function(state, cmd)
     }, function(choice)
       if choice == "Yes" then
         state:set_data_file(nil)
-        notify("Data file removed", log_levels.INFO)
+        notify("Data file removed", log.INFO)
       end
     end)
   end
@@ -145,7 +132,7 @@ M.create = function(state, cmd)
     if lang_type == "compiled" or lang_type == "assembled" then
       lines[#lines + 1] = "Compiler          : " .. (state.compiler or "None")
       lines[#lines + 1] = "Compile Flags     : " .. (flags == "" and "None" or flags)
-      lines[#lines + 1] = "Output Directory  : " .. (state.output_directory == "" and "None" or state.output_directory)
+      lines[#lines + 1] = "Output Directory  : " .. (state.outdir == "" and "None" or state.outdir)
     end
 
     if lang_type == "assembled" then

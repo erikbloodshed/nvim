@@ -23,19 +23,19 @@ function State:init(config)
   self.default_cflags = vim.deepcopy(self.compiler_flags)
 
   if lang_type ~= "interpreted" then
-    self.src_basename = fn.fnamemodify(self.src_file, ":t:r")
-    self.output_directory = config.output_directory or ""
-    self.exe_file = vim.fn.join({ self.output_directory, self.src_basename }, "/")
+    self.basename = fn.fnamemodify(self.src_file, ":t:r")
+    self.outdir = config.output_directory or ""
+    self.exe = vim.fn.join({ self.outdir, self.basename }, "/")
   end
 
   if lang_type == "assembled" then
     self.linker = config.linker
     self.linker_flags = config.linker_flags or {}
-    self.obj_file = self.exe_file .. ".o"
+    self.obj_file = self.exe .. ".o"
   end
 
   if lang_type == "compiled" then
-    self.asm_file = self.exe_file .. ".s"
+    self.asm_file = self.exe .. ".s"
   end
 
   return self
