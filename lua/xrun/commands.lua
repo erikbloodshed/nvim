@@ -53,39 +53,50 @@ local profiles = {
   },
 }
 
-local function build_command(state, spec)
-  local cmd = state[spec.tool]
-  local parts = { cmd }
-
-  if spec.flags and state[spec.flags] and #state[spec.flags] > 0 then
-    vim.list_extend(parts, state[spec.flags])
-  end
-
-  if spec.args then
-    local resolved_args = vim.tbl_map(function(arg) return state[arg] or arg end, spec.args)
-    vim.list_extend(parts, resolved_args)
-  end
-
-  if spec.cmd_args and state[spec.cmd_args] and state[spec.cmd_args] ~= "" then
-    table.insert(parts, state[spec.cmd_args])
-  end
-
-  if spec.input_file and state[spec.input_file] then
-    vim.list_extend(parts, { "<", state[spec.input_file] })
-  end
-
-  return spec.name == "run" and table.concat(parts, " ") or parts
-end
-
 M.create = function(state)
+  local handlers = {}
+
+  handlers.default = function(spec, parts)
+    local flags, args = spec.flags, spec.args
+
+    if flags and state[flags] and #state[flags] > 0 then
+      vim.list_extend(parts, state[flags])
+    end
+
+    if args then
+      local resolved_args = vim.tbl_map(function(arg)
+        return state[arg] or arg
+      end, args)
+      vim.list_extend(parts, resolved_args)
+    end
+
+    return parts
+  end
+
+  handlers.run = function(spec, parts)
+    parts = handlers.default(spec, parts)
+    local cmd_args, input_file = spec.cmd_args, spec.input_file
+
+    if cmd_args and state[cmd_args] and state[cmd_args] ~= "" then
+      table.insert(parts, state[cmd_args])
+    end
+
+    if input_file and state[input_file] then
+      vim.list_extend(parts, { "<", state[input_file] })
+    end
+
+    return table.concat(parts, " ")
+  end
+
   local cmds = {}
   local specs = profiles[state.type] or {}
 
   for _, spec in ipairs(specs) do
-    local key = spec.name .. "_cmd"
-    cmds[spec.name] = function()
-      return state:get_cached_command(key, function()
-        return build_command(state, spec)
+    local name = spec.name
+    cmds[name] = function()
+      return state:get_cached_command(name .. "_cmd", function()
+        local handler = handlers[name] or handlers.default
+        return handler(spec, { state[spec.tool] })
       end)
     end
   end
