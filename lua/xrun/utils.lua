@@ -60,13 +60,20 @@ end
 
 M.open = function(title, lines, ft)
   local max_length = 0
+  local cols = vim.o.columns
+  local rows = vim.o.lines
+  local width = math.floor(cols * 0.6)
+  local height = math.floor(rows * 0.6)
 
-  for _, line in ipairs(lines) do
-    max_length = math.max(max_length, #line)
+  if ft == "text" then
+    for _, line in ipairs(lines) do
+      max_length = math.max(max_length, #line)
+    end
+
+    width = max_length
+    height = #lines
   end
 
-  local width = math.min(max_length, math.floor(vim.o.columns * 0.8))
-  local height = math.min(#lines, math.floor(vim.o.lines * 0.8))
   local buf = api.nvim_create_buf(false, true)
 
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -75,8 +82,8 @@ M.open = function(title, lines, ft)
     relative = "editor",
     width = width,
     height = height,
-    row = (vim.o.lines - height) / 2,
-    col = (vim.o.columns - width) / 2,
+    row = (rows - height) / 2 - 1,
+    col = (cols - width) / 2,
     style = "minimal",
     border = "rounded",
     title = title,

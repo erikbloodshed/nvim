@@ -25,7 +25,7 @@ function State:init(config)
   if lang_type ~= "interpreted" then
     self.basename = fn.fnamemodify(self.src_file, ":t:r")
     self.outdir = config.output_directory or ""
-    self.exe = vim.fn.join({ self.outdir, self.basename }, "/")
+    self.exe = vim.fs.joinpath(self.outdir, self.basename)
   end
 
   if lang_type == "assembled" then
