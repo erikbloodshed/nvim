@@ -24,6 +24,9 @@ autocmd({ "Filetype" }, {
         cpp = {
           response_file = ".compile_flags",
         },
+        python = {
+          compiler = "python3.14"
+        }
       }
     })
   end,
@@ -55,17 +58,13 @@ autocmd({ "VimEnter" }, {
         border = 'rounded',
         open_in_file_dir = true,
         open = true,
-        backdrop = {
-          enabled = true,    -- Enable/disable backdrop
-          opacity = 60,      -- Backdrop opacity (0-100)
-          color = "#000000", -- Backdrop color
-        }
+        backdrop = { enabled = true, opacity = 60, color = "#000000", }
       },
 
       terminals = {
         shell = {},
         python = {
-          shell = 'python3.14', -- Or 'python'
+          shell = 'python3.14',
           filetype = 'pyterm',
           auto_delete_on_close = true,
         },
@@ -77,10 +76,8 @@ autocmd({ "VimEnter" }, {
       },
 
       keymaps = {
-        { mode = 'n', lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
-        { mode = 'n', lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
-        { mode = 't', lhs = '<leader>tt', terminal = 'shell', action = 'hide', desc = 'Hide shell' },
-        { mode = 't', lhs = '<leader>tp', terminal = 'python', action = 'hide', desc = 'Hide Python' },
+        { mode = { 'n', 't' }, lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
+        { mode = { 'n', 't' }, lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
       },
     })
   end,
