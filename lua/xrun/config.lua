@@ -1,14 +1,13 @@
 return {
   keymaps = {
-    { key = "<leader>rr", action = "run", mode = "n", desc = "Run File" },
-    { key = "<leader>rc", action = "compile", mode = "n", desc = "Compile File" },
-    { key = "<leader>ra", action = "set_cmd_args", mode = "n", desc = "Set Arguments" },
-    { key = "<leader>rf", action = "set_compiler_flags", mode = "n", desc = "Set Compiler Flags" },
-    { key = "<leader>ri", action = "get_build_info", mode = "n", desc = "Show Build Info" },
-    { key = "<leader>rd", action = "add_data_file", mode = "n", desc = "Add Data File" },
-    { key = "<leader>rx", action = "remove_data_file", mode = "n", desc = "Remove Data File" },
-    { key = "<leader>rs", action = "show_assembly", mode = "n", desc = "Show Assembly" },
-    { key = "<leader>rq", action = "open_quickfix", mode = "n", desc = "Open Quickfix" },
+    { key = "<leader>rr", action = "run", desc = "Run File" },
+    { key = "<leader>ra", action = "set_cmd_args", desc = "Set Arguments" },
+    { key = "<leader>rf", action = "set_compiler_flags", desc = "Set Compiler Flags" },
+    { key = "<leader>rq", action = "open_quickfix", desc = "Open Quickfix" },
+    { key = "<leader>rd", action = "add_data_file", desc = "Add Data File" },
+    { key = "<leader>rx", action = "remove_data_file", desc = "Remove Data File" },
+    { key = "<leader>rs", action = "show_assembly", desc = "Show Assembly" },
+    { key = "<leader>ri", action = "get_build_info", desc = "Show Build Info" },
   },
 
   filetype = {

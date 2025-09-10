@@ -17,10 +17,7 @@ M.setup = function(cfg)
   local map = vim.keymap.set
 
   for _, m in ipairs(keymaps) do
-    if m.action and actions[m.action] then
-      map(m.mode or "n", m.key, actions[m.action],
-        { buffer = 0, noremap = true, desc = m.desc })
-    end
+    map("n", m.key, actions[m.action], { buffer = 0, noremap = true, desc = m.desc })
   end
 end
 

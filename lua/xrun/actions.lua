@@ -17,23 +17,22 @@ M.create = function(state, cmd)
     return status
   end
 
-  local lang_type = state.type
-  local actions = {}
-
-  actions.compile = function()
+  local compile = function()
     vim.cmd("silent! update")
 
-    if lang_type == "interpreted" then return true end
+    if not cmd.compile then return true end
 
     local buffer_hash = state:get_buffer_hash()
     local success = cache_proc(buffer_hash, "compile", cmd.compile())
 
-    if lang_type == "assembled" and success then
+    if cmd.link and success then
       success = cache_proc(buffer_hash, "link", cmd.link())
     end
 
     return success
   end
+
+  local actions = {}
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
@@ -50,7 +49,7 @@ M.create = function(state, cmd)
 
   actions.run = function()
     if utils.has_errors() then return end
-    if actions.compile() then utils.run(cmd.run()) end
+    if compile() then utils.run(cmd.run()) end
   end
 
   actions.open_quickfix = function()
@@ -117,6 +116,7 @@ M.create = function(state, cmd)
 
   actions.get_build_info = function()
     local flags = table.concat(state.compiler_flags or {}, " ")
+    local lang_type = state.type
     local lines = {
       "Filename      : " .. fn.fnamemodify(state.src_file, ':t'),
       "Filetype      : " .. vim.bo.filetype,
