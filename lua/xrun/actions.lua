@@ -20,6 +20,19 @@ M.create = function(state, cmd)
 
   local actions = {}
 
+  actions.compile = function()
+    vim.cmd.update()
+
+    if cmd.compile and utils.execute(cmd.compile()) then
+      local hash = state:get_buffer_hash()
+      state.hash_tbl["compile"] = hash
+
+      if cmd.link and utils.execute(cmd.link()) then
+        state.hash_tbl["link"] = hash
+      end
+    end
+  end
+
   actions.run = function()
     if utils.has_errors() then return end
     vim.cmd.update()
