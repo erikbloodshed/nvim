@@ -35,7 +35,7 @@ M.create = function(state, cmd)
       end)
 
       if cmd.link and success then
-        success = cache_proc("link", cmd.link())
+        success = utils.execute(cmd.link())
       end
 
       if not success then return end

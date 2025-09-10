@@ -1,7 +1,8 @@
 M = {}
 
 M.open_quickfixlist = function()
-  local diagnostics = vim.diagnostic.get()
+  local current_buf = vim.api.nvim_get_current_buf()
+  local diagnostics = vim.diagnostic.get(current_buf)
 
   if vim.tbl_isempty(diagnostics) then
     vim.notify("No diagnostics in current buffer.", vim.log.levels.INFO)
@@ -16,10 +17,10 @@ M.open_quickfixlist = function()
   vim.cmd("copen " .. height)
 end
 
-local auto_close_group = vim.api.nvim_create_augroup("DiagnosticsAutoCloseOnBufLeave", { clear = true })
+local gid = vim.api.nvim_create_augroup("DiagnosticsAutoCloseOnBufLeave", { clear = true })
 
 vim.api.nvim_create_autocmd("BufLeave", {
-  group = auto_close_group,
+  group = gid,
   pattern = "*",
   callback = function()
     local qf_info = vim.fn.getqflist({ winid = 0, title = 1 })

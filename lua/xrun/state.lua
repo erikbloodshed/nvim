@@ -16,7 +16,7 @@ function State:init(config)
     compiler_flags = utils.get_response_file(config.response_file) or config.fallback_flags,
     data_path = utils.get_data_path(config.data_dir_name),
     hash_tbl = {},
-    buffer_cache = { dep_mtimes = {} }, -- Store dependency modification times
+    buffer_cache = { dep_mtimes = {} },
     command_cache = {},
     dependencies = {}
   }, State)
@@ -50,11 +50,8 @@ end
 function State:invalidate_build_cache()
   self:invalidate_run_cache()
   self.hash_tbl = {}
-  self.buffer_cache.hash = nil -- Clear hash but preserve dep_mtimes
+  self.buffer_cache.hash = nil
   self.command_cache.compile_cmd = nil
-  if self.type == "assembled" then
-    self.command_cache.link_cmd = nil
-  end
   if self.type == "compiled" then
     self.command_cache.show_assembly_cmd = nil
   end
@@ -70,18 +67,18 @@ end
 
 function State:get_buffer_hash()
   local changedtick = vim.b.changedtick
-
-  -- Check if dependencies have changed
   local dep_changed = false
-  for _, dep in ipairs(self.dependencies) do
-    local current_mtime = utils.get_date_modified(dep)
-    if current_mtime ~= self.buffer_cache.dep_mtimes[dep] then
-      dep_changed = true
-      self.buffer_cache.dep_mtimes[dep] = current_mtime
+
+  if self.type == "compiled" then
+    for _, dep in ipairs(self.dependencies) do
+      local current_mtime = utils.get_date_modified(dep)
+      if current_mtime ~= self.buffer_cache.dep_mtimes[dep] then
+        dep_changed = true
+        self.buffer_cache.dep_mtimes[dep] = current_mtime
+      end
     end
   end
 
-  -- If dependencies changed or hash is invalid, recompute
   if dep_changed or not self.buffer_cache.hash or self.buffer_cache.changedtick ~= changedtick then
     local content = api.nvim_buf_get_lines(0, 0, -1, true)
     local hash_input = table.concat(content, "\n")
@@ -93,6 +90,7 @@ function State:get_buffer_hash()
         end
       end
     end
+
     self.buffer_cache.hash = fn.sha256(hash_input)
     self.buffer_cache.changedtick = changedtick
   end
@@ -119,17 +117,17 @@ end
 function State:update_dependencies()
   if self.type == "compiled" then
     local new_deps = utils.parse_dependency_file(self.dep_file)
-    -- Check if the dependency list has actually changed
+
     if not vim.deep_equal(self.dependencies, new_deps) then
       self.dependencies = new_deps
-      -- Reset and update modification times for the new list
       self.buffer_cache.dep_mtimes = {}
+
       for _, dep in ipairs(self.dependencies) do
         self.buffer_cache.dep_mtimes[dep] = utils.get_date_modified(dep)
       end
-      -- CRITICAL: Invalidate the buffer hash so it gets recomputed
-      -- on the next check, now including the new dependencies.
+
       self.buffer_cache.hash = nil
+
       vim.notify("Dependencies updated from build output.", vim.log.levels.INFO)
     end
   end

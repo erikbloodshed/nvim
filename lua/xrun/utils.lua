@@ -144,24 +144,17 @@ M.has_errors = function()
   return false
 end
 
--- Add this new function at the end of the file
 M.parse_dependency_file = function(f_path)
   local content, err = M.read_file(f_path)
   if not content then
-    vim.notify("Could not read dependency file: " .. (err or f_path), vim.log.levels.WARN)
+    vim.notify("Could not read dependency file: " .. (err or f_path), log.WARN)
     return {}
   end
 
-  -- Join lines, removing backslash-newline continuations
   local single_line = table.concat(content, " "):gsub("\\\n", " ")
-
-  -- Split into words
   local words = vim.split(single_line, "%s+", { trimempty = true })
-
   local dependencies = {}
-  -- The first word is the target (e.g., main.o:), which we skip.
-  -- The second word is the source file itself, which we also skip.
-  -- All subsequent words are dependencies.
+
   if #words > 2 then
     for i = 3, #words do
       table.insert(dependencies, words[i])
