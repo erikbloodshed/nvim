@@ -9,6 +9,7 @@ vim.lsp.config("*", {
   },
 })
 
+-- lsp.enable({ "pyrefly", "ruff", "clangd", "luals" })
 lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {
