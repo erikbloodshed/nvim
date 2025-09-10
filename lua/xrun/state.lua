@@ -6,24 +6,6 @@ local M = {}
 local State = {}
 State.__index = State
 
--- Helper function to get dependencies for C/C++ files
-local function get_c_cpp_dependencies(src_file)
-  local dependencies = {}
-  local content = utils.read_file(src_file)
-  if not content then return dependencies end
-
-  for _, line in ipairs(content) do
-    local header = line:match('^%s*#include%s*["<](.-)[">]%s*$')
-    if header and line:match('^%s*#include%s*".-"') then
-      local header_path = vim.fs.joinpath(vim.fn.fnamemodify(src_file, ':h'), header)
-      if vim.fn.filereadable(header_path) == 1 then
-        table.insert(dependencies, header_path)
-      end
-    end
-  end
-  return dependencies
-end
-
 function State:init(config)
   local lang_type = config.type
 
@@ -36,6 +18,7 @@ function State:init(config)
     hash_tbl = {},
     buffer_cache = { dep_mtimes = {} }, -- Store dependency modification times
     command_cache = {},
+    dependencies = {}
   }, State)
 
   self.default_cflags = vim.deepcopy(self.compiler_flags)
@@ -54,13 +37,7 @@ function State:init(config)
 
   if lang_type == "compiled" then
     self.asm_file = self.exe .. ".s"
-    self.dependencies = get_c_cpp_dependencies(self.src_file)
-    -- Initialize dependency modification times
-    for _, dep in ipairs(self.dependencies) do
-      self.buffer_cache.dep_mtimes[dep] = utils.get_date_modified(dep)
-    end
-  else
-    self.dependencies = {}
+    self.dep_file = self.exe .. ".d"
   end
 
   return self
@@ -75,7 +52,9 @@ function State:invalidate_build_cache()
   self.hash_tbl = {}
   self.buffer_cache.hash = nil -- Clear hash but preserve dep_mtimes
   self.command_cache.compile_cmd = nil
-  self.command_cache.link_cmd = nil
+  if self.type == "assembled" then
+    self.command_cache.link_cmd = nil
+  end
   if self.type == "compiled" then
     self.command_cache.show_assembly_cmd = nil
   end
@@ -139,23 +118,19 @@ end
 
 function State:update_dependencies()
   if self.type == "compiled" then
-    local old_deps = vim.deepcopy(self.dependencies)
-    self.dependencies = get_c_cpp_dependencies(self.src_file)
-    -- Update modification times for new or existing dependencies
-    for _, dep in ipairs(self.dependencies) do
-      if not self.buffer_cache.dep_mtimes[dep] then
+    local new_deps = utils.parse_dependency_file(self.dep_file)
+    -- Check if the dependency list has actually changed
+    if not vim.deep_equal(self.dependencies, new_deps) then
+      self.dependencies = new_deps
+      -- Reset and update modification times for the new list
+      self.buffer_cache.dep_mtimes = {}
+      for _, dep in ipairs(self.dependencies) do
         self.buffer_cache.dep_mtimes[dep] = utils.get_date_modified(dep)
       end
-    end
-    -- Remove stale dependency modification times
-    for dep in pairs(self.buffer_cache.dep_mtimes) do
-      if not vim.tbl_contains(self.dependencies, dep) then
-        self.buffer_cache.dep_mtimes[dep] = nil
-      end
-    end
-    -- Invalidate cache if dependencies changed
-    if not vim.deep_equal(old_deps, self.dependencies) then
-      self:invalidate_build_cache()
+      -- CRITICAL: Invalidate the buffer hash so it gets recomputed
+      -- on the next check, now including the new dependencies.
+      self.buffer_cache.hash = nil
+      vim.notify("Dependencies updated from build output.", vim.log.levels.INFO)
     end
   end
 end

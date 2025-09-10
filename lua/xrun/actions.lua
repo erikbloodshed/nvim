@@ -5,7 +5,7 @@ local utils = require("xrun.utils")
 local M = {}
 
 M.create = function(state, cmd)
-  local cache_proc = function(key, command)
+  local cache_proc = function(key, command, on_success)
     local hash = state:get_buffer_hash()
 
     if state.hash_tbl[key] and state.hash_tbl[key] == hash then
@@ -15,6 +15,10 @@ M.create = function(state, cmd)
 
     local success = utils.execute(command)
     state.hash_tbl[key] = success and hash or nil
+
+    if success and on_success then
+      on_success()
+    end
 
     return success
   end
@@ -26,7 +30,9 @@ M.create = function(state, cmd)
     vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if cmd.compile then
-      local success = cache_proc("compile", cmd.compile())
+      local success = cache_proc("compile", cmd.compile(), function()
+        state:update_dependencies()
+      end)
 
       if cmd.link and success then
         success = cache_proc("link", cmd.link())

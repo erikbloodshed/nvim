@@ -6,7 +6,7 @@ local profiles = {
       name = "compile",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-o", "exe", "src_file" }
+      args = { "-MMD", "-MF", "dep_file", "-o", "exe", "src_file" }
     },
     {
       name = "show_assembly",
