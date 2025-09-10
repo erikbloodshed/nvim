@@ -1,3 +1,4 @@
+--- @diagnostic disable: missing-fields
 local api, fn, log, notify = vim.api, vim.fn, vim.log.levels, vim.notify
 local utils = require("xrun.utils")
 
@@ -20,22 +21,9 @@ M.create = function(state, cmd)
 
   local actions = {}
 
-  actions.compile = function()
-    vim.cmd.update()
-
-    if cmd.compile and utils.execute(cmd.compile()) then
-      local hash = state:get_buffer_hash()
-      state.hash_tbl["compile"] = hash
-
-      if cmd.link and utils.execute(cmd.link()) then
-        state.hash_tbl["link"] = hash
-      end
-    end
-  end
-
   actions.run = function()
     if utils.has_errors() then return end
-    vim.cmd.update()
+    vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if cmd.compile then
       local success = cache_proc("compile", cmd.compile())
@@ -47,12 +35,17 @@ M.create = function(state, cmd)
       if not success then return end
     end
 
-    utils.run(cmd.run())
+    vim.cmd("ToggleTerm")
+
+    vim.defer_fn(function()
+      local job_id = vim.bo.channel
+      fn.chansend(job_id, cmd.run() .. "\n")
+    end, 100)
   end
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
-    vim.cmd("silent! update")
+    vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if utils.has_errors() then return end
 

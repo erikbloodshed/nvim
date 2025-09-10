@@ -136,14 +136,6 @@ M.execute = function(c)
   return false
 end
 
-M.run = function(c)
-  vim.cmd("ToggleTerm")
-  local job_id = vim.bo.channel
-  vim.defer_fn(function()
-    fn.chansend(job_id, c .. "\n")
-  end, 75)
-end
-
 M.has_errors = function()
   if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
     require("xrun.diagnostics").open_quickfixlist()

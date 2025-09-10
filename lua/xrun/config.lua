@@ -1,7 +1,6 @@
 return {
   keymaps = {
     { key = "<leader>rr", action = "run", desc = "Run File" },
-    { key = "<leader>rc", action = "compile", desc = "Compile File" },
     { key = "<leader>ra", action = "set_cmd_args", desc = "Set Arguments" },
     { key = "<leader>rf", action = "set_compiler_flags", desc = "Set Compiler Flags" },
     { key = "<leader>rq", action = "open_quickfix", desc = "Open Quickfix" },

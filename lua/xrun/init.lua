@@ -20,7 +20,6 @@ M.setup = function(cfg)
     map("n", m.key, actions[m.action], { buffer = 0, noremap = true, desc = m.desc })
   end
 
-  -- Autocommand for updating dependencies on buffer write
   if config.type == "compiled" then
     vim.api.nvim_create_autocmd("BufWritePost", {
       buffer = 0,
