@@ -4,35 +4,38 @@ local utils = require("xrun.utils")
 local M = {}
 
 M.create = function(state, cmd)
-  local cache_proc = function(hash, key, command)
-    local status = true
+  local cache_proc = function(key, command)
+    local hash = state:get_buffer_hash()
 
     if state.hash_tbl[key] and state.hash_tbl[key] == hash then
       notify(string.format("Source code is already processed for %s.", key), log.WARN)
-    else
-      status = utils.translate(command)
-      state.hash_tbl[key] = status and hash or nil
+      return true
     end
 
-    return status
-  end
-
-  local compile = function()
-    vim.cmd("silent! update")
-
-    if not cmd.compile then return true end
-
-    local buffer_hash = state:get_buffer_hash()
-    local success = cache_proc(buffer_hash, "compile", cmd.compile())
-
-    if cmd.link and success then
-      success = cache_proc(buffer_hash, "link", cmd.link())
-    end
+    local success = utils.execute(command)
+    state.hash_tbl[key] = success and hash or nil
 
     return success
   end
 
   local actions = {}
+
+  actions.run = function()
+    if utils.has_errors() then return end
+    vim.cmd.update()
+
+    if cmd.compile then
+      local success = cache_proc("compile", cmd.compile())
+
+      if cmd.link and success then
+        success = cache_proc("link", cmd.link())
+      end
+
+      if not success then return end
+    end
+
+    utils.run(cmd.run())
+  end
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
@@ -40,16 +43,9 @@ M.create = function(state, cmd)
 
     if utils.has_errors() then return end
 
-    local buffer_hash = state:get_buffer_hash()
-    local success = cache_proc(buffer_hash, "assemble", cmd.show_assembly())
-    if success then
+    if cache_proc("assemble", cmd.show_assembly()) then
       utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
     end
-  end
-
-  actions.run = function()
-    if utils.has_errors() then return end
-    if compile() then utils.run(cmd.run()) end
   end
 
   actions.open_quickfix = function()
@@ -88,6 +84,7 @@ M.create = function(state, cmd)
     end
 
     local files = utils.get_files(state.data_path)
+
     if vim.tbl_isempty(files) then
       notify("No files found in data directory: " .. state.data_path, log.WARN)
       return

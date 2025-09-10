@@ -121,7 +121,7 @@ M.read_file = function(f_path)
   return content
 end
 
-M.translate = function(c)
+M.execute = function(c)
   local r = vim.system(c):wait()
 
   if r.code == 0 then
