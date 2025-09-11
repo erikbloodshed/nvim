@@ -1,5 +1,6 @@
 local api, fn, uv = vim.api, vim.fn, vim.uv
 local set, notify, log = api.nvim_set_option_value, vim.notify, vim.log.levels
+
 local M = {}
 
 local find_upward = function(name, ftype)
@@ -121,19 +122,20 @@ M.read_file = function(f_path)
   return content
 end
 
-M.execute = function(c)
-  local r = vim.system(c):wait()
-
-  if r.code == 0 then
-    notify(string.format("Compilation successful with exit code %s.", r.code), log.INFO)
-    return true
-  end
-
-  if r.stderr and r.stderr ~= "" then
-    notify(r.stderr, log.ERROR)
-  end
-
-  return false
+M.execute = function(c, callback)
+  vim.system(c, { text = true }, function(r)
+    vim.schedule(function()
+      if r.code == 0 then
+        notify(string.format("Compilation successful with exit code %s.", r.code), log.INFO)
+        callback(true)
+      else
+        if r.stderr and r.stderr ~= "" then
+          notify(r.stderr, log.ERROR)
+        end
+        callback(false)
+      end
+    end)
+  end)
 end
 
 M.has_errors = function()

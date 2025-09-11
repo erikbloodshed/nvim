@@ -5,22 +5,30 @@ local utils = require("xrun.utils")
 local M = {}
 
 M.create = function(state, cmd)
-  local cache_proc = function(key, command, on_success)
+  local cache_proc = function(key, command, on_success, callback)
     local hash = state:get_buffer_hash()
 
     if state.hash_tbl[key] and state.hash_tbl[key] == hash then
       notify(string.format("Source code is already processed for %s.", key), log.WARN)
-      return true
+      callback(true)
+      return
     end
 
-    local success = utils.execute(command)
-    state.hash_tbl[key] = success and hash or nil
+    utils.execute(command, function(success)
+      state.hash_tbl[key] = success and hash or nil
+      if success and on_success then
+        on_success()
+      end
+      callback(success)
+    end)
+  end
 
-    if success and on_success then
-      on_success()
-    end
-
-    return success
+  local run_in_terminal = function()
+    vim.cmd("ToggleTerm")
+    vim.defer_fn(function()
+      local job_id = vim.bo.channel
+      fn.chansend(job_id, cmd.run() .. "\n")
+    end, 100)
   end
 
   local actions = {}
@@ -30,23 +38,21 @@ M.create = function(state, cmd)
     vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if cmd.compile then
-      local success = cache_proc("compile", cmd.compile(), function()
-        state:update_dependencies()
+      cache_proc("compile", cmd.compile(), function() state:update_dependencies() end, function(success)
+        if not success then return end
+
+        if cmd.link then
+          utils.execute(cmd.link(), function(link_success)
+            if not link_success then return end
+            run_in_terminal()
+          end)
+        else
+          run_in_terminal()
+        end
       end)
-
-      if cmd.link and success then
-        success = utils.execute(cmd.link())
-      end
-
-      if not success then return end
+    else
+      run_in_terminal()
     end
-
-    vim.cmd("ToggleTerm")
-
-    vim.defer_fn(function()
-      local job_id = vim.bo.channel
-      fn.chansend(job_id, cmd.run() .. "\n")
-    end, 100)
   end
 
   actions.show_assembly = function()
@@ -55,9 +61,11 @@ M.create = function(state, cmd)
 
     if utils.has_errors() then return end
 
-    if cache_proc("assemble", cmd.show_assembly()) then
-      utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
-    end
+    cache_proc("assemble", cmd.show_assembly(), nil, function(success)
+      if success then
+        utils.open(state.asm_file, utils.read_file(state.asm_file), "asm")
+      end
+    end)
   end
 
   actions.open_quickfix = function()
