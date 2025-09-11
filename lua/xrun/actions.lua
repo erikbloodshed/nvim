@@ -2,30 +2,6 @@
 local api, fn, log, notify = vim.api, vim.fn, vim.log.levels, vim.notify
 local utils = require("xrun.utils")
 
-local has_errors = function()
-  if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-    require("xrun.diagnostics").open_quickfixlist()
-    return true
-  end
-  return false
-end
-
-local execute = function(c, callback)
-  vim.system(c, { text = true }, function(r)
-    vim.schedule(function()
-      if r.code == 0 then
-        notify(string.format("Compilation successful with exit code %s.", r.code), log.INFO)
-        callback(true)
-      else
-        if r.stderr and r.stderr ~= "" then
-          notify(r.stderr, log.ERROR)
-        end
-        callback(false)
-      end
-    end)
-  end)
-end
-
 local M = {}
 
 M.create = function(state, cmd)
@@ -38,7 +14,7 @@ M.create = function(state, cmd)
       return
     end
 
-    execute(command, function(success)
+    utils.execute(command, function(success)
       state.hash_tbl[key] = success and hash or nil
       if success and on_success then
         on_success()
@@ -58,33 +34,32 @@ M.create = function(state, cmd)
   local actions = {}
 
   actions.run = function()
-    if has_errors() then return end
+    if utils.has_errors() then return end
     vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
-    if state.type == "interpreted" then
-      run_in_terminal()
-      return
-    end
 
-    cache_proc("compile", cmd.compile(), function() state:update_dependencies() end, function(success)
-      if not success then return end
+    if cmd.compile then
+      cache_proc("compile", cmd.compile(), function() state:update_dependencies() end, function(success)
+        if not success then return end
 
-      if cmd.link then
-        execute(cmd.link(), function(link_success)
-          if link_success then
+        if cmd.link then
+          utils.execute(cmd.link(), function(link_success)
+            if not link_success then return end
             run_in_terminal()
-          end
-        end)
-      else
-        run_in_terminal()
-      end
-    end)
+          end)
+        else
+          run_in_terminal()
+        end
+      end)
+    else
+      run_in_terminal()
+    end
   end
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
     vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
-    if has_errors() then return end
+    if utils.has_errors() then return end
 
     cache_proc("assemble", cmd.show_assembly(), nil, function(success)
       if success then
@@ -93,7 +68,9 @@ M.create = function(state, cmd)
     end)
   end
 
-  actions.open_quickfix = require("xrun.diagnostics").open_quickfixlist
+  actions.open_quickfix = function()
+    require("xrun.diagnostics").open_quickfixlist()
+  end
 
   actions.set_compiler_flags = function()
     vim.ui.input({

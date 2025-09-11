@@ -9,7 +9,7 @@ State.__index = State
 function State:init(config)
   local lang_type = config.type
 
-  local obj = setmetatable({
+  self = setmetatable({
     src_file = api.nvim_buf_get_name(0),
     type = lang_type,
     compiler = config.compiler,
@@ -21,26 +21,26 @@ function State:init(config)
     dependencies = {}
   }, State)
 
-  obj.default_cflags = vim.deepcopy(obj.compiler_flags)
+  self.default_cflags = vim.deepcopy(self.compiler_flags)
 
   if lang_type ~= "interpreted" then
-    obj.basename = fn.fnamemodify(obj.src_file, ":t:r")
-    obj.outdir = config.output_directory or ""
-    obj.exe = vim.fs.joinpath(obj.outdir, obj.basename)
+    self.basename = fn.fnamemodify(self.src_file, ":t:r")
+    self.outdir = config.output_directory or ""
+    self.exe = vim.fs.joinpath(self.outdir, self.basename)
   end
 
   if lang_type == "assembled" then
-    obj.linker = config.linker
-    obj.linker_flags = config.linker_flags or {}
-    obj.obj_file = obj.exe .. ".o"
+    self.linker = config.linker
+    self.linker_flags = config.linker_flags or {}
+    self.obj_file = self.exe .. ".o"
   end
 
   if lang_type == "compiled" then
-    obj.asm_file = obj.exe .. ".s"
-    obj.dep_file = obj.exe .. ".d"
+    self.asm_file = self.exe .. ".s"
+    self.dep_file = self.exe .. ".d"
   end
 
-  return obj
+  return self
 end
 
 function State:invalidate_run_cache()
