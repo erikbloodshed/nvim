@@ -147,8 +147,6 @@ function State:update_deps()
         self.buffer_cache.dep_mtimes[dep] = utils.get_date_modified(dep)
       end
 
-      self.buffer_cache.hash = nil
-
       vim.notify("Dependencies updated from build output.", vim.log.levels.INFO)
     end
   end
