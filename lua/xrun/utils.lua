@@ -107,7 +107,8 @@ M.get_date_modified = function(f_path)
   if file_stats then
     return os.date("%Y-%B-%d %H:%M:%S", file_stats.mtime.sec)
   else
-    return "Unable to retrieve file modified time."
+    notify("Unable to retrieve file modified time.", log.ERROR)
+    return nil
   end
 end
 
@@ -125,7 +126,7 @@ end
 M.parse_dependency_file = function(f_path)
   local content, err = M.read_file(f_path)
   if not content then
-    vim.notify("Could not read dependency file: " .. (err or f_path), log.WARN)
+    notify("Could not read dependency file: " .. (err or f_path), log.WARN)
     return {}
   end
 
