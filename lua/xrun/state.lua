@@ -1,6 +1,38 @@
 local api, fn = vim.api, vim.fn
 local utils = require("xrun.utils")
 
+local read_file = function(f_path)
+  local f = io.open(f_path, "r")
+
+  if not f then return nil, "Could not open file: " .. f_path end
+  local content = {}
+  for line in f:lines() do table.insert(content, line) end
+  f:close()
+
+  return content
+end
+
+local parse_dependency_file = function(f_path)
+  local content, err = read_file(f_path)
+  if not content then
+    vim.notify("Could not read dependency file: " .. (err or f_path), vim.log.levels.WARN)
+    return {}
+  end
+
+  local single_line = table.concat(content, " "):gsub("\\\n", " ")
+  local words = vim.split(single_line, "%s+", { trimempty = true })
+  local dependencies = {}
+
+  if #words > 2 then
+    for i = 3, #words do
+      table.insert(dependencies, words[i])
+    end
+  end
+
+  table.sort(dependencies)
+  return dependencies
+end
+
 local M = {}
 
 local State = {}
@@ -9,7 +41,7 @@ State.__index = State
 function State:init(config)
   local lang_type = config.type
 
-  self = setmetatable({
+  local obj = setmetatable({
     src_file = api.nvim_buf_get_name(0),
     type = lang_type,
     compiler = config.compiler,
@@ -21,26 +53,26 @@ function State:init(config)
     dependencies = {}
   }, State)
 
-  self.default_cflags = vim.deepcopy(self.compiler_flags)
+  obj.default_cflags = vim.deepcopy(obj.compiler_flags)
 
   if lang_type ~= "interpreted" then
-    self.basename = fn.fnamemodify(self.src_file, ":t:r")
-    self.outdir = config.output_directory or ""
-    self.exe = vim.fs.joinpath(self.outdir, self.basename)
+    obj.basename = fn.fnamemodify(obj.src_file, ":t:r")
+    obj.outdir = config.output_directory or ""
+    obj.exe = vim.fs.joinpath(obj.outdir, obj.basename)
   end
 
   if lang_type == "assembled" then
-    self.linker = config.linker
-    self.linker_flags = config.linker_flags or {}
-    self.obj_file = self.exe .. ".o"
+    obj.linker = config.linker
+    obj.linker_flags = config.linker_flags or {}
+    obj.obj_file = obj.exe .. ".o"
   end
 
   if lang_type == "compiled" then
-    self.asm_file = self.exe .. ".s"
-    self.dep_file = self.exe .. ".d"
+    obj.asm_file = obj.exe .. ".s"
+    obj.dep_file = obj.exe .. ".d"
   end
 
-  return self
+  return obj
 end
 
 function State:invalidate_run_cache()
@@ -84,7 +116,7 @@ function State:get_buffer_hash()
     local hash_input = table.concat(content, "\n")
     if self.type == "compiled" then
       for _, dep in ipairs(self.dependencies) do
-        local dep_content = utils.read_file(dep)
+        local dep_content = read_file(dep)
         if dep_content then
           hash_input = hash_input .. table.concat(dep_content, "\n")
         end
@@ -114,9 +146,9 @@ function State:set_data_file(filepath)
   self:invalidate_run_cache()
 end
 
-function State:update_dependencies()
+function State:update_deps()
   if self.type == "compiled" then
-    local new_deps = utils.parse_dependency_file(self.dep_file)
+    local new_deps = parse_dependency_file(self.dep_file)
 
     if not vim.deep_equal(self.dependencies, new_deps) then
       self.dependencies = new_deps

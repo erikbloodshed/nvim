@@ -1,5 +1,5 @@
 local api, fn, uv = vim.api, vim.fn, vim.uv
-local set, notify, log = api.nvim_set_option_value, vim.notify, vim.log.levels
+local set = api.nvim_set_option_value
 
 local M = {}
 
@@ -109,62 +109,6 @@ M.get_date_modified = function(f_path)
   else
     return "Unable to retrieve file modified time."
   end
-end
-
-M.read_file = function(f_path)
-  local f = io.open(f_path, "r")
-
-  if not f then return nil, "Could not open file: " .. f_path end
-  local content = {}
-  for line in f:lines() do table.insert(content, line) end
-  f:close()
-
-  return content
-end
-
-M.execute = function(c, callback)
-  vim.system(c, { text = true }, function(r)
-    vim.schedule(function()
-      if r.code == 0 then
-        notify(string.format("Compilation successful with exit code %s.", r.code), log.INFO)
-        callback(true)
-      else
-        if r.stderr and r.stderr ~= "" then
-          notify(r.stderr, log.ERROR)
-        end
-        callback(false)
-      end
-    end)
-  end)
-end
-
-M.has_errors = function()
-  if #vim.diagnostic.count(0, { severity = { vim.diagnostic.severity.ERROR } }) > 0 then
-    require("xrun.diagnostics").open_quickfixlist()
-    return true
-  end
-  return false
-end
-
-M.parse_dependency_file = function(f_path)
-  local content, err = M.read_file(f_path)
-  if not content then
-    vim.notify("Could not read dependency file: " .. (err or f_path), log.WARN)
-    return {}
-  end
-
-  local single_line = table.concat(content, " "):gsub("\\\n", " ")
-  local words = vim.split(single_line, "%s+", { trimempty = true })
-  local dependencies = {}
-
-  if #words > 2 then
-    for i = 3, #words do
-      table.insert(dependencies, words[i])
-    end
-  end
-
-  table.sort(dependencies)
-  return dependencies
 end
 
 return M
