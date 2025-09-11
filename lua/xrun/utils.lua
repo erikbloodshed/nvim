@@ -102,6 +102,17 @@ M.open = function(title, lines, ft)
   return buf
 end
 
+M.read_file = function(f_path)
+  local f = io.open(f_path, "r")
+
+  if not f then return nil, "Could not open file: " .. f_path end
+  local content = {}
+  for line in f:lines() do table.insert(content, line) end
+  f:close()
+
+  return content
+end
+
 M.get_date_modified = function(f_path)
   local file_stats = uv.fs_stat(f_path)
   if file_stats then

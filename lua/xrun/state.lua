@@ -1,19 +1,8 @@
 local api, fn = vim.api, vim.fn
 local utils = require("xrun.utils")
 
-local read_file = function(f_path)
-  local f = io.open(f_path, "r")
-
-  if not f then return nil, "Could not open file: " .. f_path end
-  local content = {}
-  for line in f:lines() do table.insert(content, line) end
-  f:close()
-
-  return content
-end
-
 local parse_dependency_file = function(f_path)
-  local content, err = read_file(f_path)
+  local content, err = utils.read_file(f_path)
   if not content then
     vim.notify("Could not read dependency file: " .. (err or f_path), vim.log.levels.WARN)
     return {}
@@ -116,7 +105,7 @@ function State:get_buffer_hash()
     local hash_input = table.concat(content, "\n")
     if self.type == "compiled" then
       for _, dep in ipairs(self.dependencies) do
-        local dep_content = read_file(dep)
+        local dep_content = utils.read_file(dep)
         if dep_content then
           hash_input = hash_input .. table.concat(dep_content, "\n")
         end

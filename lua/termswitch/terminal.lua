@@ -359,16 +359,19 @@ function Terminal:send(text, opts)
 
   self:open()
 
-  local group = self:_ensure_autocommd_group()
-  api.nvim_create_autocommd('TermOpen', {
+  local group = self:_ensure_autocmd_group()
+  api.nvim_create_autocmd('TermOpen', {
     group = group,
     buffer = self.buf,
     once = true,
     callback = function(args)
-      local ready_job_id = api.nvim_buf_get_var(args.buf, 'terminal_job_id')
-      if ready_job_id then
-        vim.fn.chansend(ready_job_id, text .. '\r')
-      end
+      -- Add a small delay to ensure terminal is fully ready
+      vim.defer_fn(function()
+        local success, ready_job_id = pcall(api.nvim_buf_get_var, args.buf, 'terminal_job_id')
+        if success and ready_job_id then
+          vim.fn.chansend(ready_job_id, text .. '\r')
+        end
+      end, 50)
     end,
     desc = 'Send command to ' .. self.name .. ' after open'
   })

@@ -14,7 +14,7 @@ local execute = function(c, callback)
   vim.system(c, { text = true }, function(r)
     vim.schedule(function()
       if r.code == 0 then
-        notify(string.format("Compilation successful with exit code %s.", r.code), log.INFO)
+        notify(string.format("Compilation succeeded with exit code %s.", r.code), log.INFO)
         callback(true)
       else
         if r.stderr and r.stderr ~= "" then
@@ -33,7 +33,7 @@ M.create = function(state, cmd)
     local hash = state:get_buffer_hash()
 
     if state.hash_tbl[key] and state.hash_tbl[key] == hash then
-      notify(string.format("Source code is already processed for %s.", key), log.WARN)
+      notify("Source code is already compiled.", log.WARN)
       callback(true)
       return
     end
@@ -50,9 +50,15 @@ M.create = function(state, cmd)
   local run_in_terminal = function()
     vim.cmd("ToggleTerm")
     vim.defer_fn(function()
-      local job_id = vim.bo.channel
-      fn.chansend(job_id, cmd.run() .. "\n")
-    end, 100)
+      local current_buf = vim.api.nvim_get_current_buf()
+      local buf_type = vim.api.nvim_get_option_value('buftype', { buf = current_buf })
+      if buf_type == "terminal" then
+        local job_id = vim.b.terminal_job_id or vim.bo.channel
+        if job_id then
+          fn.chansend(job_id, cmd.run() .. "\n")
+        end
+      end
+    end, 70)
   end
 
   local actions = {}
@@ -61,7 +67,7 @@ M.create = function(state, cmd)
     if has_errors() then return end
     vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
-    if not cmd.compile then
+    if not cmd.compile or cmd.assemble then
       run_in_terminal()
       return
     end
