@@ -53,16 +53,6 @@ function Terminal:_create_buffer()
   return self.buf_id
 end
 
-function Terminal:_create_window()
-  local buf_id = self:_create_buffer()
-
-  if self.config.direction == "float" then
-    return self:_create_float_window(buf_id)
-  else
-    return self:_create_split_window(buf_id)
-  end
-end
-
 function Terminal:_create_float_window(buf_id)
   local width = math.floor(vim.o.columns * 0.8)
   local height = math.floor(vim.o.lines * 0.8)
@@ -102,6 +92,16 @@ function Terminal:_create_split_window(buf_id)
   api.nvim_win_set_buf(self.win_id, buf_id)
 
   return self.win_id
+end
+
+function Terminal:_create_window()
+  local buf_id = self:_create_buffer()
+
+  if self.config.direction == "float" then
+    return self:_create_float_window(buf_id)
+  else
+    return self:_create_split_window(buf_id)
+  end
 end
 
 function Terminal:_start_terminal()
@@ -201,6 +201,25 @@ function Terminal:toggle()
   end
 end
 
+function Terminal:hide()
+  if self.is_open and self.win_id and api.nvim_win_is_valid(self.win_id) then
+    api.nvim_win_hide(self.win_id)
+    self.win_id = nil
+    self.is_open = false
+  end
+end
+
+function Terminal:focus()
+  if self.is_open and self.win_id and api.nvim_win_is_valid(self.win_id) then
+    api.nvim_set_current_win(self.win_id)
+    if self.config.start_in_insert then
+      vim.cmd("startinsert")
+    end
+  else
+    self:open()
+  end
+end
+
 function Terminal:execute(command)
   if not command or command == "" then
     return false
@@ -259,6 +278,57 @@ function Terminal:destroy()
   if self.buf_id and api.nvim_buf_is_valid(self.buf_id) then
     api.nvim_buf_delete(self.buf_id, { force = true })
     self.buf_id = nil
+  end
+end
+
+function Terminal:setup_keymaps(user_keymaps)
+  if not user_keymaps or type(user_keymaps) ~= 'table' then
+    vim.notify("TermSwitch: Invalid keymap configuration. Must be a table.", vim.log.levels.WARN)
+    return
+  end
+
+  local esc = api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true)
+
+  for _, map_config in ipairs(user_keymaps) do
+    -- Validate the keymap configuration entry
+    if not (map_config.lhs and map_config.action) then
+      vim.notify("TermSwitch: Invalid keymap config. Requires 'lhs' and 'action'.",
+        vim.log.levels.WARN)
+      goto continue
+    end
+
+    local rhs
+    if map_config.action == 'toggle' then
+      rhs = function() self:toggle() end
+    elseif map_config.action == 'hide' then
+      rhs = function()
+        -- Special handling for hiding from within terminal mode
+        if map_config.mode == 't' then
+          api.nvim_feedkeys(esc, 't', false)
+          vim.schedule(function() self:hide() end)
+        else
+          self:hide()
+        end
+      end
+    elseif map_config.action == 'open' then
+      rhs = function() self:open() end
+    elseif map_config.action == 'focus' then
+      rhs = function() self:focus() end
+    else
+      vim.notify(
+        string.format("TermSwitch: Invalid keymap action '%s' for '%s'.", map_config.action, map_config.lhs),
+        vim.log.levels.WARN)
+      goto continue
+    end
+
+    vim.keymap.set(map_config.mode or 'n', map_config.lhs, rhs, {
+      noremap = true,
+      silent = true,
+      desc = map_config.desc or
+          string.format("%s terminal", map_config.action:gsub("^%l", string.upper))
+    })
+
+    ::continue::
   end
 end
 

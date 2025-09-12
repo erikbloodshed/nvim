@@ -5,6 +5,14 @@ local terminal = nil
 M.setup = function(cfg)
   local defaults = require("xrun.config")
   terminal = require("xrun.terminal").create_float()
+  terminal:setup_keymaps({
+    {
+      lhs = '<leader>tt',
+      action = 'toggle',
+      mode = {'n', 't'},
+      desc = 'Toggle my terminal',
+    },
+  })
 
   local ft = vim.bo.filetype
   local config = vim.tbl_deep_extend('force', defaults.filetype[ft], cfg.filetype[ft] or {})
