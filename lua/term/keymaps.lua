@@ -2,19 +2,19 @@
 
 local M = {}
 
-function M.setup(terminal_manager, user_keymaps)
-  if not user_keymaps or type(user_keymaps) ~= 'table' then
+function M.setup(manager, usr_maps)
+  if not usr_maps or type(usr_maps) ~= 'table' then
     return
   end
 
-  for _, map_config in ipairs(user_keymaps) do
+  for _, map_config in ipairs(usr_maps) do
     if not (map_config.lhs and map_config.terminal and map_config.action) then
       vim.notify("TermSwitch: Invalid keymap config. Requires 'lhs', 'terminal', and 'action'.",
         vim.log.levels.WARN)
       goto continue
     end
 
-    local terminal = terminal_manager.get_terminal(map_config.terminal)
+    local terminal = manager.get_terminal(map_config.terminal)
     if not terminal then
       vim.notify(
         string.format("TermSwitch: Terminal '%s' not found for keymap '%s'.", map_config.terminal, map_config.lhs),
