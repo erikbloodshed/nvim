@@ -2,7 +2,7 @@ local api = vim.api
 
 local M = {}
 
-function M.set_win_options(win, options)
+M.set_win_options = function(win, options)
   local win_config = {}
   local individual_opts = {}
 
@@ -23,14 +23,14 @@ function M.set_win_options(win, options)
   end
 end
 
-function M.set_buf_options(buf, options)
+M.set_buf_options = function(buf, options)
   for opt, val in pairs(options) do
     api.nvim_set_option_value(opt, val, { buf = buf })
   end
 end
 
 local ui_cache = { width = nil, height = nil, timestamp = 0 }
-local UI_CACHE_TTL = 1000 -- 1 second in milliseconds
+local UI_CACHE_TTL = 1000
 
 api.nvim_create_autocmd('VimResized', {
   callback = function()
@@ -41,8 +41,8 @@ api.nvim_create_autocmd('VimResized', {
   desc = 'Invalidate UI dimensions cache'
 })
 
-function M.get_ui_dimensions()
-  local now = vim.uv.hrtime() / 1000000   -- Convert to milliseconds
+M.get_ui_dimensions = function()
+  local now = vim.uv.hrtime() / 1000000
 
   if ui_cache.width and ui_cache.height and (now - ui_cache.timestamp) < UI_CACHE_TTL then
     return ui_cache.width, ui_cache.height
@@ -59,7 +59,7 @@ function M.get_ui_dimensions()
   return 80, 24
 end
 
-function M.create_title(name)
+M.create_title = function(name)
   return ' ' .. name:gsub("^%l", string.upper) .. ' '
 end
 

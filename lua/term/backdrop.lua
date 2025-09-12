@@ -13,7 +13,7 @@ local normal_bg_cache = nil
 local normal_bg_cache_time = 0
 local CACHE_DURATION = 1000 -- 1 second in milliseconds
 
-local function get_normal_bg()
+local get_normal_bg = function()
   local current_time = vim.loop.hrtime() / 1000000 -- Convert to milliseconds
 
   if normal_bg_cache and (current_time - normal_bg_cache_time) < CACHE_DURATION then
@@ -27,7 +27,7 @@ local function get_normal_bg()
   return normal_bg_cache
 end
 
-local function should_create_backdrop()
+local should_create_backdrop = function()
   return get_normal_bg() ~= nil and BACKDROP_OPACITY < 100
 end
 
@@ -36,7 +36,7 @@ local function is_backdrop_valid(backdrop)
     backdrop.buf and api.nvim_buf_is_valid(backdrop.buf)
 end
 
-local function create_resize_autocmd(backdrop)
+local create_resize_autocmd = function(backdrop)
   return api.nvim_create_autocmd("VimResized", {
     group = api.nvim_create_augroup("TermSwitchBackdrop_" .. backdrop.id, { clear = true }),
     callback = function()
@@ -54,7 +54,7 @@ local function create_resize_autocmd(backdrop)
   })
 end
 
-local function cleanup_backdrop_resources(backdrop)
+local cleanup_backdrop_resources = function(backdrop)
   if not backdrop then return end
 
   -- Clean up autocmd group
@@ -71,7 +71,7 @@ local function cleanup_backdrop_resources(backdrop)
   end
 end
 
-local function create_backdrop_window(backdrop)
+local create_backdrop_window = function(backdrop)
   if not should_create_backdrop() then
     return false
   end
@@ -135,15 +135,13 @@ local function create_backdrop_window(backdrop)
     vim.wo[backdrop.win][opt] = value
   end
 
-  -- Set up resize handler
   create_resize_autocmd(backdrop)
 
-  -- Store in cache
   backdrop_instances[backdrop.id] = backdrop
   return true
 end
 
-function M.create_backdrop(terminal_name)
+M.create_backdrop = function(terminal_name)
   local backdrop = {
     id = terminal_name,
     buf = nil,
@@ -154,22 +152,21 @@ function M.create_backdrop(terminal_name)
   return success and backdrop or nil
 end
 
-function M.destroy_backdrop(backdrop)
+M.destroy_backdrop = function(backdrop)
   if not backdrop then return end
 
   cleanup_backdrop_resources(backdrop)
 
-  -- Clear references
   backdrop.win = nil
   backdrop.buf = nil
   backdrop_instances[backdrop.id] = nil
 end
 
-function M.is_backdrop_valid(backdrop)
+M.is_backdrop_valid = function(backdrop)
   return is_backdrop_valid(backdrop)
 end
 
-function M.cleanup_all()
+M.cleanup_all = function()
   for _, backdrop in pairs(backdrop_instances) do
     cleanup_backdrop_resources(backdrop)
   end
@@ -180,7 +177,6 @@ function M.get_backdrop(terminal_name)
   return backdrop_instances[terminal_name]
 end
 
--- Single autocmd for cleanup on exit
 api.nvim_create_autocmd("VimLeave", {
   callback = M.cleanup_all,
   desc = "Cleanup floating terminal backdrops on exit"
