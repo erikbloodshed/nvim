@@ -286,7 +286,7 @@ function Terminal:open()
 
   local target_cwd = nil
   if self.config.open_in_file_dir then
-    local file_dir = fn.expand('%:p:h')
+    local file_dir = vim.fs.dirname(api.nvim_buf_get_name(0))
     if file_dir and fn.isdirectory(file_dir) == 1 then
       target_cwd = file_dir
     end

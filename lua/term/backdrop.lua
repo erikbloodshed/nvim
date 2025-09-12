@@ -3,9 +3,8 @@ local api = vim.api
 local M = {}
 local backdrop_instances = {}
 
--- Fixed backdrop settings - no configuration needed
 local BACKDROP_OPACITY = 60
-local BACKDROP_ZINDEX = 45
+local BACKDROP_ZINDEX = 49
 local BACKDROP_COLOR = "#000000"
 
 -- Cache Normal highlight check result temporarily
@@ -14,7 +13,7 @@ local normal_bg_cache_time = 0
 local CACHE_DURATION = 1000 -- 1 second in milliseconds
 
 local get_normal_bg = function()
-  local current_time = vim.loop.hrtime() / 1000000 -- Convert to milliseconds
+  local current_time = vim.loop.hrtime() / 1000000
 
   if normal_bg_cache and (current_time - normal_bg_cache_time) < CACHE_DURATION then
     return normal_bg_cache
@@ -118,14 +117,12 @@ local create_backdrop_window = function(backdrop)
     return false
   end
 
-  -- Set up highlight and window options
-  local hl_name = "TermSwitchBackdrop_" .. backdrop.id
+  local hl_name = "Backdrop_" .. backdrop.id
   api.nvim_set_hl(0, hl_name, {
     bg = BACKDROP_COLOR,
     default = true
   })
 
-  -- Set window options in batch
   local win_opts = {
     winhighlight = "Normal:" .. hl_name,
     winblend = BACKDROP_OPACITY
@@ -157,8 +154,7 @@ M.destroy_backdrop = function(backdrop)
 
   cleanup_backdrop_resources(backdrop)
 
-  backdrop.win = nil
-  backdrop.buf = nil
+  backdrop.win, backdrop.buf = nil, nil
   backdrop_instances[backdrop.id] = nil
 end
 
