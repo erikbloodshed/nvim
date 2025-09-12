@@ -48,29 +48,11 @@ M.create = function(state, cmd, terminal)
   end
 
   local run_in_terminal = function()
-    -- vim.cmd("ToggleTerm")
-    -- vim.defer_fn(function()
-    --   local current_buf = vim.api.nvim_get_current_buf()
-    --   local buf_type = vim.api.nvim_get_option_value('buftype', { buf = current_buf })
-    --   if buf_type == "terminal" then
-    --     local job_id = vim.b.terminal_job_id or vim.bo.channel
-    --     if job_id then
-    --       fn.chansend(job_id, cmd.run() .. "\n")
-    --     end
-    --   end
-    -- end, 70)
-    if not terminal:is_running() then
-      terminal:open()
-    end
-
+    if not terminal:is_running() then terminal:open() end
     terminal:execute(cmd.run())
   end
 
   local actions = {}
-
-  actions.toggle_terminal = function()
-    terminal:toggle()
-  end
 
   actions.run = function()
     if has_errors() then return end

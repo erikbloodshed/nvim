@@ -238,9 +238,9 @@ function Terminal:execute(command)
     else
       vim.notify("Terminal not ready for command execution", vim.log.levels.WARN)
     end
-  end, 100)
 
-  return true
+    return true
+  end, 75)
 end
 
 function Terminal:send(data)
@@ -290,7 +290,6 @@ function Terminal:setup_keymaps(user_keymaps)
   local esc = api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true)
 
   for _, map_config in ipairs(user_keymaps) do
-    -- Validate the keymap configuration entry
     if not (map_config.lhs and map_config.action) then
       vim.notify("TermSwitch: Invalid keymap config. Requires 'lhs' and 'action'.",
         vim.log.levels.WARN)
@@ -302,8 +301,10 @@ function Terminal:setup_keymaps(user_keymaps)
       rhs = function() self:toggle() end
     elseif map_config.action == 'hide' then
       rhs = function()
-        -- Special handling for hiding from within terminal mode
-        if map_config.mode == 't' then
+        -- Check if any of the modes is 't'
+        local is_terminal_mode = type(map_config.mode) == 'table' and vim.tbl_contains(map_config.mode, 't') or
+          map_config.mode == 't'
+        if is_terminal_mode then
           api.nvim_feedkeys(esc, 't', false)
           vim.schedule(function() self:hide() end)
         else
@@ -325,7 +326,7 @@ function Terminal:setup_keymaps(user_keymaps)
       noremap = true,
       silent = true,
       desc = map_config.desc or
-          string.format("%s terminal", map_config.action:gsub("^%l", string.upper))
+        string.format("%s terminal", map_config.action:gsub("^%l", string.upper))
     })
 
     ::continue::

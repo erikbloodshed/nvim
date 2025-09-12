@@ -1,10 +1,8 @@
 local M = {}
 
-local terminal = nil
-
 M.setup = function(cfg)
   local defaults = require("xrun.config")
-  terminal = require("xrun.terminal").create_float()
+  local terminal = require("xrun.terminal").create_float()
   terminal:setup_keymaps({
     {
       lhs = '<leader>tt',
@@ -31,10 +29,6 @@ M.setup = function(cfg)
   for _, m in ipairs(keymaps) do
     map("n", m.key, actions[m.action], { buffer = 0, noremap = true, desc = m.desc })
   end
-end
-
-M.get_terminal = function()
-  return terminal
 end
 
 return M

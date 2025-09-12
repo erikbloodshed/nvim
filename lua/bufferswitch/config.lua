@@ -21,7 +21,7 @@ function M.create(user_config)
       "^term://", "^neo%-tree "
     },
     exclude_buftypes = {
-      "quickfix", "nofile", "help", "prompt"
+      "quickfix", "nofile", "help", "prompt", "terminal"
     },
     exclude_filetypes = {
       "qf", "netrw", "NvimTree"
