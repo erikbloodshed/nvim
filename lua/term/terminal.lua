@@ -44,7 +44,7 @@ function Terminal:get_float_config()
     border = self.config.border,
     title = self.config.title,
     title_pos = 'center',
-    zindex = self.config.backdrop.enabled and 50 or nil,
+    zindex = 50,
   }
 end
 
@@ -88,7 +88,6 @@ function Terminal:setup_window_options()
 end
 
 function Terminal:create_backdrop()
-  if not self.config.backdrop.enabled then return end
   if self.backdrop_instance and backdrop.is_backdrop_valid(self.backdrop_instance) then return end
   self.backdrop_instance = backdrop.create_backdrop(self.name)
 end

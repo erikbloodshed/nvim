@@ -58,14 +58,13 @@ autocmd({ "VimEnter" }, {
         border = 'rounded',
         open_in_file_dir = true,
         open = true,
-        backdrop = { enabled = true, opacity = 60, color = "#000000", }
       },
 
       terminals = {
         shell = {},
         python = {
           shell = 'python3.14',
-          filetype = 'pyterm',
+          filetype = 'terminal',
           auto_delete_on_close = true,
         },
       },
@@ -80,13 +79,6 @@ autocmd({ "VimEnter" }, {
         { mode = { 'n', 't' }, lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
       },
     })
-  end,
-})
-
-autocmd({ "TermOpen" }, {
-  pattern = { "*" },
-  callback = function()
-    vim.cmd.startinsert()
   end,
 })
 

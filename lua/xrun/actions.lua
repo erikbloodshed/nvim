@@ -47,15 +47,17 @@ M.create = function(state, cmd)
     end)
   end
 
+  local cmd_run = cmd.run() .. "\n"
+
   local run_in_terminal = function()
-    vim.cmd("ToggleTerm")
+    api.nvim_cmd({ cmd = "ToggleTerm" }, {})
     vim.defer_fn(function()
-      local current_buf = vim.api.nvim_get_current_buf()
-      local buf_type = vim.api.nvim_get_option_value('buftype', { buf = current_buf })
-      if buf_type == "terminal" then
+      local curbuf = api.nvim_get_current_buf()
+      local buftype = api.nvim_get_option_value('buftype', { buf = curbuf })
+      if buftype == "terminal" then
         local job_id = vim.b.terminal_job_id or vim.bo.channel
         if job_id then
-          fn.chansend(job_id, cmd.run() .. "\n")
+          fn.chansend(job_id,  cmd_run)
         end
       end
     end, 70)
@@ -65,7 +67,7 @@ M.create = function(state, cmd)
 
   actions.run = function()
     if has_errors() then return end
-    vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
+    api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if not cmd.compile or cmd.assemble then
       run_in_terminal()
@@ -88,7 +90,7 @@ M.create = function(state, cmd)
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
-    vim.api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
+    api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if has_errors() then return end
 

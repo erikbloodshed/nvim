@@ -39,22 +39,6 @@ function M.validate_config(cfg)
     validated.border = M.defaults.border
   end
 
-  if validated.backdrop then
-    if validated.backdrop.opacity and
-      (type(validated.backdrop.opacity) ~= 'number' or
-        validated.backdrop.opacity < 0 or validated.backdrop.opacity > 100) then
-      vim.notify("Term: 'backdrop.opacity' must be between 0 and 100. Using default.", vim.log.levels.WARN)
-      validated.backdrop.opacity = M.defaults.backdrop.opacity
-    end
-
-    if validated.backdrop.color and type(validated.backdrop.color) ~= 'string' then
-      vim.notify("Term: 'backdrop.color' must be a string. Using default.", vim.log.levels.WARN)
-      validated.backdrop.color = M.defaults.backdrop.color
-    end
-  else
-    validated.backdrop = vim.deepcopy(M.defaults.backdrop)
-  end
-
   return validated
 end
 
