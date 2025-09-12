@@ -32,7 +32,7 @@ end
 
 function Terminal:get_float_config()
   local ui_width, ui_height = utils.get_ui_dimensions()
-  local width = math.floor(ui_width * self.config.width)
+  local width = math.floor(ui_width * self.config.width) + 2
   local height = math.floor(ui_height * self.config.height)
 
   return {
@@ -134,20 +134,16 @@ function Terminal:create_backdrop()
     return
   end
 
-  if not self.backdrop_instance then
-    self.backdrop_instance = backdrop.create_backdrop(self.name, {
-      opacity = self.config.backdrop.opacity,
-      color = self.config.backdrop.color,
-      zindex = 45,
-    })
+  if self.backdrop_instance and backdrop.is_backdrop_valid(self.backdrop_instance) then
+    return
   end
 
-  self.backdrop_instance:create()
+  self.backdrop_instance = backdrop.create_backdrop(self.name)
 end
 
 function Terminal:destroy_backdrop()
   if self.backdrop_instance then
-    self.backdrop_instance:destroy()
+    backdrop.destroy_backdrop(self.backdrop_instance)
     self.backdrop_instance = nil
   end
 end

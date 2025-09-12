@@ -30,17 +30,17 @@ function M.validate_config(cfg)
   local validated = vim.deepcopy(cfg)
 
   if validated.width and (validated.width <= 0 or validated.width > 1) then
-    vim.notify("TermSwitch: 'width' must be between 0 and 1. Using default.", vim.log.levels.WARN)
+    vim.notify("Term: 'width' must be between 0 and 1. Using default.", vim.log.levels.WARN)
     validated.width = M.defaults.width
   end
 
   if validated.height and (validated.height <= 0 or validated.height > 1) then
-    vim.notify("TermSwitch: 'height' must be between 0 and 1. Using default.", vim.log.levels.WARN)
+    vim.notify("Term: 'height' must be between 0 and 1. Using default.", vim.log.levels.WARN)
     validated.height = M.defaults.height
   end
 
   if validated.border and not M.borders[validated.border] then
-    vim.notify(string.format("TermSwitch: Invalid 'border' style '%s'. Using 'rounded'.", validated.border),
+    vim.notify(string.format("Term: Invalid 'border' style '%s'. Using 'rounded'.", validated.border),
       vim.log.levels.WARN)
     validated.border = M.defaults.border
   end
@@ -49,12 +49,12 @@ function M.validate_config(cfg)
     if validated.backdrop.opacity and
       (type(validated.backdrop.opacity) ~= 'number' or
         validated.backdrop.opacity < 0 or validated.backdrop.opacity > 100) then
-      vim.notify("TermSwitch: 'backdrop.opacity' must be between 0 and 100. Using default.", vim.log.levels.WARN)
+      vim.notify("Term: 'backdrop.opacity' must be between 0 and 100. Using default.", vim.log.levels.WARN)
       validated.backdrop.opacity = M.defaults.backdrop.opacity
     end
 
     if validated.backdrop.color and type(validated.backdrop.color) ~= 'string' then
-      vim.notify("TermSwitch: 'backdrop.color' must be a string. Using default.", vim.log.levels.WARN)
+      vim.notify("Term: 'backdrop.color' must be a string. Using default.", vim.log.levels.WARN)
       validated.backdrop.color = M.defaults.backdrop.color
     end
   else

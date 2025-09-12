@@ -32,7 +32,7 @@ function M.setup(terminal_manager, user_commands)
     local term_name = cmd_config.terminal
 
     if not cmd_name or not term_name then
-      vim.notify("TermSwitch: Invalid command config. Requires 'name' and 'terminal'.", vim.log.levels.WARN)
+      vim.notify("Term: Invalid command config. Requires 'name' and 'terminal'.", vim.log.levels.WARN)
       goto continue
     end
 
