@@ -18,12 +18,6 @@ M.defaults = {
   auto_delete_on_close = false,
   open_in_file_dir = false,
   open = true,
-
-  backdrop = {
-    enabled = true,
-    opacity = 60,
-    color = "#000000",
-  }
 }
 
 function M.validate_config(cfg)
