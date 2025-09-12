@@ -2,7 +2,6 @@ local api = vim.api
 
 local M = {}
 
--- Batch set options to reduce API calls
 function M.set_win_options(win, options)
   local win_config = {}
   local individual_opts = {}

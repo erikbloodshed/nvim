@@ -5,7 +5,7 @@ local _keymaps
 
 local function get_terminal_manager()
   if not _terminal_manager then
-    _terminal_manager = require('termswitch.terminal_manager')
+    _terminal_manager = require('term.terminal_manager')
   end
   return _terminal_manager
 end
@@ -24,14 +24,14 @@ function M.setup(config)
 
   if config.commands and #config.commands > 0 then
     if not _commands then
-      _commands = require('termswitch.commands')
+      _commands = require('term.commands')
     end
     _commands.setup(terminal_manager, config.commands)
   end
 
   if config.keymaps and #config.keymaps > 0 then
     if not _keymaps then
-      _keymaps = require('termswitch.keymaps')
+      _keymaps = require('term.keymaps')
     end
     _keymaps.setup(terminal_manager, config.keymaps)
   end

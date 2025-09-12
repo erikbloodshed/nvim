@@ -51,7 +51,7 @@ autocmd({ "VimEnter" }, {
     keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
 
-    require('termswitch').setup({
+    require('term').setup({
       defaults = {
         width = 0.8,
         height = 0.8,

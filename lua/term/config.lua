@@ -20,9 +20,9 @@ M.defaults = {
   open = true,
 
   backdrop = {
-    enabled = true,    -- Enable/disable backdrop
-    opacity = 60,      -- Backdrop opacity (0-100)
-    color = "#000000", -- Backdrop color
+    enabled = true,
+    opacity = 60,
+    color = "#000000",
   }
 }
 

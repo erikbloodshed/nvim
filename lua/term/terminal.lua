@@ -1,7 +1,7 @@
 local api = vim.api
-local config = require('termswitch.config')
-local utils = require('termswitch.utils')
-local backdrop = require('termswitch.backdrop')
+local config = require('term.config')
+local utils = require('term.utils')
+local backdrop = require('term.backdrop')
 
 local Terminal = {}
 Terminal.__index = Terminal
@@ -302,22 +302,12 @@ function Terminal:hide()
   self:destroy_backdrop()
 end
 
-function Terminal:focus()
-  if not self:is_valid_window() then return false end
-
-  api.nvim_set_current_win(self.win)
-  vim.cmd('startinsert')
-  return true
-end
-
 function Terminal:toggle()
   local current_win = api.nvim_get_current_win()
   local win_valid = self.win and api.nvim_win_is_valid(self.win)
 
   if win_valid and current_win == self.win then
     self:hide()
-  elseif win_valid then
-    self:focus()
   else
     self:open()
   end
@@ -339,44 +329,6 @@ function Terminal:_get_job_id()
   end
 
   return nil
-end
-
-function Terminal:send(text, opts)
-  opts = opts or {}
-  local force_open = opts.open
-
-  local job_id = self:_get_job_id()
-
-  if job_id then
-    vim.fn.chansend(job_id, text .. '\r')
-    return true
-  end
-
-  if not force_open then
-    vim.notify("TermSwitch: Terminal '" .. self.name .. "' is not running.", vim.log.levels.WARN)
-    return false
-  end
-
-  self:open()
-
-  local group = self:_ensure_autocmd_group()
-  api.nvim_create_autocmd('TermOpen', {
-    group = group,
-    buffer = self.buf,
-    once = true,
-    callback = function(args)
-      -- Add a small delay to ensure terminal is fully ready
-      vim.defer_fn(function()
-        local success, ready_job_id = pcall(api.nvim_buf_get_var, args.buf, 'terminal_job_id')
-        if success and ready_job_id then
-          vim.fn.chansend(ready_job_id, text .. '\r')
-        end
-      end, 50)
-    end,
-    desc = 'Send command to ' .. self.name .. ' after open'
-  })
-
-  return true
 end
 
 function Terminal:is_running()

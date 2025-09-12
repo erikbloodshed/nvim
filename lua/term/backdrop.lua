@@ -25,36 +25,26 @@ function Backdrop:new(id, opts)
 end
 
 function Backdrop:should_create()
-  -- Check if Normal highlight has background color
-  local normal, has_bg
-  normal = api.nvim_get_hl(0, { name = "Normal" })
-  has_bg = normal.bg ~= nil
-
-  -- Only create if we have a background and opacity is less than 100
-  return has_bg and self.opts.opacity < 100
+  local normal = api.nvim_get_hl(0, { name = "Normal" })
+  return normal.bg ~= nil and self.opts.opacity < 100
 end
 
---- Creates the backdrop window
 function Backdrop:create()
   if not self:should_create() then
     return false
   end
 
-  -- Clean up existing backdrop if it exists
   self:destroy()
 
-  -- Create backdrop buffer
   self.buf = api.nvim_create_buf(false, true)
   if not self.buf then
     return false
   end
 
-  -- Set buffer options
   vim.bo[self.buf].buftype = "nofile"
   vim.bo[self.buf].filetype = "termswitch_backdrop"
   vim.bo[self.buf].bufhidden = "wipe"
 
-  -- Create fullscreen backdrop window
   self.win = api.nvim_open_win(self.buf, false, {
     relative = "editor",
     width = vim.o.columns,
@@ -67,34 +57,28 @@ function Backdrop:create()
   })
 
   if not self.win then
-    -- Clean up buffer if window creation failed
     if api.nvim_buf_is_valid(self.buf) then
       api.nvim_buf_delete(self.buf, { force = true })
     end
     return false
   end
 
-  -- Set up backdrop highlight
   local hl_name = "TermSwitchBackdrop_" .. self.id
   api.nvim_set_hl(0, hl_name, {
     bg = self.opts.color,
     default = true
   })
 
-  -- Apply backdrop styling
   vim.wo[self.win].winhighlight = "Normal:" .. hl_name
   vim.wo[self.win].winblend = self.opts.opacity
 
-  -- Set up auto-resize for backdrop
   self:setup_resize_handler()
 
-  -- Register this backdrop instance
   backdrop_instances[self.id] = self
 
   return true
 end
 
---- Sets up automatic resizing of backdrop on VimResized
 function Backdrop:setup_resize_handler()
   if not self:is_valid() then
     return
@@ -116,8 +100,6 @@ function Backdrop:setup_resize_handler()
   })
 end
 
---- Checks if backdrop is valid
----@return boolean
 function Backdrop:is_valid()
   return self.win and api.nvim_win_is_valid(self.win) and
     self.buf and api.nvim_buf_is_valid(self.buf)
@@ -125,34 +107,27 @@ end
 
 --- Destroys the backdrop
 function Backdrop:destroy()
-  -- Clean up autocmd group
   pcall(api.nvim_del_augroup_by_name, "TermSwitchBackdrop_" .. self.id)
 
-  -- Close window
   if self.win and api.nvim_win_is_valid(self.win) then
     api.nvim_win_close(self.win, true)
   end
 
-  -- Delete buffer
   if self.buf and api.nvim_buf_is_valid(self.buf) then
     api.nvim_buf_delete(self.buf, { force = true })
   end
 
-  -- Clear references
   self.win = nil
   self.buf = nil
 
-  -- Unregister instance
   backdrop_instances[self.id] = nil
 end
 
---- Creates a backdrop for a terminal
 function M.create_backdrop(terminal_name, opts)
   local backdrop = Backdrop:new(terminal_name, opts)
   return backdrop
 end
 
---- Destroys all backdrop instances
 function M.cleanup_all()
   for _, backdrop in pairs(backdrop_instances) do
     backdrop:destroy()
@@ -164,7 +139,6 @@ function M.get_backdrop(terminal_name)
   return backdrop_instances[terminal_name]
 end
 
---- Auto-cleanup on VimLeave
 api.nvim_create_autocmd("VimLeave", {
   callback = function()
     M.cleanup_all()

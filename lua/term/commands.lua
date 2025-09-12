@@ -2,11 +2,7 @@ local api = vim.api
 
 local M = {}
 
---- Sets up user commands.
----@param terminal_manager table The terminal manager module.
----@param user_commands table A list of command configurations.
 function M.setup(terminal_manager, user_commands)
-  -- Generic command to toggle any terminal by its name
   api.nvim_create_user_command('ToggleTerminal', function(opts)
     local name = opts.args
     if name == '' then
@@ -27,7 +23,6 @@ function M.setup(terminal_manager, user_commands)
     desc = 'Toggle any terminal by name',
   })
 
-  -- Create user-defined convenience commands
   if not user_commands or type(user_commands) ~= 'table' then
     return
   end
