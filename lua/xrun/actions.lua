@@ -28,7 +28,7 @@ end
 
 local M = {}
 
-M.create = function(state, cmd, terminal)
+M.create = function(state, cmd)
   local cache_proc = function(key, command, on_success, callback)
     local hash = state:get_buffer_hash()
 
@@ -48,8 +48,17 @@ M.create = function(state, cmd, terminal)
   end
 
   local run_in_terminal = function()
-    if not terminal:is_running() then terminal:open() end
-    terminal:execute(cmd.run())
+    vim.cmd("ToggleTerm")
+    vim.defer_fn(function()
+      local current_buf = vim.api.nvim_get_current_buf()
+      local buf_type = vim.api.nvim_get_option_value('buftype', { buf = current_buf })
+      if buf_type == "terminal" then
+        local job_id = vim.b.terminal_job_id or vim.bo.channel
+        if job_id then
+          fn.chansend(job_id, cmd.run() .. "\n")
+        end
+      end
+    end, 70)
   end
 
   local actions = {}

@@ -2,16 +2,6 @@ local M = {}
 
 M.setup = function(cfg)
   local defaults = require("xrun.config")
-  local terminal = require("xrun.terminal").create_float()
-  terminal:setup_keymaps({
-    {
-      lhs = '<leader>tt',
-      action = 'toggle',
-      mode = {'n', 't'},
-      desc = 'Toggle my terminal',
-    },
-  })
-
   local ft = vim.bo.filetype
   local config = vim.tbl_deep_extend('force', defaults.filetype[ft], cfg.filetype[ft] or {})
 
@@ -22,7 +12,7 @@ M.setup = function(cfg)
 
   local state = require("xrun.state").init(config)
   local commands = require("xrun.commands").create(state)
-  local actions = require("xrun.actions").create(state, commands, terminal)
+  local actions = require("xrun.actions").create(state, commands)
   local keymaps = vim.tbl_deep_extend('force', defaults.keymaps, cfg.keymaps or {})
   local map = vim.keymap.set
 
