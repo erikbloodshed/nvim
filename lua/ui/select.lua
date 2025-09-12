@@ -1,5 +1,4 @@
-local api = vim.api
-local opt = vim.opt
+local api, opt = vim.api, vim.opt
 
 local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
 
