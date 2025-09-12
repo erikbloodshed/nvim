@@ -66,7 +66,37 @@ function Terminal:_create_float_window(buf_id)
   }, self.config.float)
 
   self.win_id = api.nvim_open_win(buf_id, true, win_config)
+
+  -- Set up resize autocommand for floating window
+  vim.api.nvim_create_autocmd("VimResized", {
+    callback = function()
+      if self.is_open and self.win_id and api.nvim_win_is_valid(self.win_id) and self.config.direction == "float" then
+        self:_resize_float_window()
+      end
+    end,
+    desc = "Resize terminal floating window",
+  })
+
   return self.win_id
+end
+
+function Terminal:_resize_float_window()
+  if not self.win_id or not api.nvim_win_is_valid(self.win_id) then
+    return
+  end
+
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.8)
+
+  local win_config = vim.tbl_deep_extend("force", {
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = "minimal",
+  }, self.config.float)
+
+  api.nvim_win_set_config(self.win_id, win_config)
 end
 
 function Terminal:_create_split_window(buf_id)
@@ -91,7 +121,31 @@ function Terminal:_create_split_window(buf_id)
   self.win_id = api.nvim_get_current_win()
   api.nvim_win_set_buf(self.win_id, buf_id)
 
+  -- Set up resize autocommand for split window
+  vim.api.nvim_create_autocmd("VimResized", {
+    callback = function()
+      if self.is_open and self.win_id and api.nvim_win_is_valid(self.win_id) and self.config.direction ~= "float" then
+        self:_resize_split_window()
+      end
+    end,
+    desc = "Resize terminal split window",
+  })
+
   return self.win_id
+end
+
+function Terminal:_resize_split_window()
+  if not self.win_id or not api.nvim_win_is_valid(self.win_id) then
+    return
+  end
+
+  local size = math.floor((self.config.direction == "horizontal" and vim.o.lines or vim.o.columns) * self.config.size)
+
+  if self.config.direction == "horizontal" then
+    api.nvim_win_set_height(self.win_id, size)
+  else
+    api.nvim_win_set_width(self.win_id, size)
+  end
 end
 
 function Terminal:_create_window()
