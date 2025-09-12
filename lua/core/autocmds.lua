@@ -51,35 +51,35 @@ autocmd({ "VimEnter" }, {
     keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
 
-    require('termswitch').setup({
-      defaults = {
-        width = 0.8,
-        height = 0.8,
-        border = 'rounded',
-        open_in_file_dir = true,
-        open = true,
-        backdrop = { enabled = true, opacity = 60, color = "#000000", }
-      },
-
-      terminals = {
-        shell = {},
-        python = {
-          shell = 'python3.14',
-          filetype = 'pyterm',
-          auto_delete_on_close = true,
-        },
-      },
-
-      commands = {
-        { name = 'ToggleTerm', terminal = 'shell' },
-        { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
-      },
-
-      keymaps = {
-        { mode = { 'n', 't' }, lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
-        { mode = { 'n', 't' }, lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
-      },
-    })
+    -- require('termswitch').setup({
+    --   defaults = {
+    --     width = 0.8,
+    --     height = 0.8,
+    --     border = 'rounded',
+    --     open_in_file_dir = true,
+    --     open = true,
+    --     backdrop = { enabled = true, opacity = 60, color = "#000000", }
+    --   },
+    --
+    --   terminals = {
+    --     shell = {},
+    --     python = {
+    --       shell = 'python3.14',
+    --       filetype = 'pyterm',
+    --       auto_delete_on_close = true,
+    --     },
+    --   },
+    --
+    --   commands = {
+    --     { name = 'ToggleTerm', terminal = 'shell' },
+    --     { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
+    --   },
+    --
+    --   keymaps = {
+    --     { mode = { 'n', 't' }, lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
+    --     { mode = { 'n', 't' }, lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
+    --   },
+    -- })
   end,
 })
 

@@ -1,7 +1,11 @@
 local M = {}
 
+local terminal = nil
+
 M.setup = function(cfg)
   local defaults = require("xrun.config")
+  terminal = require("xrun.terminal").create_float()
+
   local ft = vim.bo.filetype
   local config = vim.tbl_deep_extend('force', defaults.filetype[ft], cfg.filetype[ft] or {})
 
@@ -12,13 +16,17 @@ M.setup = function(cfg)
 
   local state = require("xrun.state").init(config)
   local commands = require("xrun.commands").create(state)
-  local actions = require("xrun.actions").create(state, commands)
+  local actions = require("xrun.actions").create(state, commands, terminal)
   local keymaps = vim.tbl_deep_extend('force', defaults.keymaps, cfg.keymaps or {})
   local map = vim.keymap.set
 
   for _, m in ipairs(keymaps) do
     map("n", m.key, actions[m.action], { buffer = 0, noremap = true, desc = m.desc })
   end
+end
+
+M.get_terminal = function()
+  return terminal
 end
 
 return M
