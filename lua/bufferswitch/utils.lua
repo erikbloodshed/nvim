@@ -78,4 +78,23 @@ function M.stop_hide_timer()
   end
 end
 
+function M.darken_color(fg, a, bg)
+  local p = "^#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])$"
+
+  local rgb = function(h)
+    local r, g, b = string.match(string.lower(h), p)
+    return { tonumber(r, 16), tonumber(g, 16), tonumber(b, 16) }
+  end
+
+  local b = rgb(bg)
+  local f = rgb(fg)
+
+  local blend = function(i)
+    local r = (a * f[i] + ((1 - a) * b[i]))
+    return math.floor(math.min(math.max(0, r), 255) + 0.5)
+  end
+
+  return string.format("#%02X%02X%02X", blend(1), blend(2), blend(3))
+end
+
 return M

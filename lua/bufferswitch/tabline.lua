@@ -8,44 +8,43 @@ local config = {
   hide_timeout = 2000,    -- ms before hiding tabline
 }
 
--- Enhanced color scheme with yellow selected tab
+local colors = {
+  rosewater = "#f5e0dc",
+  flamingo = "#f2cdcd",
+  pink = "#f5c2e7",
+  mauve = "#cba6f7",
+  red = "#f38ba8",
+  maroon = "#eba0ac",
+  peach = "#fab387",
+  yellow = "#f9e2af",
+  green = "#a6e3a1",
+  teal = "#94e2d5",
+  sky = "#89dceb",
+  sapphire = "#74c7ec",
+  blue = "#89b4fa",
+  lavender = "#b4befe",
+  text = "#cdd6f4",
+  subtext1 = "#bac2de",
+  subtext0 = "#a6adc8",
+  overlay2 = "#9399b2",
+  overlay1 = "#7f849c",
+  overlay0 = "#6c7086",
+  surface2 = "#585b70",
+  surface1 = "#45475a",
+  surface0 = "#313244",
+  base = "#1e1e2e",
+  mantle = "#181825",
+  crust = "#11111b",
+  none = "NONE",
+}
+
 local function setup_highlight_groups()
-  -- Selected tab - bright yellow background with dark text
-  vim.api.nvim_set_hl(0, 'BufferSwitchSelected', {
-    bg = '#ffd700', -- Golden yellow
-    fg = '#1a1a1a', -- Dark text for contrast
-    bold = true,
-  })
-
-  -- Inactive tabs - subtle dark theme
-  vim.api.nvim_set_hl(0, 'BufferSwitchInactive', {
-    bg = '#2a2a2a', -- Dark gray
-    fg = '#888888', -- Light gray text
-  })
-
-  -- Hover effect (for future enhancement)
-  vim.api.nvim_set_hl(0, 'BufferSwitchHover', {
-    bg = '#3a3a3a', -- Slightly lighter gray
-    fg = '#cccccc', -- Brighter text
-  })
-
-  -- Modified indicator
-  vim.api.nvim_set_hl(0, 'BufferSwitchModified', {
-    fg = '#ff6b6b', -- Red for modified indicator
-    bold = true,
-  })
-
-  -- Separator between tabs
-  vim.api.nvim_set_hl(0, 'BufferSwitchSeparator', {
-    bg = '#1a1a1a', -- Background color
-    fg = '#444444', -- Subtle separator
-  })
-
-  -- Fill area
-  vim.api.nvim_set_hl(0, 'BufferSwitchFill', { bg = '#1a1a1a', fg = '#666666' })
-
-  -- Right section (CWD)
-  vim.api.nvim_set_hl(0, 'BufferSwitchRight', { link = "Directory" })
+  vim.api.nvim_set_hl(0, 'BufferSwitchSelected', { bg = colors.base, fg = colors.text, bold = true, })
+  vim.api.nvim_set_hl(0, 'BufferSwitchInactive', { bg = colors.mantle, fg = colors.overlay0, })
+  vim.api.nvim_set_hl(0, 'BufferSwitchModified', { fg = '#ff6b6b' })
+  vim.api.nvim_set_hl(0, 'BufferSwitchSeparator', { bg = colors.mantle, fg = colors.subtext0, })
+  vim.api.nvim_set_hl(0, 'BufferSwitchFill', { bg = colors.mantle })
+  vim.api.nvim_set_hl(0, 'BufferSwitchRight', { bg = colors.base, fg = colors.peach, bold = true, })
 end
 
 function M.format_buffer_name(bufnr, is_current)
@@ -65,47 +64,39 @@ function M.format_buffer_name(bufnr, is_current)
     display_name = "[No Name]"
   end
 
-  -- Truncate very long names
   if #display_name > 25 then
     display_name = display_name:sub(1, 22) .. "..."
   end
 
-  -- Determine the correct highlight group for the main text
   local base_hl = is_current and "BufferSwitchSelected" or "BufferSwitchInactive"
 
   -- Enhanced modified marker with custom highlight
   local modified_marker = ""
   if vim.bo[bufnr].modified then
-    modified_marker = " %#BufferSwitchModified#●%#" .. base_hl .. "#"
+    modified_marker = "%#BufferSwitchModified#●%#" .. base_hl .. "#"
   end
 
-  -- Enhanced icon handling with better color matching
-  local icon = ""
-  if has_devicons then
-    local ext = vim.fn.fnamemodify(name, ":e") or ""
-    local devicon, icon_hl = devicons.get_icon(display_name, ext, { default = true })
-    if devicon then
-      local ok, original_hl = pcall(vim.api.nvim_get_hl, 0, { name = icon_hl })
-      local tab_hl = vim.api.nvim_get_hl(0, { name = base_hl })
-      local custom_icon_hl = "BufferSwitchIcon" .. (is_current and "Selected" or "Inactive")
+  local get_devicon = function()
+    if has_devicons then
+      local ext = vim.fn.fnamemodify(name, ":e") or ""
 
-      if ok and original_hl and original_hl.fg then
-        local icon_fg = is_current and original_hl.fg or
-          (original_hl.fg and string.format("#%06x",
-            bit.band(original_hl.fg * 0.7, 0xffffff)) or "#888888")
+      local devicon, icon_hl = devicons.get_icon_color(display_name, ext)
+
+      if devicon then
+        local custom_icon_hl = "BufferSwitchIcon" .. (is_current and "Selected" or "Inactive")
 
         vim.api.nvim_set_hl(0, custom_icon_hl, {
-          fg = icon_fg,
-          bg = tab_hl.bg or "NONE",
+          fg = is_current and icon_hl or colors.overlay0,
+          bg = is_current and colors.base or colors.mantle,
         })
-      end
 
-      -- The fix: explicitly switch back to the base highlight group after the icon.
-      icon = string.format("%%#%s#%s%%#%s# ", custom_icon_hl, devicon, base_hl)
+        return string.format("%%#%s#%s%%#%s# ", custom_icon_hl, devicon, base_hl)
+      end
     end
+    return ""
   end
 
-  return string.format("%s%s%s", icon, display_name, modified_marker)
+  return string.format("%s%s%s", get_devicon(), display_name, modified_marker)
 end
 
 function M.update_tabline(buffer_list)
@@ -132,7 +123,7 @@ function M.update_tabline(buffer_list)
 
       -- Enhanced separator with better visual distinction
       if i < #buffer_list then
-        table.insert(parts, "%#BufferSwitchSeparator#|") -- Thicker separator
+        table.insert(parts, "%#BufferSwitchSeparator#▎") -- Thicker separator
       else
         -- For the last buffer, explicitly reset to fill highlight to prevent
         -- selected highlight from extending across remaining area
