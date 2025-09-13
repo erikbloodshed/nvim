@@ -46,11 +46,10 @@ autocmd({ "VimEnter" }, {
     require("ui.input")
     require("ui.select")
     require("ui.statusline")
-    require("bufswitch").setup({})
 
-    keyset('n', "<Right>", function() require("bufswitch").goto_next_buffer() end,
+    keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
       { noremap = true, silent = true })
-    keyset('n', "<Left>", function() require("bufswitch").goto_prev_buffer() end,
+    keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
 
     require('term').setup({
@@ -66,7 +65,7 @@ autocmd({ "VimEnter" }, {
         shell = {},
         python = {
           shell = 'python3.14',
-          filetype = 'terminal',
+          filetype = 'nofile',
           auto_delete_on_close = true,
         },
       },
@@ -97,5 +96,11 @@ api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
   group = cl_group,
   callback = function()
     wo.cursorline = true
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "TermOpen" }, {
+  callback = function(ev)
+    vim.bo.buflisted = false
   end,
 })

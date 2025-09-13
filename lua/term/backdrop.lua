@@ -63,8 +63,9 @@ local function create_backdrop_window(backdrop)
   -- Set buffer options
   local buf_opts = {
     buftype = "nofile",
-    filetype = "term_backdrop",
-    bufhidden = "wipe"
+    filetype = "nofile",
+    bufhidden = "wipe",
+    buflisted = false
   }
 
   for opt, value in pairs(buf_opts) do

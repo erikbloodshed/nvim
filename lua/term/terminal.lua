@@ -13,7 +13,7 @@ local defaults = {
   width = 0.8,
   height = 0.8,
   border = 'rounded',
-  filetype = 'terminal',
+  filetype = 'nofile',
   auto_delete_on_close = false,
   open_in_file_dir = false,
   open = true,
@@ -115,7 +115,6 @@ function Terminal:_ensure_buffer()
     return false
   end
 
-  api.nvim_set_option_value("buflisted", false, { buf = self.buf })
   api.nvim_set_option_value("bufhidden", "hide", { buf = self.buf })
   api.nvim_set_option_value("filetype", self.config.filetype, { buf = self.buf })
 
