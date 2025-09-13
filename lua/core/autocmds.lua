@@ -51,6 +51,8 @@ autocmd({ "VimEnter" }, {
       { noremap = true, silent = true })
     keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
+    keyset('n', "<C-t>", function() require("bufferswitch").alt_tab_buffer() end,
+      { noremap = true, silent = true })
 
     require('term').setup({
       defaults = {

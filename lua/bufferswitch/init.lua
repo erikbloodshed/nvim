@@ -1,48 +1,43 @@
 local M = {}
 
-local config = require('bufferswitch.config')
+local config = {
+  hide_timeout = 800,
+  show_tabline = true,
+  hide_in_special = true,
+  disable_in_special = true,
+  periodic_cleanup = true,
+  debug = false,
+
+  special_buftypes = {
+    "quickfix", "help", "nofile", "prompt", "terminal"
+  },
+  special_filetypes = {
+    "qf", "help", "netrw", "neo-tree", "NvimTree"
+  },
+  special_bufname_patterns = {
+    "^term://", "^neo%-tree "
+  },
+}
+
 local core = require('bufferswitch.core')
-local tabline = require('bufferswitch.tabline')
-local utils = require('bufferswitch.utils')
+core.initialize(config)
 
-function M.setup(user_config)
-  M.config = config.create(user_config)
-
-  core.initialize(M.config)
-
-  if M.config.debug then
-    vim.api.nvim_create_user_command('BufferSwitcherDebug', core.debug_buffers, {})
-  end
-end
-
-function M.set_debounce_delay(delay_ms)
-  return utils.set_debounce_delay(delay_ms)
-end
-
-function M.show_tabline(timeout)
-  if timeout then
-    M.config.hide_timeout = timeout
-  end
-  tabline.manage_tabline(M.config)
-end
-
-function M.hide_tabline()
-  tabline.hide_tabline()
-end
-
-function M.force_refresh()
-  core.refresh_buffer_list()
-  tabline.manage_tabline(M.config)
+function M.goto_next_buffer()
+  core.next_buffer()
 end
 
 function M.goto_prev_buffer()
-  M.setup()
   core.prev_buffer()
 end
 
-function M.goto_next_buffer()
-  M.setup()
-  core.next_buffer()
+function M.alt_tab_buffer()
+  core.alt_tab_buffer()
+end
+
+if config.debug then
+  function M.debug_buffers()
+    core.debug_buffers()
+  end
 end
 
 return M
