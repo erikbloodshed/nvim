@@ -7,6 +7,8 @@ local tabline = require('bufferswitch.tabline')
 
 -- The master list of buffers, always in Most-Recently-Used order.
 local buffer_order = {}
+-- Static list for tabline display, order does not change with navigation.
+local tabline_order = {}
 local config = {}
 local autocmds_created = false
 
@@ -34,12 +36,18 @@ local function update_buffer_mru(bufnr)
   table.insert(buffer_order, bufnr)
 end
 
--- Removes a buffer from the main `buffer_order` list (e.g., on BufDelete).
+-- Removes a buffer from the main `buffer_order` and `tabline_order` lists (e.g., on BufDelete).
 local function remove_buffer_from_order(bufnr)
   for i, b in ipairs(buffer_order) do
     if b == bufnr then
       table.remove(buffer_order, i)
-      return
+      break
+    end
+  end
+  for i, b in ipairs(tabline_order) do
+    if b == bufnr then
+      table.remove(tabline_order, i)
+      break
     end
   end
 end
@@ -68,8 +76,12 @@ local function end_cycle()
   if final_bufnr and vim.api.nvim_buf_is_valid(final_bufnr) then
     update_buffer_mru(final_bufnr)
   end
-end
 
+  -- 5. Update the tabline with the static tabline_order if needed.
+  if config.show_tabline then
+    tabline.update_tabline(tabline_order)
+  end
+end
 
 local function sanitize_buffer_order()
   local i = 1
@@ -80,9 +92,17 @@ local function sanitize_buffer_order()
       i = i + 1
     end
   end
+  i = 1
+  while i <= #tabline_order do
+    if not utils.should_include_buffer(config, tabline_order[i]) then
+      table.remove(tabline_order, i)
+    else
+      i = i + 1
+    end
+  end
 end
 
--- This is the new core function that handles all navigation.
+-- This is the core function that handles all navigation.
 -- It either starts a new cycle or continues an existing one.
 local function navigate(direction)
   -- Any navigation command should reset the hide timer.
@@ -98,8 +118,7 @@ local function navigate(direction)
     -- 1. Activate the "switching mode".
     cycle.is_active = true
 
-    -- 2. Create the "frozen" list for display by copying the main list.
-    --    This is the key to preventing the tab arrangement from changing.
+    -- 2. Create the "frozen" list for navigation by copying the main list.
     cycle.order = {}
     for _, bufnr in ipairs(buffer_order) do
       table.insert(cycle.order, bufnr)
@@ -136,14 +155,13 @@ local function navigate(direction)
   -- Switch to the target buffer. The BufEnter event is guarded by `cycle.is_active`.
   vim.cmd('buffer ' .. target_bufnr)
 
-  -- Display the tabline using the *frozen* `cycle.order` list.
+  -- Display the tabline using the static `tabline_order` list.
   vim.o.showtabline = 2
-  tabline.update_tabline(cycle.order)
+  tabline.update_tabline(tabline_order)
 
   -- Start the timer that will eventually call `end_cycle` to exit the mode.
   utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
-
 
 --[[
   Plugin Setup and Public Functions
@@ -156,7 +174,6 @@ end
 
 function M.next_buffer()
   if config.disable_in_special and utils.is_special_buffer(config) then return end
-  -- NOTE: This now cycles through buffers in Most-Recently-Used order.
   navigate("next")
 end
 
@@ -170,6 +187,11 @@ function M.debug_buffers()
   for i, bufnr in ipairs(buffer_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
     print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #buffer_order and "<- CURRENT" or ""))
+  end
+  print("\nTabline buffer order (Fixed):")
+  for i, bufnr in ipairs(tabline_order) do
+    local name = vim.fn.bufname(bufnr) or "[No Name]"
+    print(string.format("%d: %s (bufnr=%d)", i, name, bufnr))
   end
 end
 
@@ -186,7 +208,7 @@ local function setup_autocmds()
       update_buffer_mru(vim.api.nvim_get_current_buf())
 
       if config.show_tabline then
-        tabline.update_tabline(buffer_order)
+        tabline.update_tabline(tabline_order)
       end
     end,
   })
@@ -195,13 +217,18 @@ local function setup_autocmds()
     group = ag,
     callback = function(ev)
       if cycle.is_active then return end
-      update_buffer_mru(ev.buf)
+      if utils.should_include_buffer(config, ev.buf) then
+        table.insert(tabline_order, ev.buf) -- Add to fixed tabline order
+        update_buffer_mru(ev.buf)
+      end
     end,
   })
 
   vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
     group = ag,
-    callback = function(ev) remove_buffer_from_order(ev.buf) end,
+    callback = function(ev)
+      remove_buffer_from_order(ev.buf)
+    end,
   })
 
   if config.periodic_cleanup then
@@ -217,9 +244,11 @@ end
 function M.initialize(user_config)
   config = user_config
   buffer_order = {}
+  tabline_order = {}
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
     if utils.should_include_buffer(config, bufnr) then
       table.insert(buffer_order, bufnr)
+      table.insert(tabline_order, bufnr)
     end
   end
   update_buffer_mru(vim.api.nvim_get_current_buf())

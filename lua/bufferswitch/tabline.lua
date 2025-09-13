@@ -3,6 +3,15 @@ local M = {}
 local utils = require("bufferswitch.utils")
 local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
 
+local function get_buffer_name(bufnr)
+  local name = vim.fn.bufname(bufnr)
+  if name == "" then
+    return "[No Name]"
+  end
+  -- Shorten the name to the basename for cleaner display
+  return vim.fn.fnamemodify(name, ":t")
+end
+
 function M.format_buffer_name(bufnr)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return '[Invalid]'
@@ -28,34 +37,25 @@ function M.format_buffer_name(bufnr)
   return display_name
 end
 
-function M.update_tabline(buffer_order)
-  if not buffer_order or #buffer_order == 0 then
-    vim.o.tabline = '%#TabLineFill#%='
-    return
-  end
+function M.update_tabline(buffer_list)
+  local current_buf = vim.api.nvim_get_current_buf()
+  local tabline_parts = {}
 
-  local current = vim.api.nvim_get_current_buf()
-  local parts = {}
-  local max_width = math.floor(vim.o.columns * 0.8)
-  local available_per_buffer = math.max(math.floor(max_width / #buffer_order), 8)
-
-  for _, bufnr in ipairs(buffer_order) do
-    local buf_label = M.format_buffer_name(bufnr)
-
-    if vim.fn.strwidth(buf_label) > available_per_buffer then
-      buf_label = string.sub(buf_label, 1, available_per_buffer - 1) .. "…"
-    end
-
-    local padded_label = ' ' .. buf_label .. ' '
-
-    if bufnr == current then
-      table.insert(parts, '%#TabLineSel#' .. padded_label)
-    else
-      table.insert(parts, '%#TabLine#' .. padded_label)
+  -- Iterate through the buffer list to create tabline entries
+  for _, bufnr in ipairs(buffer_list) do
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      local name = get_buffer_name(bufnr)
+      -- Highlight the current buffer
+      local is_current = bufnr == current_buf
+      local hl_group = is_current and "%#TabLineSel#" or "%#TabLine#"
+      local entry = string.format("%s %s %%#TabLineFill#", hl_group, name)
+      table.insert(tabline_parts, entry)
     end
   end
 
-  vim.o.tabline = table.concat(parts, '%#TabLine#|') .. '%#TabLineFill#%='
+  -- Join entries with a separator and wrap with TabLineFill
+  local tabline = "%#TabLineFill# " .. table.concat(tabline_parts, " | ") .. " %T"
+  vim.o.tabline = tabline
 end
 
 function M.show_tabline_temporarily(config, buffer_order)
