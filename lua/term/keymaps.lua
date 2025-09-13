@@ -1,5 +1,3 @@
--- local api = vim.api
-
 local M = {}
 
 function M.setup(manager, usr_maps)
@@ -9,7 +7,7 @@ function M.setup(manager, usr_maps)
 
   for _, map_config in ipairs(usr_maps) do
     if not (map_config.lhs and map_config.terminal and map_config.action) then
-      vim.notify("TermSwitch: Invalid keymap config. Requires 'lhs', 'terminal', and 'action'.",
+      vim.notify("Term: Invalid keymap config. Requires 'lhs', 'terminal', and 'action'.",
         vim.log.levels.WARN)
       goto continue
     end
@@ -17,7 +15,7 @@ function M.setup(manager, usr_maps)
     local terminal = manager.get_terminal(map_config.terminal)
     if not terminal then
       vim.notify(
-        string.format("TermSwitch: Terminal '%s' not found for keymap '%s'.", map_config.terminal, map_config.lhs),
+        string.format("Term: Terminal '%s' not found for keymap '%s'.", map_config.terminal, map_config.lhs),
         vim.log.levels.WARN)
       goto continue
     end

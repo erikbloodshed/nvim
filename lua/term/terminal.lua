@@ -1,21 +1,23 @@
-local api = vim.api
-local fn = vim.fn
-local utils = require('term.utils')
+local api, fn = vim.api, vim.fn
 local backdrop = require('term.backdrop')
+
+local get_ui_dimensions = function()
+  local ui = api.nvim_list_uis()[1]
+  if ui then
+    return ui.width, ui.height
+  end
+  return 80, 24
+end
 
 local defaults = {
   width = 0.8,
   height = 0.8,
   border = 'rounded',
-  shell = nil,
   filetype = 'terminal',
   auto_delete_on_close = false,
   open_in_file_dir = false,
   open = true,
 }
-
-local Terminal = {}
-Terminal.__index = Terminal
 
 local STATES = {
   CLOSED = 'closed',
@@ -25,22 +27,20 @@ local STATES = {
   TERMINATED = 'terminated'
 }
 
+local Terminal = {}
+Terminal.__index = Terminal
+
 function Terminal:new(name, user_config)
   local merged = vim.tbl_extend('force', defaults, user_config or {})
 
   if not merged.title then
-    merged.title = utils.create_title(name)
+    merged.title = string.format(" %s ", name:gsub("^%l", string.upper))
   end
 
   local terminal = setmetatable({
     name = name,
     config = merged,
     state = STATES.CLOSED,
-    buf = nil,
-    win = nil,
-    job_id = nil,
-    backdrop_instance = nil,
-    _autocmd_group = nil,
   }, self)
 
   terminal:_setup_global_events()
@@ -87,7 +87,7 @@ function Terminal:_handle_resize()
 end
 
 function Terminal:_get_float_config()
-  local ui_w, ui_h = utils.get_ui_dimensions()
+  local ui_w, ui_h = get_ui_dimensions()
   local width = math.floor(ui_w * self.config.width)
   local height = math.floor(ui_h * self.config.height)
 
@@ -115,11 +115,9 @@ function Terminal:_ensure_buffer()
     return false
   end
 
-  utils.set_buf_options(self.buf, {
-    buflisted = false,
-    bufhidden = 'hide',
-    filetype = self.config.filetype,
-  })
+  api.nvim_set_option_value("buflisted", false, { buf = self.buf })
+  api.nvim_set_option_value("bufhidden", "hide", { buf = self.buf })
+  api.nvim_set_option_value("filetype", self.config.filetype, { buf = self.buf })
 
   self:_setup_buffer_events()
   return true
@@ -184,12 +182,10 @@ function Terminal:_create_window()
     return false
   end
 
-  utils.set_win_options(self.win, {
-    number = false,
-    relativenumber = false,
-    signcolumn = 'no',
-    wrap = false,
-  })
+  api.nvim_set_option_value("number", false, { win = self.win })
+  api.nvim_set_option_value("relativenumber", false, { win = self.win })
+  api.nvim_set_option_value("signcolumn", "no", { win = self.win })
+  api.nvim_set_option_value("wrap", false, { win = self.win })
 
   self:_setup_window_events()
   return true
