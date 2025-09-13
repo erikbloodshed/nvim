@@ -98,9 +98,3 @@ api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
     wo.cursorline = true
   end,
 })
-
-vim.api.nvim_create_autocmd({ "TermOpen" }, {
-  callback = function(ev)
-    vim.bo.buflisted = false
-  end,
-})

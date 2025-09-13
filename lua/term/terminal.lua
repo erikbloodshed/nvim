@@ -62,7 +62,10 @@ function Terminal:_setup_global_events()
   api.nvim_create_autocmd('VimResized', {
     group = self._autocmd_group,
     callback = function()
-      self:_handle_resize()
+      -- Schedule resize to avoid conflicts with other resize operations
+      vim.schedule(function()
+        self:_handle_resize()
+      end)
     end,
     desc = 'Resize terminal window'
   })
@@ -181,10 +184,15 @@ function Terminal:_create_window()
     return false
   end
 
-  api.nvim_set_option_value("number", false, { win = self.win })
-  api.nvim_set_option_value("relativenumber", false, { win = self.win })
-  api.nvim_set_option_value("signcolumn", "no", { win = self.win })
-  api.nvim_set_option_value("wrap", false, { win = self.win })
+  -- Schedule window option setting to ensure window is fully created
+  vim.schedule(function()
+    if self:_is_valid_window() then
+      api.nvim_set_option_value("number", false, { win = self.win })
+      api.nvim_set_option_value("relativenumber", false, { win = self.win })
+      api.nvim_set_option_value("signcolumn", "no", { win = self.win })
+      api.nvim_set_option_value("wrap", false, { win = self.win })
+    end
+  end)
 
   self:_setup_window_events()
   return true
@@ -226,6 +234,13 @@ function Terminal:_start_terminal_process()
 
   self.job_id = fn.getbufvar(self.buf, 'terminal_job_id', nil)
 
+  -- Force buflisted to false after terminal creation
+  vim.schedule(function()
+    if api.nvim_buf_is_valid(self.buf) then
+      api.nvim_set_option_value("buflisted", false, { buf = self.buf })
+    end
+  end)
+
   if cwd_changed and original_cwd then
     api.nvim_cmd({ cmd = 'lcd', args = { original_cwd } }, {})
   end
@@ -237,7 +252,10 @@ function Terminal:open()
   if self.state == STATES.OPEN then
     if self:_is_valid_window() then
       api.nvim_set_current_win(self.win)
-      api.nvim_cmd({ cmd = 'startinsert' }, {})
+      -- Schedule startinsert to ensure window focus is complete
+      vim.schedule(function()
+        api.nvim_cmd({ cmd = 'startinsert' }, {})
+      end)
     end
     return
   end
@@ -260,7 +278,10 @@ function Terminal:open()
   end
 
   self.state = STATES.OPEN
-  api.nvim_cmd({ cmd = 'startinsert' }, {})
+  -- Schedule startinsert to ensure everything is properly set up
+  vim.schedule(function()
+    api.nvim_cmd({ cmd = 'startinsert' }, {})
+  end)
 end
 
 function Terminal:hide()

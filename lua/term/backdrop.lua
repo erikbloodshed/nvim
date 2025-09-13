@@ -15,13 +15,16 @@ local function setup_global_events()
   api.nvim_create_autocmd("ColorScheme", {
     group = api.nvim_create_augroup("BackdropColorScheme", { clear = true }),
     callback = function()
-      for _, backdrop in pairs(backdrop_instances) do
-        if M.is_backdrop_valid(backdrop) then
-          M.destroy_backdrop(backdrop)
-          local new_backdrop = M.create_backdrop(backdrop.id)
-          backdrop_instances[backdrop.id] = new_backdrop
+      -- Schedule backdrop recreation to avoid issues during colorscheme changes
+      vim.schedule(function()
+        for _, backdrop in pairs(backdrop_instances) do
+          if M.is_backdrop_valid(backdrop) then
+            M.destroy_backdrop(backdrop)
+            local new_backdrop = M.create_backdrop(backdrop.id)
+            backdrop_instances[backdrop.id] = new_backdrop
+          end
         end
-      end
+      end)
     end,
     desc = "Update backdrops on colorscheme change"
   })
@@ -113,10 +116,15 @@ local function create_backdrop_window(backdrop)
     group = api.nvim_create_augroup("Backdrop_" .. backdrop.id, { clear = true }),
     callback = function()
       if is_backdrop_valid(backdrop) then
-        pcall(api.nvim_win_set_config, backdrop.win, {
-          width = vim.o.columns,
-          height = vim.o.lines,
-        })
+        -- Schedule resize to avoid potential conflicts
+        vim.schedule(function()
+          if is_backdrop_valid(backdrop) then
+            pcall(api.nvim_win_set_config, backdrop.win, {
+              width = vim.o.columns,
+              height = vim.o.lines,
+            })
+          end
+        end)
       else
         return true -- Remove this autocmd
       end
@@ -178,10 +186,15 @@ end
 M.resize_backdrop = function(backdrop)
   if not is_backdrop_valid(backdrop) then return end
 
-  pcall(api.nvim_win_set_config, backdrop.win, {
-    width = vim.o.columns,
-    height = vim.o.lines,
-  })
+  -- Schedule resize to ensure it happens after any pending operations
+  vim.schedule(function()
+    if is_backdrop_valid(backdrop) then
+      pcall(api.nvim_win_set_config, backdrop.win, {
+        width = vim.o.columns,
+        height = vim.o.lines,
+      })
+    end
+  end)
 end
 
 M.is_backdrop_valid = function(backdrop)

@@ -12,19 +12,19 @@ function M.create(user_config)
     disable_in_special = true,
     passthrough_keys_in_special = false,
     special_buftypes = {
-      "quickfix", "help", "nofile", "prompt", "terminal"
+      "quickfix", "help", "nofile", "prompt",
     },
     special_filetypes = {
-      "qf", "help", "netrw", "neo-tree", "terminal"
+      "qf", "help", "netrw", "neo-tree",
     },
     special_bufname_patterns = {
       "^term://", "^neo%-tree "
     },
     exclude_buftypes = {
-      "quickfix", "nofile", "help", "prompt", "terminal"
+      "quickfix", "nofile", "help", "prompt",
     },
     exclude_filetypes = {
-      "qf", "netrw", "NvimTree", "terminal"
+      "qf", "netrw", "NvimTree",
     },
     periodic_cleanup = true,
     debug = false,
