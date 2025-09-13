@@ -1,3 +1,5 @@
+-- core.lua
+
 local M = {}
 
 local utils = require('bufferswitch.utils')
