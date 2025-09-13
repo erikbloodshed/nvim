@@ -131,7 +131,7 @@ function M.update_tabline(buffer_list)
   local git_branch = ""
 
   local ok, branch = pcall(function()
-    return vim.fn.system("git branch --show-current 2>/dev/null"):gsub("\n", "")
+    return vim.fn.system("git symbolic-ref --short HEAD"):gsub("\n", "")
   end)
   if ok and branch and branch ~= "" and not branch:match("fatal:") then
     git_branch = " " .. branch .. " "

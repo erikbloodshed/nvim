@@ -46,8 +46,6 @@ M.create = function(state, cmd)
     end)
   end
 
-  local cmd_run = cmd.run() .. "\n"
-
   local run_in_terminal = function()
     api.nvim_cmd({ cmd = "ToggleTerm" }, {})
     vim.defer_fn(function()
@@ -56,7 +54,7 @@ M.create = function(state, cmd)
       if buftype == "terminal" then
         local job_id = vim.b.terminal_job_id or vim.bo.channel
         if job_id then
-          fn.chansend(job_id,  cmd_run)
+          fn.chansend(job_id,  cmd.run() .. "\n")
         end
       end
     end, 70)
