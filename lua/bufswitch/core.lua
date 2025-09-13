@@ -1,54 +1,25 @@
 local M = {}
 
-local utils = require('bufferswitch.utils')
-local tabline = require('bufferswitch.tabline')
+local utils = require('bufswitch.utils')
+local tabline = require('bufswitch.tabline')
 
-local buffer_order = {}
 local config = {}
 
-local function add_buffer_to_order(bufnr)
-  if utils.should_include_buffer(config, bufnr) then
-    local found = false
-    for _, existing_bufnr in ipairs(buffer_order) do
-      if existing_bufnr == bufnr then
-        found = true
-        break
-      end
-    end
-    if not found then
-      table.insert(buffer_order, bufnr)
+-- Simplified: Compute buffer order on-demand (stable by getbufinfo order, filtered)
+local function get_buffer_order()
+  local bufs = vim.fn.getbufinfo({ buflisted = 1 })
+  table.sort(bufs, function(a, b) return a.lnum < b.lnum end) -- Stable sort by internal order
+  local order = {}
+  for _, buf in ipairs(bufs) do
+    if utils.should_include_buffer(config, buf.bufnr) then
+      table.insert(order, buf.bufnr)
     end
   end
-end
-
-local function remove_buffer_from_order(bufnr)
-  for i, existing_bufnr in ipairs(buffer_order) do
-    if existing_bufnr == bufnr then
-      table.remove(buffer_order, i)
-      break
-    end
-  end
-end
-
-local function sanitize_buffer_order()
-  local i = 1
-  while i <= #buffer_order do
-    local bufnr = buffer_order[i]
-    if not utils.should_include_buffer(config, bufnr) then
-      table.remove(buffer_order, i)
-    else
-      i = i + 1
-    end
-  end
+  return order
 end
 
 function M.refresh_buffer_list()
-  sanitize_buffer_order()
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    add_buffer_to_order(bufnr)
-  end
-
+  local buffer_order = get_buffer_order()
   if vim.o.showtabline == 2 then
     tabline.debounced_update_tabline(buffer_order)
   end
@@ -63,14 +34,18 @@ function M.next_buffer()
     return
   end
 
+  local buffer_order = get_buffer_order()
   local current_buf = vim.api.nvim_get_current_buf()
 
   if #buffer_order > 1 then
-    if not utils.safe_command("silent! bnext") then
-      -- If that fails, try to find next buffer manually
+    local ok = pcall(vim.api.nvim_cmd, {
+      cmd = "bnext",
+      mods = { emsg_silent = true } --- @diagnostic disable-line: missing-fields
+    })
+    if not ok then
+      -- Manual fallback
       local found_current = false
       local next_buf = nil
-
       for _, bufnr in ipairs(buffer_order) do
         if found_current then
           next_buf = bufnr
@@ -80,11 +55,9 @@ function M.next_buffer()
           found_current = true
         end
       end
-
       if not next_buf and #buffer_order > 0 then
         next_buf = buffer_order[1]
       end
-
       if next_buf and next_buf ~= current_buf then
         vim.api.nvim_set_current_buf(next_buf)
       end
@@ -93,11 +66,10 @@ function M.next_buffer()
     vim.notify("No other buffers to navigate to", vim.log.levels.INFO)
   end
 
-  tabline.manage_tabline(config, buffer_order)
+  tabline.manage_tabline(config, get_buffer_order())
 end
 
 function M.prev_buffer()
-  -- Don't navigate if we're in a special buffer
   if config.disable_in_special and utils.is_special_buffer(config) then
     if config.passthrough_keys_in_special then
       local key = vim.api.nvim_replace_termcodes(config.orig_prev_key or "<C-p>", true, true, true)
@@ -106,20 +78,23 @@ function M.prev_buffer()
     return
   end
 
+  local buffer_order = get_buffer_order()
   local current_buf = vim.api.nvim_get_current_buf()
 
   if #buffer_order > 1 then
-    if not utils.safe_command("silent! bprevious") then
+    local ok = pcall(vim.api.nvim_cmd, {
+      cmd = "bprevious",
+      mods = { emsg_silent = true } --- @diagnostic disable-line: missing-fields
+    })
+    if not ok then
       local prev_buf = nil
       local found_index = nil
-
       for i, bufnr in ipairs(buffer_order) do
         if bufnr == current_buf then
           found_index = i
           break
         end
       end
-
       if found_index then
         if found_index > 1 then
           prev_buf = buffer_order[found_index - 1]
@@ -127,7 +102,6 @@ function M.prev_buffer()
           prev_buf = buffer_order[#buffer_order]
         end
       end
-
       if prev_buf and prev_buf ~= current_buf then
         vim.api.nvim_set_current_buf(prev_buf)
       end
@@ -136,10 +110,11 @@ function M.prev_buffer()
     vim.notify("No other buffers to navigate to", vim.log.levels.INFO)
   end
 
-  tabline.manage_tabline(config, buffer_order)
+  tabline.manage_tabline(config, get_buffer_order())
 end
 
 function M.debug_buffers()
+  local buffer_order = get_buffer_order()
   print("Current buffer order:")
   for i, bufnr in ipairs(buffer_order) do
     local name = vim.fn.bufname(bufnr)
@@ -157,46 +132,31 @@ function M.initialize(user_config)
 
   local ag = vim.api.nvim_create_augroup('BufferSwitcher', { clear = true })
 
-  buffer_order = {}
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    add_buffer_to_order(bufnr)
-  end
+  -- Initial refresh
+  M.refresh_buffer_list()
 
-  vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+  -- Simplified autocmds: Only BufEnter/BufLeave for refreshes; BufWinLeave for deletes
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'BufLeave' }, {
     group = ag,
     callback = function()
       local current_buf = vim.api.nvim_get_current_buf()
-
       if config.hide_in_special and utils.is_special_buffer(config, current_buf) then
         if vim.o.showtabline == 2 then
           vim.o.showtabline = 0
         end
         return
       end
-
-      add_buffer_to_order(current_buf)
       if config.show_tabline and vim.o.showtabline == 2 then
-        tabline.debounced_update_tabline(buffer_order)
+        M.refresh_buffer_list()
       end
     end,
   })
 
-  vim.api.nvim_create_autocmd({ 'BufAdd' }, {
+  vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout', 'BufWinLeave' }, {
     group = ag,
-    callback = function(ev)
-      add_buffer_to_order(ev.buf)
+    callback = function()
       if config.show_tabline and vim.o.showtabline == 2 then
-        tabline.debounced_update_tabline(buffer_order)
-      end
-    end,
-  })
-
-  vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
-    group = ag,
-    callback = function(ev)
-      remove_buffer_from_order(ev.buf)
-      if config.show_tabline and vim.o.showtabline == 2 then
-        tabline.debounced_update_tabline(buffer_order)
+        M.refresh_buffer_list()
       end
     end,
   })
@@ -215,18 +175,7 @@ function M.initialize(user_config)
     end,
   })
 
-  if config.periodic_cleanup then
-    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-      group = ag,
-      callback = function()
-        sanitize_buffer_order()
-      end,
-    })
-  end
-
-  M.get_buffer_order = function()
-    return buffer_order
-  end
+  M.get_buffer_order = get_buffer_order
 end
 
 return M

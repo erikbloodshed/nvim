@@ -1,7 +1,7 @@
 local wo, api = vim.wo, vim.api
 local keyset, autocmd = vim.keymap.set, api.nvim_create_autocmd
 
---- @diagnostic disable: assign-type-mismatch
+--- @diagnostic disable-next-line: assign-type-mismatch
 autocmd({ "Filetype" }, {
   pattern = { "c", "cpp", "asm", "python", "lua" },
   callback = function(args)
@@ -32,6 +32,7 @@ autocmd({ "Filetype" }, {
   end,
 })
 
+--- @diagnostic disable-next-line: assign-type-mismatch
 autocmd({ "Filetype" }, {
   pattern = { "help", "qf" },
   callback = function(args)
@@ -46,9 +47,9 @@ autocmd({ "VimEnter" }, {
     require("ui.select")
     require("ui.statusline")
 
-    keyset('n', "<Right>", function() require("bufferswitch").goto_next_buffer() end,
+    keyset('n', "<Right>", function() require("bufswitch").goto_next_buffer() end,
       { noremap = true, silent = true })
-    keyset('n', "<Left>", function() require("bufferswitch").goto_prev_buffer() end,
+    keyset('n', "<Left>", function() require("bufswitch").goto_prev_buffer() end,
       { noremap = true, silent = true })
 
     require('term').setup({

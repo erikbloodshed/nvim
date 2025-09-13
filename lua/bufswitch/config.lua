@@ -11,23 +11,13 @@ function M.create(user_config)
     hide_in_special = true,
     disable_in_special = true,
     passthrough_keys_in_special = false,
-    special_buftypes = {
-      "quickfix", "help", "nofile", "prompt",
-    },
-    special_filetypes = {
-      "qf", "help", "netrw", "neo-tree",
-    },
-    special_bufname_patterns = {
-      "^term://", "^neo%-tree "
-    },
-    exclude_buftypes = {
-      "quickfix", "nofile", "help", "prompt", "terminal"
-    },
-    exclude_filetypes = {
-      "qf", "netrw", "NvimTree"
-    },
-    periodic_cleanup = true,
+    special_buftypes = { "quickfix", "help", "nofile", "prompt" },
+    special_filetypes = { "qf", "help", "netrw", "neo-tree" },
+    special_bufname_patterns = { "^term://", "^neo%-tree " },
+    exclude_buftypes = { "quickfix", "nofile", "help", "prompt", "terminal" },
+    exclude_filetypes = { "qf", "netrw", "NvimTree" },
     debug = false,
+    max_tab_width = 15,      -- New: For simplified truncation
   }
 
   if user_config then

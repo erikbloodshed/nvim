@@ -1,4 +1,3 @@
---- @diagnostic disable: missing-fields
 local api, fn, log, notify = vim.api, vim.fn, vim.log.levels, vim.notify
 local utils = require("xrun.utils")
 
@@ -67,6 +66,7 @@ M.create = function(state, cmd)
 
   actions.run = function()
     if has_errors() then return end
+    --- @diagnostic disable-next-line: missing-fields
     api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if not cmd.compile or cmd.assemble then
@@ -90,6 +90,7 @@ M.create = function(state, cmd)
 
   actions.show_assembly = function()
     if not cmd.show_assembly then return end
+    --- @diagnostic disable-next-line: missing-fields
     api.nvim_cmd({ cmd = "update", bang = true, mods = { emsg_silent = true } }, {})
 
     if has_errors() then return end
