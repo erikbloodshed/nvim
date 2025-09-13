@@ -8,7 +8,7 @@ local function get_buffer_name(bufnr)
   if name == "" then
     return "[No Name]"
   end
-  -- Shorten the name to the basename for cleaner display
+
   return vim.fn.fnamemodify(name, ":t")
 end
 

@@ -1,5 +1,3 @@
--- core.lua
-
 local M = {}
 
 local utils = require('bufferswitch.utils')
@@ -15,8 +13,7 @@ local autocmds_created = false
 -- State for managing the "switching mode" when the tabline is temporarily visible.
 local cycle = {
   is_active = false, -- Is the user currently cycling through buffers?
-  order = {},        -- A frozen, temporary copy of buffer_order used for display.
-  index = 0,         -- The currently selected buffer's index in the frozen cycle.order list.
+  index = 0,         -- The currently selected buffer's index in tabline_order.
 }
 
 --[[
@@ -65,11 +62,10 @@ local function end_cycle()
   vim.o.showtabline = 0
 
   -- 2. Get the buffer that the user finally landed on.
-  local final_bufnr = cycle.order[cycle.index]
+  local final_bufnr = tabline_order[cycle.index]
 
   -- 3. IMPORTANT: Reset the cycle state *before* doing anything else.
   cycle.is_active = false
-  cycle.order = {}
   cycle.index = 0
 
   -- 4. "Commit" the change: Update the main MRU list with the final selection.
@@ -83,25 +79,6 @@ local function end_cycle()
   end
 end
 
-local function sanitize_buffer_order()
-  local i = 1
-  while i <= #buffer_order do
-    if not utils.should_include_buffer(config, buffer_order[i]) then
-      table.remove(buffer_order, i)
-    else
-      i = i + 1
-    end
-  end
-  i = 1
-  while i <= #tabline_order do
-    if not utils.should_include_buffer(config, tabline_order[i]) then
-      table.remove(tabline_order, i)
-    else
-      i = i + 1
-    end
-  end
-end
-
 -- This is the core function that handles all navigation.
 -- It either starts a new cycle or continues an existing one.
 local function navigate(direction)
@@ -110,7 +87,7 @@ local function navigate(direction)
 
   if not cycle.is_active then
     -- This is the START of a new cycle.
-    if #buffer_order < 2 then
+    if #tabline_order < 2 then
       vim.notify("No other buffers to switch to", vim.log.levels.INFO)
       return
     end
@@ -118,35 +95,65 @@ local function navigate(direction)
     -- 1. Activate the "switching mode".
     cycle.is_active = true
 
-    -- 2. Create the "frozen" list for navigation by copying the main list.
-    cycle.order = {}
-    for _, bufnr in ipairs(buffer_order) do
-      table.insert(cycle.order, bufnr)
+    -- 2. Find the current buffer's index in tabline_order.
+    local current_buf = vim.api.nvim_get_current_buf()
+    cycle.index = 0
+    for i, bufnr in ipairs(tabline_order) do
+      if bufnr == current_buf then
+        cycle.index = i
+        break
+      end
     end
-
-    -- 3. The starting index is the current buffer, which is the last one in the MRU list.
-    cycle.index = #cycle.order
+    -- If current buffer not in tabline_order, start at first valid buffer.
+    if cycle.index == 0 then
+      cycle.index = 1
+    end
   end
 
   -- We are now in a cycle. Let's find the next buffer to highlight.
   if direction == "prev" then
-    -- "Next" moves from most-recent to least-recent (backwards through the list).
+    -- Move to previous buffer in tabline_order.
     cycle.index = cycle.index - 1
-    if cycle.index < 1 then cycle.index = #cycle.order end -- Wrap around
+    if cycle.index < 1 then cycle.index = #tabline_order end -- Wrap around
   elseif direction == "next" then
-    -- "Prev" moves from least-recent to most-recent (forwards through the list).
+    -- Move to next buffer in tabline_order.
     cycle.index = cycle.index + 1
-    if cycle.index > #cycle.order then cycle.index = 1 end -- Wrap around
+    if cycle.index > #tabline_order then cycle.index = 1 end -- Wrap around
   elseif direction == "alt" then
-    -- Toggles between the most-recent (#order) and second-most-recent (#order-1) buffers.
-    if cycle.index == #cycle.order then
-      cycle.index = #cycle.order - 1
+    -- Toggle between the two most recent buffers in buffer_order
+    local mru_order = {}
+    for _, bufnr in ipairs(buffer_order) do
+      table.insert(mru_order, bufnr)
+    end
+    local mru_size = #mru_order
+    if mru_size < 2 then return end -- Not enough buffers to toggle
+
+    local current_buf = vim.api.nvim_get_current_buf()
+    local target_mru_index
+    if current_buf == mru_order[mru_size] then
+      target_mru_index = mru_size - 1
     else
-      cycle.index = #cycle.order
+      target_mru_index = mru_size
+    end
+    if target_mru_index < 1 then target_mru_index = 1 end
+
+    local target_bufnr = mru_order[target_mru_index]
+
+    -- Find the index of target_bufnr in tabline_order and update cycle.index
+    cycle.index = 0
+    for i, bufnr in ipairs(tabline_order) do
+      if bufnr == target_bufnr then
+        cycle.index = i
+        break
+      end
+    end
+    if cycle.index == 0 then
+      -- If not found (unlikely), fall back to current index
+      return
     end
   end
 
-  local target_bufnr = cycle.order[cycle.index]
+  local target_bufnr = tabline_order[cycle.index]
   if not (target_bufnr and vim.api.nvim_buf_is_valid(target_bufnr)) then
     end_cycle() -- End cycle safely if buffer became invalid.
     return
@@ -230,13 +237,6 @@ local function setup_autocmds()
       remove_buffer_from_order(ev.buf)
     end,
   })
-
-  if config.periodic_cleanup then
-    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-      group = ag,
-      callback = sanitize_buffer_order,
-    })
-  end
 
   autocmds_created = true
 end
