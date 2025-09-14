@@ -40,7 +40,7 @@ end
 
 function Terminal:get_float_config()
   local ui_w, ui_h = utils.get_ui_dimensions()
-  local width = math.floor(ui_w * self.config.width) + (self.config._internal_width_padding or 2)
+  local width = math.floor(ui_w * self.config.width) + 2
   local height = math.floor(ui_h * self.config.height)
 
   return {
@@ -97,7 +97,6 @@ function Terminal:setup_window_options()
 end
 
 function Terminal:create_backdrop()
-  if self.backdrop_instance and backdrop.is_backdrop_valid(self.backdrop_instance) then return end
   self.backdrop_instance = backdrop.create_backdrop(self.name)
 end
 

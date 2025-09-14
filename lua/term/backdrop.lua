@@ -37,7 +37,7 @@ end
 
 local create_resize_autocmd = function(backdrop)
   return api.nvim_create_autocmd("VimResized", {
-    group = api.nvim_create_augroup("TermSwitchBackdrop_" .. backdrop.id, { clear = true }),
+    group = api.nvim_create_augroup("TermBackdrop_" .. backdrop.id, { clear = true }),
     callback = function()
       if is_backdrop_valid(backdrop) then
         -- Use pcall to avoid errors if window is closed during resize
@@ -57,7 +57,7 @@ local cleanup_backdrop_resources = function(backdrop)
   if not backdrop then return end
 
   -- Clean up autocmd group
-  pcall(api.nvim_del_augroup_by_name, "TermSwitchBackdrop_" .. backdrop.id)
+  pcall(api.nvim_del_augroup_by_name, "TermBackdrop_" .. backdrop.id)
 
   -- Close window
   if backdrop.win and api.nvim_win_is_valid(backdrop.win) then
@@ -138,6 +138,13 @@ local create_backdrop_window = function(backdrop)
   return true
 end
 
+local cleanup_all = function()
+  for _, backdrop in pairs(backdrop_instances) do
+    cleanup_backdrop_resources(backdrop)
+  end
+  backdrop_instances = {}
+end
+
 M.create_backdrop = function(terminal_name)
   local backdrop = {
     id = terminal_name,
@@ -158,23 +165,8 @@ M.destroy_backdrop = function(backdrop)
   backdrop_instances[backdrop.id] = nil
 end
 
-M.is_backdrop_valid = function(backdrop)
-  return is_backdrop_valid(backdrop)
-end
-
-M.cleanup_all = function()
-  for _, backdrop in pairs(backdrop_instances) do
-    cleanup_backdrop_resources(backdrop)
-  end
-  backdrop_instances = {}
-end
-
-function M.get_backdrop(terminal_name)
-  return backdrop_instances[terminal_name]
-end
-
 api.nvim_create_autocmd("VimLeave", {
-  callback = M.cleanup_all,
+  callback = cleanup_all,
   desc = "Cleanup floating terminal backdrops on exit"
 })
 
