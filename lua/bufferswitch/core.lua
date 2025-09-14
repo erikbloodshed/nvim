@@ -1,3 +1,5 @@
+local api = vim.api
+
 local M = {}
 
 local utils = require('bufferswitch.utils')
@@ -51,7 +53,7 @@ local function end_cycle()
   cycle.is_active = false
   cycle.index = 0
 
-  if final_bufnr and vim.api.nvim_buf_is_valid(final_bufnr) then
+  if final_bufnr and api.nvim_buf_is_valid(final_bufnr) then
     update_buffer_mru(final_bufnr)
   end
 
@@ -71,7 +73,7 @@ local function navigate(direction)
 
     cycle.is_active = true
 
-    local current_buf = vim.api.nvim_get_current_buf()
+    local current_buf = api.nvim_get_current_buf()
     cycle.index = 0
     for i, bufnr in ipairs(tabline_order) do
       if bufnr == current_buf then
@@ -99,7 +101,7 @@ local function navigate(direction)
     local mru_size = #mru_order
     if mru_size < 2 then return end
 
-    local current_buf = vim.api.nvim_get_current_buf()
+    local current_buf = api.nvim_get_current_buf()
     local target_mru_index
     if current_buf == mru_order[mru_size] then
       target_mru_index = mru_size - 1
@@ -123,7 +125,7 @@ local function navigate(direction)
   end
 
   local target_bufnr = tabline_order[cycle.index]
-  if not (target_bufnr and vim.api.nvim_buf_is_valid(target_bufnr)) then
+  if not (target_bufnr and api.nvim_buf_is_valid(target_bufnr)) then
     end_cycle()
     return
   end
@@ -166,14 +168,14 @@ end
 
 local function setup_autocmds()
   if autocmds_created then return end
-  local ag = vim.api.nvim_create_augroup('BufferSwitcher', { clear = true })
+  local ag = api.nvim_create_augroup('BufferSwitcher', { clear = true })
 
-  vim.api.nvim_create_autocmd('BufEnter', {
+  api.nvim_create_autocmd('BufEnter', {
     group = ag,
     callback = function()
       if cycle.is_active then return end
 
-      update_buffer_mru(vim.api.nvim_get_current_buf())
+      update_buffer_mru(api.nvim_get_current_buf())
 
       if config.show_tabline then
         tabline.update_tabline(tabline_order)
@@ -181,7 +183,7 @@ local function setup_autocmds()
     end,
   })
 
-  vim.api.nvim_create_autocmd('BufAdd', {
+  api.nvim_create_autocmd('BufAdd', {
     group = ag,
     callback = function(ev)
       if cycle.is_active then return end
@@ -192,7 +194,7 @@ local function setup_autocmds()
     end,
   })
 
-  vim.api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
+  api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
     group = ag,
     callback = function(ev)
       remove_buffer_from_order(ev.buf)
@@ -202,17 +204,17 @@ local function setup_autocmds()
   autocmds_created = true
 end
 
-function M.initialize(user_config)
+function M.init(user_config)
   config = user_config
   buffer_order = {}
   tabline_order = {}
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+  for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if utils.should_include_buffer(config, bufnr) then
       table.insert(buffer_order, bufnr)
       table.insert(tabline_order, bufnr)
     end
   end
-  update_buffer_mru(vim.api.nvim_get_current_buf())
+  update_buffer_mru(api.nvim_get_current_buf())
   setup_autocmds()
 end
 

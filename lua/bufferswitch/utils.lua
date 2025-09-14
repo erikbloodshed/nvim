@@ -1,9 +1,11 @@
+local api = vim.api
+
 local M = {}
 
 local hide_timer = nil
 
-function M.is_special_buffer(config, bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
+M.is_special_buffer = function(config, bufnr)
+  bufnr = bufnr or api.nvim_get_current_buf()
 
   local buf_type = vim.bo[bufnr].buftype
   local buf_filetype = vim.bo[bufnr].filetype
@@ -30,8 +32,8 @@ function M.is_special_buffer(config, bufnr)
   return vim.fn.win_gettype() ~= ""
 end
 
-function M.should_include_buffer(config, bufnr)
-  if not vim.api.nvim_buf_is_valid(bufnr) or vim.fn.buflisted(bufnr) ~= 1 then
+M.should_include_buffer = function(config, bufnr)
+  if not api.nvim_buf_is_valid(bufnr) or vim.fn.buflisted(bufnr) ~= 1 then
     return false
   end
 
@@ -42,12 +44,12 @@ function M.should_include_buffer(config, bufnr)
   local buf_name = vim.fn.bufname(bufnr)
 
   if buf_name == "" and vim.fn.getbufvar(bufnr, '&modified') == 0 then
-    local line_count = vim.api.nvim_buf_line_count(bufnr)
+    local line_count = api.nvim_buf_line_count(bufnr)
 
     if line_count > 1 then
       return true
     elseif line_count == 1 then
-      local first_line = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1]
+      local first_line = api.nvim_buf_get_lines(bufnr, 0, 1, false)[1]
       return first_line and #first_line > 0
     end
 
@@ -57,11 +59,7 @@ function M.should_include_buffer(config, bufnr)
   return true
 end
 
-function M.safe_command(cmd)
-  return pcall(vim.api.nvim_command, cmd)
-end
-
-function M.start_hide_timer(timeout_ms, callback)
+M.start_hide_timer = function(timeout_ms, callback)
   M.stop_hide_timer()
 
   hide_timer = vim.uv.new_timer()
@@ -70,7 +68,7 @@ function M.start_hide_timer(timeout_ms, callback)
   end
 end
 
-function M.stop_hide_timer()
+M.stop_hide_timer = function()
   if hide_timer and not hide_timer:is_closing() then
     hide_timer:stop()
     hide_timer:close()

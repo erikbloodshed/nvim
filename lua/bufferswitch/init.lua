@@ -20,7 +20,7 @@ local config = {
 }
 
 local core = require('bufferswitch.core')
-core.initialize(config)
+core.init(config)
 
 function M.goto_next_buffer()
   core.next_buffer()

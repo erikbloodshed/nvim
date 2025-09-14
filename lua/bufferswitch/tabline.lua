@@ -8,7 +8,6 @@ local config = {
   debounce_delay = 16,
 }
 
--- Caching infrastructure
 local caches = {
   bufname = {},
   devicon = {},
@@ -20,9 +19,8 @@ local timers = {
   cache_cleanup = nil,
 }
 
--- Utility functions
 local function get_timestamp()
-  return vim.loop.hrtime() / 1000000 -- Convert to milliseconds
+  return vim.loop.hrtime() / 1000000
 end
 
 local function is_cache_valid(timestamp, ttl)
@@ -30,20 +28,13 @@ local function is_cache_valid(timestamp, ttl)
 end
 
 local function hash_buffer_list(buffer_list)
+  if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
   local parts = { tostring(current_buf) }
-
-  for _, bufnr in ipairs(buffer_list) do
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      local modified = vim.bo[bufnr].modified and "1" or "0"
-      table.insert(parts, tostring(bufnr) .. ":" .. modified)
-    end
-  end
 
   return table.concat(parts, "|")
 end
 
--- Cached devicon lookup
 local function get_cached_devicon(display_name, filepath, is_current, base_hl)
   if not has_devicons then
     return ""
@@ -81,9 +72,8 @@ local format_bufname = function(bufnr, is_current)
     return "[Invalid]"
   end
 
-  local modified = vim.bo[bufnr].modified
   local buftype = vim.bo[bufnr].buftype
-  local cache_key = bufnr .. ":" .. (is_current and "1" or "0") .. ":" .. (modified and "1" or "0")
+  local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
 
   local cached = caches.bufname[cache_key]
   if cached and is_cache_valid(cached.timestamp) then
@@ -91,9 +81,8 @@ local format_bufname = function(bufnr, is_current)
   end
 
   local name = vim.fn.bufname(bufnr)
-  local display_name = vim.fn.fnamemodify(name, ":t")
+  local display_name = vim.fs.basename(vim.api.nvim_buf_get_name(bufnr))
 
-  -- Handle special buffer types
   if buftype == "help" then
     display_name = "[Help] " .. (display_name ~= "" and display_name or "help")
   elseif buftype == "terminal" then
@@ -102,29 +91,20 @@ local format_bufname = function(bufnr, is_current)
     display_name = "[No Name]"
   end
 
-  -- Truncate long names
-  if #display_name > 25 then
-    display_name = display_name:sub(1, 22) .. "..."
+  if #display_name > 16 then
+    display_name = display_name:sub(1, 13) .. "..."
   end
 
   local base_hl = is_current and "BufferSwitchSelected" or "BufferSwitchInactive"
 
-  -- Build result components
   local components = {}
 
-  -- Add devicon
-  local devicon = get_cached_devicon(vim.fn.fnamemodify(name, ":t"), name, is_current, base_hl)
+  local devicon = get_cached_devicon(display_name, name, is_current, base_hl)
   if devicon ~= "" then
     table.insert(components, devicon)
   end
 
-  -- Add display name
   table.insert(components, display_name)
-
-  -- Add modified marker
-  if modified then
-    table.insert(components, "%#BufferSwitchModified#●%#" .. base_hl .. "#")
-  end
 
   local result = table.concat(components)
 
@@ -141,7 +121,7 @@ local M = {}
 function M.update_tabline(buffer_list)
   local buffer_hash = hash_buffer_list(buffer_list)
   if caches.tabline.buffer_hash == buffer_hash and
-    is_cache_valid(caches.tabline.timestamp, 100) then -- Very short TTL for tabline
+    is_cache_valid(caches.tabline.timestamp, 100) then
     vim.o.tabline = caches.tabline.content
     return
   end
@@ -149,7 +129,6 @@ function M.update_tabline(buffer_list)
   local current_buf = vim.api.nvim_get_current_buf()
   local parts = {}
 
-  -- Build buffer list
   for i, bufnr in ipairs(buffer_list) do
     if vim.api.nvim_buf_is_valid(bufnr) then
       local is_current = bufnr == current_buf
@@ -176,7 +155,6 @@ function M.update_tabline(buffer_list)
   vim.o.tabline = tabline_content
 end
 
--- Debounced update wrapper
 local function update_tabline_debounced(buffer_list)
   if timers.update then
     timers.update:stop()
@@ -208,7 +186,6 @@ function M.hide_tabline()
   vim.o.showtabline = 0
   utils.stop_hide_timer()
 
-  -- Cancel pending updates
   if timers.update then
     timers.update:stop()
     timers.update:close()
@@ -216,41 +193,32 @@ function M.hide_tabline()
   end
 end
 
--- Cache management
 local function cleanup_expired_cache()
-  -- Clean bufname cache
   for key, entry in pairs(caches.bufname) do
-    if not is_cache_valid(entry.timestamp) then
+    if not is_cache_valid(entry.timestamp, config.cache_ttl) then
       caches.bufname[key] = nil
     end
   end
-
-  -- Clean devicon cache
   for key, entry in pairs(caches.devicon) do
-    if not is_cache_valid(entry.timestamp) then
+    if not is_cache_valid(entry.timestamp, config.cache_ttl) then
       caches.devicon[key] = nil
     end
   end
 end
 
 local function invalidate_buffer_cache(bufnr)
-  -- Remove all cache entries for this buffer
   for key in pairs(caches.bufname) do
     if key:match("^" .. bufnr .. ":") then
       caches.bufname[key] = nil
     end
   end
 
-  -- Invalidate tabline cache
   caches.tabline.buffer_hash = ""
 end
 
--- Setup cache cleanup and invalidation
 local function setup_cache_management()
-  -- Periodic cache cleanup
   timers.cache_cleanup = vim.fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
 
-  -- Buffer change invalidation
   vim.api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
     callback = function(args)
       invalidate_buffer_cache(args.buf)
@@ -258,7 +226,6 @@ local function setup_cache_management()
   })
 end
 
--- Initialize performance monitoring (optional)
 function M.get_cache_stats()
   local function count_nested_cache(cache)
     local count = 0
