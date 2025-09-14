@@ -1,26 +1,11 @@
 local Terminal = require('term.terminal').Terminal
-local api = vim.api
 
 local M = {}
 local terminals = {}
 local default_config_cache = {}
-local manager_events_setup = false
-
-local function setup_manager_events()
-  if manager_events_setup then return end
-
-  api.nvim_create_autocmd('VimLeavePre', {
-    group = api.nvim_create_augroup('TerminalManager', { clear = true }),
-    callback = M.cleanup,
-    desc = 'Cleanup all terminals on exit'
-  })
-
-  manager_events_setup = true
-end
 
 function M.cache_defaults(user_config)
   default_config_cache = user_config or {}
-  setup_manager_events()
 end
 
 function M.create_terminal(name, config)
