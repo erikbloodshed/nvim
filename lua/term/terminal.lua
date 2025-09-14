@@ -234,7 +234,6 @@ function Terminal:_start_terminal_process()
 
   self.job_id = fn.getbufvar(self.buf, 'terminal_job_id', nil)
 
-  -- Force buflisted to false after terminal creation
   vim.schedule(function()
     if api.nvim_buf_is_valid(self.buf) then
       api.nvim_set_option_value("buflisted", false, { buf = self.buf })

@@ -1,4 +1,4 @@
-local utils = require("bufferswitch.utils")
+local utils = require("bufswitch.utils")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local config = {
@@ -35,27 +35,27 @@ local function hash_buffer_list(buffer_list)
   return table.concat(parts, "|")
 end
 
-local function get_cached_devicon(display_name, filepath, is_current, base_hl)
+local function get_cached_devicon(filename, filepath, is_current, base_hl)
   if not has_devicons then
     return ""
   end
 
   local basename = vim.fs.basename(filepath) or ""
   local ext = basename:match("%.([^%.]+)$") or ""
-  local cache_key = display_name .. ":" .. ext .. ":" .. (is_current and "1" or "0")
+  local cache_key = filename .. ":" .. ext .. ":" .. (is_current and "1" or "0")
 
   local cached = caches.devicon[cache_key]
   if cached and is_cache_valid(cached.timestamp) then
     return cached.result
   end
 
-  local devicon, icon_color = devicons.get_icon_color(display_name, ext)
+  local devicon, icon_color = devicons.get_icon_color(filename, ext)
   local result = ""
 
   if devicon then
     local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
-    vim.api.nvim_set_hl(0, "BufferSwitchDevicon", { fg = icon_color, bg = hl.bg })
-    local icon_hl = is_current and "BufferSwitchDevicon" or "BufferSwitchInactive"
+    vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = icon_color, bg = hl.bg })
+    local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
     result = string.format("%%#%s#%s%%#%s# ", icon_hl, devicon, base_hl)
   end
 
@@ -95,7 +95,7 @@ local format_bufname = function(bufnr, is_current)
     display_name = display_name:sub(1, 13) .. "..."
   end
 
-  local base_hl = is_current and "BufferSwitchSelected" or "BufferSwitchInactive"
+  local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
 
   local components = {}
 
@@ -118,8 +118,8 @@ end
 
 local M = {}
 
-function M.update_tabline(buffer_list)
-  local buffer_hash = hash_buffer_list(buffer_list)
+function M.update_tabline(buflist)
+  local buffer_hash = hash_buffer_list(buflist)
   if caches.tabline.buffer_hash == buffer_hash and
     is_cache_valid(caches.tabline.timestamp, 100) then
     vim.o.tabline = caches.tabline.content
@@ -129,25 +129,24 @@ function M.update_tabline(buffer_list)
   local current_buf = vim.api.nvim_get_current_buf()
   local parts = {}
 
-  for i, bufnr in ipairs(buffer_list) do
+  for i, bufnr in ipairs(buflist) do
     if vim.api.nvim_buf_is_valid(bufnr) then
       local is_current = bufnr == current_buf
-      local hl = is_current and "%#BufferSwitchSelected#" or "%#BufferSwitchInactive#"
+      local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
       local entry = table.concat({ hl, "  ", format_bufname(bufnr, is_current), "  " })
 
       table.insert(parts, entry)
 
-      if i < #buffer_list then
-        table.insert(parts, "%#BufferSwitchSeparator#|")
+      if i < #buflist then
+        table.insert(parts, "%#BufSwitchSeparator#|")
       else
-        table.insert(parts, "%#BufferSwitchFill#")
+        table.insert(parts, "%#BufSwitchFill#")
       end
     end
   end
 
-  local tabline_content = table.concat({ "%#BufferSwitchFill#", table.concat(parts, ""), "%T" })
+  local tabline_content = table.concat({ "%#BufSwitchFill#", table.concat(parts, ""), "%T" })
 
-  -- Cache the result
   caches.tabline.content = tabline_content
   caches.tabline.timestamp = get_timestamp()
   caches.tabline.buffer_hash = buffer_hash

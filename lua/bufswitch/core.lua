@@ -2,8 +2,8 @@ local api = vim.api
 
 local M = {}
 
-local utils = require('bufferswitch.utils')
-local tabline = require('bufferswitch.tabline')
+local utils = require('bufswitch.utils')
+local tabline = require('bufswitch.tabline')
 
 local buffer_order = {}
 local tabline_order = {}

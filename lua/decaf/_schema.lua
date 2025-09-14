@@ -447,10 +447,10 @@ function M.get(c, o)
     BlinkCmpKindTypeParameter = { fg = c.maroon },
     BlinkCmpKindCopilot = { fg = c.teal }, -- }}}
     -- {{{ Bufswitch
-    BufferSwitchSelected = { link = "PmenuSel" },
-    BufferSwitchInactive = { bg = c.mantle, fg = c.overlay0, },
-    BufferSwitchSeparator = { fg = c.surface1 },
-    BufferSwitchFill = { bg = c.mantle },
+    BufSwitchSelected = { link = "PmenuSel" },
+    BufSwitchInactive = { bg = c.mantle, fg = c.overlay0, },
+    BufSwitchSeparator = { fg = c.surface1 },
+    BufSwitchFill = { bg = c.mantle },
   }
 end
 
