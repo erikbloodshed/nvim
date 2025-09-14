@@ -67,7 +67,7 @@ autocmd({ "VimEnter" }, {
         shell = {},
         python = {
           shell = 'python3.14',
-          filetype = 'nofile',
+          filetype = 'terminal',
           auto_delete_on_close = true,
         },
       },
