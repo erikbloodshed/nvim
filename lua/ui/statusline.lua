@@ -367,9 +367,9 @@ local function create_components(winid, bufnr)
       local s = vim.diagnostic.severity
       local sev_map = {
         { s.ERROR, "StatusLineDiagError", config.icons.error },
-        { s.WARN,  "StatusLineDiagWarn",  config.icons.warn },
-        { s.INFO,  "StatusLineDiagInfo",  config.icons.info },
-        { s.HINT,  "StatusLineDiagHint",  config.icons.hint },
+        { s.WARN, "StatusLineDiagWarn", config.icons.warn },
+        { s.INFO, "StatusLineDiagInfo", config.icons.info },
+        { s.HINT, "StatusLineDiagHint", config.icons.hint },
       }
       local p = {}
       for _, v in ipairs(sev_map) do
@@ -458,12 +458,7 @@ M.refresh_window = function(winid)
 
   local main_expr = string.format('%%!v:lua.require("ui.statusline").statusline_for_window(%d)', winid)
   local simple_expr = string.format('%%!v:lua.require("ui.statusline").simple_statusline_for_window(%d)', winid)
-
-  if is_excluded_buftype(winid) then
-    api.nvim_set_option_value("statusline", simple_expr, { win = winid })
-  else
-    api.nvim_set_option_value("statusline", main_expr, { win = winid })
-  end
+  vim.wo[winid].statusline = is_excluded_buftype(winid) and simple_expr or main_expr
 end
 
 M.refresh = function(win)

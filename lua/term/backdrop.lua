@@ -20,12 +20,10 @@ end
 local function cleanup_backdrop(backdrop)
   if not backdrop then return end
 
-  -- Clean up autocmd group
   if backdrop.augroup then
     pcall(api.nvim_del_augroup_by_id, backdrop.augroup)
   end
 
-  -- Close window (buffer gets cleaned up automatically)
   if backdrop.win and api.nvim_win_is_valid(backdrop.win) then
     pcall(api.nvim_win_close, backdrop.win, true)
   end
@@ -38,13 +36,11 @@ local function create_backdrop_window(id)
     return nil
   end
 
-  -- Clean up existing backdrop
   local existing = backdrop_instances[id]
   if existing then
     cleanup_backdrop(existing)
   end
 
-  -- Create scratch buffer
   local buf = api.nvim_create_buf(false, true)
   if not buf then return nil end
 

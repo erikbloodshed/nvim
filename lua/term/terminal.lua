@@ -88,10 +88,10 @@ function Terminal:_setup_window()
   self:create_backdrop()
   self.win = api.nvim_open_win(self.buf, true, self:get_float_config())
 
-  local win_opts = { number = false, relativenumber = false, signcolumn = 'no', wrap = false, }
-  for opt, val in pairs(win_opts) do
-    api.nvim_set_option_value(opt, val, { win = self.win })
-  end
+  vim.wo[self.win].number = false
+  vim.wo[self.win].relativenumber = false
+  vim.wo[self.win].signcolumn = 'no'
+  vim.wo[self.win].wrap = false
 
   self:_setup_window_handlers()
 end
@@ -177,16 +177,8 @@ function Terminal:_start_terminal(target_cwd)
     api.nvim_cmd({ cmd = 'lcd', args = { original_cwd } }, {})
   end
 
-  -- Set buffer options
-  local buf_opts = {
-    buflisted = false,
-    bufhidden = 'hide',
-    filetype = self.config.filetype,
-  }
-
-  for opt, val in pairs(buf_opts) do
-    api.nvim_set_option_value(opt, val, { buf = self.buf })
-  end
+  vim.bo[self.buf].buflisted = false
+  vim.bo[self.buf].filetype = self.config.filetype
 
   -- Setup auto-delete if enabled
   if self.config.auto_delete_on_close then
