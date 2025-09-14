@@ -446,6 +446,13 @@ function M.get(c, o)
     BlinkCmpKindOperator = { fg = c.sky },
     BlinkCmpKindTypeParameter = { fg = c.maroon },
     BlinkCmpKindCopilot = { fg = c.teal }, -- }}}
+    -- {{{ Bufswitch
+    BufferSwitchSelected = { link = "PmenuSel" },
+    BufferSwitchInactive = { bg = c.mantle, fg = c.overlay0, },
+    BufferSwitchModified = { link = "StatusLineModified" },
+    BufferSwitchSeparator = { fg = c.surface1 },
+    BufferSwitchFill = { bg = c.mantle },
+    BufferSwitchRight = { bg = c.base, fg = c.peach, bold = true, }, -- }}}
   }
 end
 

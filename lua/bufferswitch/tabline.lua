@@ -8,46 +8,40 @@ local config = {
   hide_timeout = 2000,    -- ms before hiding tabline
 }
 
-local colors = {
-  rosewater = "#f5e0dc",
-  flamingo = "#f2cdcd",
-  pink = "#f5c2e7",
-  mauve = "#cba6f7",
-  red = "#f38ba8",
-  maroon = "#eba0ac",
-  peach = "#fab387",
-  yellow = "#f9e2af",
-  green = "#a6e3a1",
-  teal = "#94e2d5",
-  sky = "#89dceb",
-  sapphire = "#74c7ec",
-  blue = "#89b4fa",
-  lavender = "#b4befe",
-  text = "#cdd6f4",
-  subtext1 = "#bac2de",
-  subtext0 = "#a6adc8",
-  overlay2 = "#9399b2",
-  overlay1 = "#7f849c",
-  overlay0 = "#6c7086",
-  surface2 = "#585b70",
-  surface1 = "#45475a",
-  surface0 = "#313244",
-  base = "#1e1e2e",
-  mantle = "#181825",
-  crust = "#11111b",
-  none = "NONE",
-}
+local git_branch_cache = {}
 
-local function setup_highlight_groups()
-  vim.api.nvim_set_hl(0, 'BufferSwitchSelected', { bg = colors.base, fg = colors.text, bold = true, })
-  vim.api.nvim_set_hl(0, 'BufferSwitchInactive', { bg = colors.mantle, fg = colors.overlay0, })
-  vim.api.nvim_set_hl(0, 'BufferSwitchModified', { fg = '#ff6b6b' })
-  vim.api.nvim_set_hl(0, 'BufferSwitchSeparator', { bg = colors.mantle, fg = colors.subtext0, })
-  vim.api.nvim_set_hl(0, 'BufferSwitchFill', { bg = colors.mantle })
-  vim.api.nvim_set_hl(0, 'BufferSwitchRight', { bg = colors.base, fg = colors.peach, bold = true, })
+local function get_git_branch(bufnr, callback)
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    callback("")
+    return
+  end
+
+  local filepath = vim.api.nvim_buf_get_name(bufnr)
+  if filepath == "" then
+    callback("")
+    return
+  end
+
+  -- Run git from the file's directory
+  local file_dir = vim.fn.fnamemodify(filepath, ":h")
+
+  if git_branch_cache[file_dir] then
+    callback(git_branch_cache[file_dir])
+    return
+  end
+
+  vim.system({ "git", "-C", file_dir, "symbolic-ref", "--short", "HEAD" }, {}, function(obj)
+    local branch = ""
+    if obj.code == 0 and obj.stdout then
+      branch = obj.stdout:gsub("\n", "")
+    end
+
+    git_branch_cache[file_dir] = branch
+    callback(branch)
+  end)
 end
 
-function M.format_buffer_name(bufnr, is_current)
+function M.format_bufname(bufnr, is_current)
   if not vim.api.nvim_buf_is_valid(bufnr) then
     return "[Invalid]"
   end
@@ -77,18 +71,12 @@ function M.format_buffer_name(bufnr, is_current)
   local get_devicon = function()
     if has_devicons then
       local ext = vim.fn.fnamemodify(name, ":e") or ""
-
-      local devicon, icon_hl = devicons.get_icon_color(display_name, ext)
-
+      local devicon, icon_color = devicons.get_icon_color(display_name, ext)
+      local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel"})
       if devicon then
-        local custom_icon_hl = "BufferSwitchIcon" .. (is_current and "Selected" or "Inactive")
-
-        vim.api.nvim_set_hl(0, custom_icon_hl, {
-          fg = is_current and icon_hl or colors.overlay0,
-          bg = is_current and colors.base or colors.mantle,
-        })
-
-        return string.format("%%#%s#%s%%#%s# ", custom_icon_hl, devicon, base_hl)
+        vim.api.nvim_set_hl(0, "BufferSwitchDevicon", { fg = icon_color, bg = hl.bg })
+        local icon_hl = is_current and "BufferSwitchDevicon" or "BufferSwitchInactive"
+        return string.format("%%#%s#%s%%#%s# ", icon_hl, devicon, base_hl)
       end
     end
     return ""
@@ -98,8 +86,6 @@ function M.format_buffer_name(bufnr, is_current)
 end
 
 function M.update_tabline(buffer_list)
-  setup_highlight_groups()
-
   local current_buf = vim.api.nvim_get_current_buf()
   local parts = {}
 
@@ -107,13 +93,7 @@ function M.update_tabline(buffer_list)
     if vim.api.nvim_buf_is_valid(bufnr) then
       local is_current = bufnr == current_buf
       local hl = is_current and "%#BufferSwitchSelected#" or "%#BufferSwitchInactive#"
-
-      local entry = table.concat({
-        hl,
-        "  ",
-        M.format_buffer_name(bufnr, is_current),
-        "  ",
-      })
+      local entry = table.concat({ hl, "  ", M.format_bufname(bufnr, is_current), "  ", })
 
       table.insert(parts, entry)
 
@@ -126,25 +106,21 @@ function M.update_tabline(buffer_list)
   end
 
   local left = table.concat(parts, "")
+  local cwd = vim.fs.basename(vim.fs.dirname(vim.api.nvim_buf_get_name(current_buf)))
 
-  local cwd = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
-  local git_branch = ""
+  get_git_branch(current_buf, function(branch)
+    local git_branch = branch ~= "" and (" " .. branch .. " ") or ""
+    local right = string.format(
+      "%%=%s%%#BufferSwitchRight# %s%s ",
+      "%#BufferSwitchFill#",
+      git_branch ~= "" and (icons.git .. git_branch .. "📁 ") or "📁 ",
+      cwd
+    )
 
-  local ok, branch = pcall(function()
-    return vim.fn.system("git symbolic-ref --short HEAD"):gsub("\n", "")
+    vim.schedule(function()
+      vim.o.tabline = "%#BufferSwitchFill#" .. left .. right .. "%T"
+    end)
   end)
-  if ok and branch and branch ~= "" and not branch:match("fatal:") then
-    git_branch = " " .. branch .. " "
-  end
-
-  local right = string.format(
-    "%%=%s%%#BufferSwitchRight# %s%s ",
-    "%#BufferSwitchFill#",
-    git_branch ~= "" and (icons.git .. git_branch .. "📁 ") or "📁 ",
-    cwd
-  )
-
-  vim.o.tabline = "%#BufferSwitchFill#" .. left .. right .. "%T"
 end
 
 function M.show_tabline_temporarily(_, buffer_order)
