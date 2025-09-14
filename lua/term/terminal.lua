@@ -1,15 +1,24 @@
 local api = vim.api
 local fn = vim.fn
-local config = require('term.config')
 local utils = require('term.utils')
 local backdrop = require('term.backdrop')
+
+local defaults = {
+  width = 0.8,
+  height = 0.8,
+  border = 'rounded',
+  shell = nil,
+  filetype = 'terminal',
+  auto_delete_on_close = false,
+  open_in_file_dir = false,
+  open = true,
+}
 
 local Terminal = {}
 Terminal.__index = Terminal
 
 function Terminal:new(name, user_config)
-  local merged = vim.tbl_extend('force', config.defaults, user_config or {})
-  merged = config.validate_config(merged)
+  local merged = vim.tbl_extend('force', defaults, user_config or {})
 
   if not merged.title then
     merged.title = utils.create_title(name)
