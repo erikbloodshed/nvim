@@ -6,7 +6,6 @@ local hide_timer = nil
 
 M.is_special_buffer = function(config, bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
-
   local buf_type = vim.bo[bufnr].buftype
   local buf_filetype = vim.bo[bufnr].filetype
   local buf_name = vim.fn.bufname(bufnr)

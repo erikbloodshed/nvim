@@ -229,7 +229,7 @@ function M.get(c, o)
 
     -- Types
     ["@type"] = { link = "StorageClass" },
-    ["@type.builtin"] = { link = "Statement" },
+    ["@type.builtin"] = { link = "Operator" },
     ["@type.definition"] = { link = "StorageClass" },
 
     ["@attribute"] = { link = "Special" },
