@@ -24,6 +24,10 @@ function M.alt_tab_buffer()
   require('bufswitch.core').alt_tab_buffer()
 end
 
+function M.show_tabline()
+  require('bufswitch.core').show_tabline()
+end
+
 if state.config.debug then
   function M.debug_buffers()
     require('bufswitch.core').debug_buffers()

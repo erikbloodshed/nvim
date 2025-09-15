@@ -13,13 +13,18 @@ local caches = {
 
 local timers = {
   update = nil,
-  cache_cleanup = nil,
 }
 
 local window_offset = 1
 
+-- Initialize highlight group for devicons
+if has_devicons then
+  local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
+  vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = nil, bg = hl.bg })
+end
+
 local function get_timestamp()
-  return vim.loop.hrtime() / 1000000
+  return vim.fn.reltimefloat(vim.fn.reltime()) * 1000
 end
 
 local function is_cache_valid(timestamp, ttl)
@@ -29,11 +34,7 @@ end
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
-  local parts = { tostring(current_buf), tostring(cycle_index or 0), tostring(window_offset) }
-  for _, bufnr in ipairs(buffer_list) do
-    table.insert(parts, tostring(bufnr))
-  end
-  return table.concat(parts, "|")
+  return string.format("%d:%d:%d", current_buf, cycle_index or 0, window_offset)
 end
 
 local function get_cached_devicon(filename, filepath, is_current, base_hl)
@@ -50,8 +51,7 @@ local function get_cached_devicon(filename, filepath, is_current, base_hl)
   local devicon, icon_color = devicons.get_icon_color(filename, ext)
   local result = ""
   if devicon then
-    local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
-    vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = icon_color, bg = hl.bg })
+    vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = icon_color, bg = vim.api.nvim_get_hl(0, { name = "BufSwitchDevicon" }).bg })
     local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
     result = string.format("%%#%s#%s%%#%s# ", icon_hl, devicon, base_hl)
   end
@@ -60,22 +60,22 @@ local function get_cached_devicon(filename, filepath, is_current, base_hl)
 end
 
 local format_bufname = function(bufnr, is_current)
-  if not vim.api.nvim_buf_is_valid(bufnr) then
-    return "[Invalid]"
-  end
-  local buftype = vim.bo[bufnr].buftype
   local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
   local cached = caches.bufname[cache_key]
   if cached and is_cache_valid(cached.timestamp) then
     return cached.result
   end
-  local name = vim.fn.bufname(bufnr)
-  local display_name = vim.fs.basename(vim.api.nvim_buf_get_name(bufnr))
+  local name = vim.api.nvim_buf_is_valid(bufnr) and vim.fn.bufname(bufnr) or ""
+  if not name or name == "" then
+    return "[Invalid]"
+  end
+  local buftype = vim.bo[bufnr].buftype
+  local display_name = vim.fs.basename(name) or "[No Name]"
   if buftype == "help" then
-    display_name = "[Help] " .. (display_name ~= "" and display_name or "help")
+    display_name = "[Help] " .. (display_name ~= "[No Name]" and display_name or "help")
   elseif buftype == "terminal" then
-    display_name = "[Term] " .. (display_name ~= "" and display_name:gsub("^term://.*//", "") or "terminal")
-  elseif display_name == "" then
+    display_name = "[Term] " .. (display_name ~= "[No Name]" and display_name:gsub("^term://.*//", "") or "terminal")
+  elseif display_name == "[No Name]" then
     display_name = "[No Name]"
   end
   if #display_name > 16 then
@@ -97,8 +97,7 @@ local M = {}
 
 function M.update_tabline(buflist, cycle_index)
   local buffer_hash = hash_buffer_list(buflist, cycle_index)
-  if caches.tabline.buffer_hash == buffer_hash and
-    is_cache_valid(caches.tabline.timestamp, 100) then
+  if caches.tabline.buffer_hash == buffer_hash and is_cache_valid(caches.tabline.timestamp, 100) then
     vim.o.tabline = caches.tabline.content
     return
   end
@@ -106,7 +105,7 @@ function M.update_tabline(buflist, cycle_index)
   local current_buf = vim.api.nvim_get_current_buf()
   local parts = {}
   local total_buffers = #buflist
-  local display_window = state.config.tabline_display_window -- Use central config
+  local display_window = state.config.tabline_display_window
 
   if total_buffers == 0 then
     vim.o.tabline = "%#BufSwitchFill#%T"
@@ -114,12 +113,9 @@ function M.update_tabline(buflist, cycle_index)
   end
 
   local current_index = 0
-
-  -- If cycle_index is provided, use it directly as the position
   if cycle_index then
     current_index = cycle_index
   else
-    -- Find the current buffer's position in the list
     for i, bufnr in ipairs(buflist) do
       if bufnr == current_buf then
         current_index = i
@@ -129,24 +125,10 @@ function M.update_tabline(buflist, cycle_index)
     if current_index == 0 and total_buffers > 0 then current_index = 1 end
   end
 
-  -- Determine start_index and end_index based on window_offset
+  window_offset = math.max(1, math.min(current_index - display_window + 1, total_buffers - display_window + 1))
   local start_index = window_offset
   local end_index = math.min(start_index + display_window - 1, total_buffers)
 
-  -- Adjust window_offset when reaching the last or first viewable buffer
-  if current_index > end_index and current_index <= total_buffers then
-    -- Scroll right when navigating past the last viewable buffer
-    window_offset = math.max(1, current_index - display_window + 1)
-    start_index = window_offset
-    end_index = math.min(start_index + display_window - 1, total_buffers)
-  elseif current_index < start_index and current_index >= 1 then
-    -- Scroll left when navigating before the first viewable buffer
-    window_offset = math.max(1, current_index - display_window + 1)
-    start_index = window_offset
-    end_index = math.min(start_index + display_window - 1, total_buffers)
-  end
-
-  -- Only add "<.." if start_index > 1 and the current buffer is not the first buffer
   if start_index > 1 and current_index > 1 then
     table.insert(parts, "%#BufSwitchSeparator#<..")
   end
@@ -154,14 +136,7 @@ function M.update_tabline(buflist, cycle_index)
   for i = start_index, end_index do
     local bufnr = buflist[i]
     if vim.api.nvim_buf_is_valid(bufnr) then
-      -- During cycling, highlight the buffer at cycle_index, otherwise highlight current_buf
-      local is_current
-      if cycle_index then
-        is_current = (i == cycle_index)
-      else
-        is_current = (bufnr == current_buf)
-      end
-
+      local is_current = cycle_index and i == cycle_index or bufnr == current_buf
       local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
       local entry = table.concat({ hl, "  ", format_bufname(bufnr, is_current), "  " })
       if i > start_index or (i == start_index and start_index > 1) then
@@ -175,6 +150,7 @@ function M.update_tabline(buflist, cycle_index)
     table.insert(parts, "%#BufSwitchSeparator#|..>")
   end
 
+  -- Explicitly reset highlight before fill to prevent overlap
   table.insert(parts, "%#BufSwitchFill#")
   local tabline_content = table.concat({ "%#BufSwitchFill#", table.concat(parts, ""), "%T" })
   caches.tabline.content = tabline_content
@@ -184,14 +160,14 @@ function M.update_tabline(buflist, cycle_index)
 end
 
 local function update_tabline_debounced(buffer_list, cycle_index)
-  if timers.update then
-    timers.update:stop()
-    timers.update:close()
+  if not timers.update then
+    timers.update = vim.loop.new_timer()
   end
-  timers.update = vim.defer_fn(function()
+  timers.update:stop()
+  timers.update:start(debounce_delay, 0, vim.schedule_wrap(function()
     M.update_tabline(buffer_list, cycle_index)
-    timers.update = nil
-  end, debounce_delay)
+    timers.update:stop()
+  end))
 end
 
 function M.show_tabline_temporarily(_, buffer_order)
@@ -217,14 +193,22 @@ function M.hide_tabline()
 end
 
 local function cleanup_expired_cache()
-  for key, entry in pairs(caches.bufname) do
-    if not is_cache_valid(entry.timestamp, cache_ttl) then
-      caches.bufname[key] = nil
+  local bufname_count = 0
+  for _ in pairs(caches.bufname) do bufname_count = bufname_count + 1 end
+  if bufname_count > 100 then
+    for key, entry in pairs(caches.bufname) do
+      if not is_cache_valid(entry.timestamp, cache_ttl) then
+        caches.bufname[key] = nil
+      end
     end
   end
-  for key, entry in pairs(caches.devicon) do
-    if not is_cache_valid(entry.timestamp, cache_ttl) then
-      caches.devicon[key] = nil
+  local devicon_count = 0
+  for _ in pairs(caches.devicon) do devicon_count = devicon_count + 1 end
+  if devicon_count > 100 then
+    for key, entry in pairs(caches.devicon) do
+      if not is_cache_valid(entry.timestamp, cache_ttl) then
+        caches.devicon[key] = nil
+      end
     end
   end
 end
@@ -239,7 +223,7 @@ local function invalidate_buffer_cache(bufnr)
 end
 
 local function setup_cache_management()
-  timers.cache_cleanup = vim.fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
+  vim.fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
   vim.api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
     callback = function(args)
       invalidate_buffer_cache(args.buf)

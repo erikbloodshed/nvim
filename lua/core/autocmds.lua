@@ -53,6 +53,8 @@ autocmd({ "VimEnter" }, {
       { noremap = true, nowait = true, silent = true })
     keyset({ 'n', 'i' }, "<Up>", function() require("bufswitch").alt_tab_buffer() end,
       { noremap = true, silent = true })
+    keyset({ 'n', 'i' }, "<Down>", function() require("bufswitch").show_tabline() end,
+      { noremap = true, silent = true })
 
     require('term').setup({
       defaults = {

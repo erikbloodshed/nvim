@@ -59,7 +59,7 @@ local function navigate(direction)
 
   if not state.cycle.is_active then
     if #state.tabline_order < 2 then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline if no other buffers
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
       return
     end
 
@@ -149,6 +149,10 @@ function M.prev_buffer()
   navigate("prev")
 end
 
+function M.show_tabline()
+  tabline.show_tabline_temporarily(_, state.buffer_order)
+end
+
 function M.debug_buffers()
   print("Current buffer order (MRU):")
   for i, bufnr in ipairs(state.buffer_order) do
@@ -172,6 +176,9 @@ local function setup_autocmds()
       if state.cycle.is_active then return end
       update_buffer_mru(api.nvim_get_current_buf())
       if state.config.show_tabline then
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
         tabline.update_tabline(state.tabline_order)
       end
     end,
