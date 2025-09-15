@@ -2,13 +2,13 @@ local M = {}
 
 local user_config = {
   hide_timeout = 1000,
-  tabline_display_window = 8, -- You can change this number
+  tabline_display_window = 8,
   wrap_around = true,
   debug = false,
 }
 
 local state = require('bufswitch.state')
-state.init_config(user_config) -- Apply user config to the central state
+state.init_config(user_config)
 
 require('bufswitch.core').init()
 

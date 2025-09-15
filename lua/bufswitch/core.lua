@@ -1,14 +1,15 @@
 local api = vim.api
 local utils = require('bufswitch.utils')
 local tabline = require('bufswitch.tabline')
-local state = require('bufswitch.state') -- Use the central state
+local state = require('bufswitch.state')
 
 local M = {}
 
 local autocmds_created = false
+local config = state.config
 
 local function update_buffer_mru(bufnr)
-  if not utils.should_include_buffer(state.config, bufnr) then return end
+  if not utils.should_include_buffer(config, bufnr) then return end
 
   for i, b in ipairs(state.buffer_order) do
     if b == bufnr then
@@ -49,7 +50,7 @@ local function end_cycle()
     update_buffer_mru(final_bufnr)
   end
 
-  if state.config.show_tabline then
+  if config.show_tabline then
     tabline.update_tabline(state.tabline_order)
   end
 end
@@ -80,8 +81,8 @@ local function navigate(direction)
   end
 
   if direction == "prev" then
-    if state.cycle.index <= 1 and not state.config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline at first buffer
+    if state.cycle.index <= 1 and not config.wrap_around then
+      tabline.show_tabline_temporarily(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index - 1
@@ -89,8 +90,8 @@ local function navigate(direction)
       state.cycle.index = #state.tabline_order
     end
   elseif direction == "next" then
-    if state.cycle.index >= #state.tabline_order and not state.config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline at last buffer
+    if state.cycle.index >= #state.tabline_order and not config.wrap_around then
+      tabline.show_tabline_temporarily(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index + 1
@@ -126,26 +127,23 @@ local function navigate(direction)
   end
 
   vim.cmd('buffer ' .. target_bufnr)
-
   vim.o.showtabline = 2
-  -- Pass the cycle index so the tabline knows which buffer to highlight and center on
   tabline.update_tabline(state.tabline_order, state.cycle.index)
-
-  utils.start_hide_timer(state.config.hide_timeout, end_cycle)
+  utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
 
 function M.alt_tab_buffer()
-  if state.config.disable_in_special and utils.is_special_buffer(state.config) then return end
+  if config.disable_in_special and utils.is_special_buffer(config) then return end
   navigate("alt")
 end
 
 function M.next_buffer()
-  if state.config.disable_in_special and utils.is_special_buffer(state.config) then return end
+  if config.disable_in_special and utils.is_special_buffer(config) then return end
   navigate("next")
 end
 
 function M.prev_buffer()
-  if state.config.disable_in_special and utils.is_special_buffer(state.config) then return end
+  if config.disable_in_special and utils.is_special_buffer(config) then return end
   navigate("prev")
 end
 
@@ -175,10 +173,7 @@ local function setup_autocmds()
     callback = function()
       if state.cycle.is_active then return end
       update_buffer_mru(api.nvim_get_current_buf())
-      if state.config.show_tabline then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
+      if config.show_tabline then
         tabline.update_tabline(state.tabline_order)
       end
     end,
@@ -188,7 +183,7 @@ local function setup_autocmds()
     group = ag,
     callback = function(ev)
       if state.cycle.is_active then return end
-      if utils.should_include_buffer(state.config, ev.buf) then
+      if utils.should_include_buffer(config, ev.buf) then
         table.insert(state.tabline_order, ev.buf)
         update_buffer_mru(ev.buf)
       end
@@ -206,12 +201,10 @@ local function setup_autocmds()
 end
 
 function M.init()
-  -- Clear state tables on re-init
   state.buffer_order = {}
   state.tabline_order = {}
-  -- Populate initial buffers
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
-    if utils.should_include_buffer(state.config, bufnr) then
+    if utils.should_include_buffer(config, bufnr) then
       table.insert(state.buffer_order, bufnr)
       table.insert(state.tabline_order, bufnr)
     end

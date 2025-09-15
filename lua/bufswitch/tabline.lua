@@ -2,31 +2,27 @@ local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
--- Configuration
 local CACHE_TTL = 5000
 local DEBOUNCE_DELAY = 16
 local TABLINE_TTL = 100
 local MAX_CACHE_SIZE = 100
 local MAX_NAME_LENGTH = 16
 
--- Cache storage
 local cache = {
   bufname = {},
   devicon = {},
-  tabline = { content = "", timestamp = 0, hash = "" },
-  static_tabline = { content = "", timestamp = 0, hash = "" }
+  tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
+  static_tabline = { content = "", timestamp = 0, hash = "", window_start = 1 }
 }
 
--- Timers
 local update_timer = nil
+local config = state.config
 
--- Initialize devicon highlight if available
 if has_devicons then
   local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
   vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = nil, bg = hl.bg })
 end
 
--- Utility functions
 local function get_timestamp()
   return vim.fn.reltimefloat(vim.fn.reltime()) * 1000
 end
@@ -39,7 +35,6 @@ local function create_cache_entry(result)
   return { result = result, timestamp = get_timestamp() }
 end
 
--- Cache management
 local function cleanup_cache_table(cache_table)
   local count = 0
   for _ in pairs(cache_table) do count = count + 1 end
@@ -59,25 +54,23 @@ local function cleanup_expired_cache()
 end
 
 local function invalidate_buffer_cache(bufnr)
-  -- Clear buffer-specific cache entries
   for key in pairs(cache.bufname) do
     if key:match("^" .. bufnr .. ":") then
       cache.bufname[key] = nil
     end
   end
-  -- Force tabline refresh
   cache.tabline.hash = ""
+  cache.tabline.window_start = 1
   cache.static_tabline.hash = ""
+  cache.static_tabline.window_start = 1
 end
 
--- Buffer hash for cache invalidation
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
   return string.format("%d:%d:%d", current_buf, cycle_index or 0, 1)
 end
 
--- Devicon handling
 local function get_devicon(filename, filepath, is_current, base_hl)
   if not has_devicons then return "" end
 
@@ -106,7 +99,6 @@ local function get_devicon(filename, filepath, is_current, base_hl)
   return result
 end
 
--- Buffer name formatting
 local function get_display_name(bufnr, name)
   local buftype = vim.bo[bufnr].buftype
   local display_name = vim.fs.basename(name) or "[No Name]"
@@ -145,29 +137,28 @@ local function format_bufname(bufnr, is_current)
   return result
 end
 
--- Calculate window bounds for buffer display
-local function calculate_window_bounds(current_index, total_buffers, display_window)
+local function calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
   if total_buffers <= display_window then
     return 1, total_buffers
   end
 
-  -- Default to showing first N buffers
-  local start_index = 1
+  local window_start = cache_ref.window_start or 1
+  local window_end = window_start + display_window - 1
 
-  -- Only scroll when current buffer would be outside the window
-  if current_index > display_window then
-    -- Scroll so current buffer appears at the rightmost position
-    start_index = current_index - display_window + 1
+  if current_index > window_end then
+    window_start = current_index - display_window + 1
+  elseif current_index < window_start then
+    window_start = current_index
   end
 
-  -- Don't scroll past the end
-  start_index = math.min(start_index, total_buffers - display_window + 1)
-  local end_index = math.min(start_index + display_window - 1, total_buffers)
+  window_start = math.max(1, math.min(window_start, total_buffers - display_window + 1))
+  local window_end_final = math.min(window_start + display_window - 1, total_buffers)
 
-  return start_index, end_index
+  cache_ref.window_start = window_start
+
+  return window_start, window_end_final
 end
 
--- Find current buffer index
 local function find_current_index(buffer_order, current_buf, cycle_index)
   if cycle_index then
     return cycle_index
@@ -182,11 +173,9 @@ local function find_current_index(buffer_order, current_buf, cycle_index)
   return #buffer_order > 0 and 1 or 0
 end
 
--- Render tabline content
 local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   local buffer_hash = hash_buffer_list(buffer_order, cycle_index)
 
-  -- Check cache
   if cache_ref.hash == buffer_hash and is_cache_valid(cache_ref, ttl) then
     return cache_ref.content
   end
@@ -198,25 +187,21 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
 
   local current_buf = vim.api.nvim_get_current_buf()
   local current_index = find_current_index(buffer_order, current_buf, cycle_index)
-  local display_window = state.config.tabline_display_window
-  local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_window)
+  local display_window = config.tabline_display_window
+  local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
 
-  -- Build tabline parts
   local parts = { "%#BufSwitchFill#" }
 
-  -- Left truncation indicator
   if start_index > 1 then
     table.insert(parts, "%#BufSwitchSeparator#<..")
   end
 
-  -- Buffer entries
   for i = start_index, end_index do
     local bufnr = buffer_order[i]
     if vim.api.nvim_buf_is_valid(bufnr) then
       local is_current = (cycle_index and i == cycle_index) or bufnr == current_buf
       local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
 
-      -- Add separator before entry (except for first)
       if i > start_index or (i == start_index and start_index > 1) then
         table.insert(parts, "%#BufSwitchSeparator#|")
       end
@@ -225,7 +210,6 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
     end
   end
 
-  -- Right truncation indicator
   if end_index < total_buffers then
     table.insert(parts, "%#BufSwitchSeparator#|..>")
   end
@@ -233,7 +217,6 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   table.insert(parts, "%#BufSwitchFill#%T")
   local tabline_content = table.concat(parts, "")
 
-  -- Update cache
   cache_ref.content = tabline_content
   cache_ref.timestamp = get_timestamp()
   cache_ref.hash = buffer_hash
@@ -241,17 +224,15 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   return tabline_content
 end
 
--- Public API implementation
 local M = {}
 
 function M.update_tabline(buflist, cycle_index)
   vim.o.tabline = render_tabline(buflist, cycle_index, cache.tabline, TABLINE_TTL)
 end
 
--- Debounced update function
 local function update_tabline_debounced(buffer_list, cycle_index)
   if not update_timer then
-    update_timer = vim.loop.new_timer()
+    update_timer = vim.uv.new_timer()
   end
 
   if update_timer then
@@ -265,9 +246,8 @@ local function update_tabline_debounced(buffer_list, cycle_index)
   end
 end
 
--- Show tabline with auto-hide
 local function show_with_hide_timer(setter)
-  if state.config.hide_in_special and utils.is_special_buffer(state.config) then
+  if config.hide_in_special and utils.is_special_buffer(config) then
     return
   end
 
@@ -275,7 +255,7 @@ local function show_with_hide_timer(setter)
   vim.o.showtabline = 2
   setter()
 
-  utils.start_hide_timer(state.config.hide_timeout, function()
+  utils.start_hide_timer(config.hide_timeout, function()
     vim.o.showtabline = 0
   end)
 end
@@ -303,7 +283,6 @@ function M.hide_tabline()
   end
 end
 
--- Setup cache management
 local function setup_cache_management()
   vim.fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
   vim.api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
