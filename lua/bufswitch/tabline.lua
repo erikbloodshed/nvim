@@ -1,8 +1,7 @@
 local utils = require("bufswitch.utils")
-local state = require("bufswitch.state") -- Use the central state
+local state = require("bufswitch.state")
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
--- These are now constants or caches, not configuration
 local cache_ttl = 5000
 local debounce_delay = 16
 
@@ -17,7 +16,6 @@ local timers = {
   cache_cleanup = nil,
 }
 
--- Persistent window offset to track the start of the visible window
 local window_offset = 1
 
 local function get_timestamp()
@@ -148,7 +146,8 @@ function M.update_tabline(buflist, cycle_index)
     end_index = math.min(start_index + display_window - 1, total_buffers)
   end
 
-  if start_index > 1 then
+  -- Only add "<.." if start_index > 1 and the current buffer is not the first buffer
+  if start_index > 1 and current_index > 1 then
     table.insert(parts, "%#BufSwitchSeparator#<..")
   end
 

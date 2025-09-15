@@ -59,7 +59,7 @@ local function navigate(direction)
 
   if not state.cycle.is_active then
     if #state.tabline_order < 2 then
-      vim.notify("No other buffers to switch to", vim.log.levels.INFO)
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline if no other buffers
       return
     end
 
@@ -80,11 +80,23 @@ local function navigate(direction)
   end
 
   if direction == "prev" then
+    if state.cycle.index <= 1 and not state.config.wrap_around then
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline at first buffer
+      return
+    end
     state.cycle.index = state.cycle.index - 1
-    if state.cycle.index < 1 then state.cycle.index = #state.tabline_order end
+    if state.cycle.index < 1 then
+      state.cycle.index = #state.tabline_order
+    end
   elseif direction == "next" then
+    if state.cycle.index >= #state.tabline_order and not state.config.wrap_around then
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- Show tabline at last buffer
+      return
+    end
     state.cycle.index = state.cycle.index + 1
-    if state.cycle.index > #state.tabline_order then state.cycle.index = 1 end
+    if state.cycle.index > #state.tabline_order then
+      state.cycle.index = 1
+    end
   elseif direction == "alt" then
     local mru_size = #state.buffer_order
     if mru_size < 2 then return end

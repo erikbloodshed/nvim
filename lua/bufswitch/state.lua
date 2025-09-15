@@ -8,6 +8,7 @@ local M = {
     periodic_cleanup = true,
     debug = false,
     tabline_display_window = 15, -- The key option for scrolling
+    wrap_around = false,
     special_buftypes = { "quickfix", "help", "nofile", "prompt", "terminal" },
     special_filetypes = { "qf", "help", "netrw", "neo-tree", "NvimTree" },
     special_bufname_patterns = { "^term://", "^neo%-tree " },
