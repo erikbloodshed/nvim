@@ -143,7 +143,7 @@ function M.update_tabline(buflist, cycle_index)
     end_index = math.min(start_index + display_window - 1, total_buffers)
   elseif current_index < start_index and current_index >= 1 then
     -- Scroll left when navigating before the first viewable buffer
-    window_offset = math.max(1, current_index)
+    window_offset = math.max(1, current_index - display_window + 1)
     start_index = window_offset
     end_index = math.min(start_index + display_window - 1, total_buffers)
   end
