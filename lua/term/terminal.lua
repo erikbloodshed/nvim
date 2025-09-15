@@ -157,7 +157,7 @@ function Terminal:_start_terminal(target_cwd)
   if target_cwd and fn.isdirectory(target_cwd) == 1 then
     original_cwd = fn.getcwd(0)
     if original_cwd ~= target_cwd then
-      api.nvim_cmd({ cmd = 'lcd', args = { target_cwd } }, {})
+      api.nvim_cmd({ cmd = 'cd', args = { target_cwd } }, {})
     end
   end
 
@@ -174,7 +174,7 @@ function Terminal:_start_terminal(target_cwd)
 
   -- Restore directory
   if original_cwd and original_cwd ~= target_cwd then
-    api.nvim_cmd({ cmd = 'lcd', args = { original_cwd } }, {})
+    api.nvim_cmd({ cmd = 'cd', args = { original_cwd } }, {})
   end
 
   vim.bo[self.buf].buflisted = false
@@ -224,13 +224,9 @@ end
 function Terminal:open()
   self:_create_buffer()
 
-  -- Determine target directory
   local target_cwd = nil
   if self.config.open_in_file_dir then
-    local file_dir = vim.fs.dirname(api.nvim_buf_get_name(0))
-    if file_dir and fn.isdirectory(file_dir) == 1 then
-      target_cwd = file_dir
-    end
+    target_cwd = vim.fs.dirname(api.nvim_buf_get_name(0))
   end
 
   self:_setup_window()

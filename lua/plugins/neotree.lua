@@ -53,7 +53,7 @@ return {
       close_if_last_window = true,
       popup_border_style = "rounded",
       filesystem = {
-        bind_to_cwd = false,
+        bind_to_cwd = true,
         follow_current_file = { enabled = true },
         filtered_items = {
           hide_by_pattern = { "*.out" },
