@@ -9,6 +9,7 @@ local caches = {
   bufname = {},
   devicon = {},
   tabline = { content = "", timestamp = 0, buffer_hash = "" },
+  static_tabline = { content = "", timestamp = 0, buffer_hash = "" }
 }
 
 local timers = {
@@ -17,7 +18,6 @@ local timers = {
 
 local window_offset = 1
 
--- Initialize highlight group for devicons
 if has_devicons then
   local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
   vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = nil, bg = hl.bg })
@@ -51,7 +51,8 @@ local function get_cached_devicon(filename, filepath, is_current, base_hl)
   local devicon, icon_color = devicons.get_icon_color(filename, ext)
   local result = ""
   if devicon then
-    vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = icon_color, bg = vim.api.nvim_get_hl(0, { name = "BufSwitchDevicon" }).bg })
+    vim.api.nvim_set_hl(0, "BufSwitchDevicon",
+      { fg = icon_color, bg = vim.api.nvim_get_hl(0, { name = "BufSwitchDevicon" }).bg })
     local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
     result = string.format("%%#%s#%s%%#%s# ", icon_hl, devicon, base_hl)
   end
@@ -59,7 +60,7 @@ local function get_cached_devicon(filename, filepath, is_current, base_hl)
   return result
 end
 
-local format_bufname = function(bufnr, is_current)
+local function format_bufname(bufnr, is_current)
   local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
   local cached = caches.bufname[cache_key]
   if cached and is_cache_valid(cached.timestamp) then
@@ -93,50 +94,53 @@ local format_bufname = function(bufnr, is_current)
   return result
 end
 
-local M = {}
-
-function M.update_tabline(buflist, cycle_index)
-  local buffer_hash = hash_buffer_list(buflist, cycle_index)
-  if caches.tabline.buffer_hash == buffer_hash and is_cache_valid(caches.tabline.timestamp, 100) then
-    vim.o.tabline = caches.tabline.content
-    return
+local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
+  local buffer_hash = hash_buffer_list(buffer_order, cycle_index)
+  if cache_ref.buffer_hash == buffer_hash
+    and is_cache_valid(cache_ref.timestamp, ttl or 100) then
+    return cache_ref.content
   end
 
   local current_buf = vim.api.nvim_get_current_buf()
-  local parts = {}
-  local total_buffers = #buflist
+  local total_buffers = #buffer_order
   local display_window = state.config.tabline_display_window
 
   if total_buffers == 0 then
-    vim.o.tabline = "%#BufSwitchFill#%T"
-    return
+    return "%#BufSwitchFill#%T"
   end
 
   local current_index = 0
   if cycle_index then
     current_index = cycle_index
   else
-    for i, bufnr in ipairs(buflist) do
+    for i, bufnr in ipairs(buffer_order) do
       if bufnr == current_buf then
         current_index = i
         break
       end
     end
-    if current_index == 0 and total_buffers > 0 then current_index = 1 end
+    if current_index == 0 and total_buffers > 0 then
+      current_index = 1
+    end
   end
 
-  window_offset = math.max(1, math.min(current_index - display_window + 1, total_buffers - display_window + 1))
-  local start_index = window_offset
+  local win_offset = math.max(1, math.min(
+    current_index - math.floor(display_window / 2),
+    total_buffers - display_window + 1
+  ))
+
+  local start_index = win_offset
   local end_index = math.min(start_index + display_window - 1, total_buffers)
 
-  if start_index > 1 and current_index > 1 then
+  local parts = {}
+  if start_index > 1 then
     table.insert(parts, "%#BufSwitchSeparator#<..")
   end
 
   for i = start_index, end_index do
-    local bufnr = buflist[i]
+    local bufnr = buffer_order[i]
     if vim.api.nvim_buf_is_valid(bufnr) then
-      local is_current = cycle_index and i == cycle_index or bufnr == current_buf
+      local is_current = (cycle_index and i == cycle_index) or bufnr == current_buf
       local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
       local entry = table.concat({ hl, "  ", format_bufname(bufnr, is_current), "  " })
       if i > start_index or (i == start_index and start_index > 1) then
@@ -150,13 +154,23 @@ function M.update_tabline(buflist, cycle_index)
     table.insert(parts, "%#BufSwitchSeparator#|..>")
   end
 
-  -- Explicitly reset highlight before fill to prevent overlap
   table.insert(parts, "%#BufSwitchFill#")
-  local tabline_content = table.concat({ "%#BufSwitchFill#", table.concat(parts, ""), "%T" })
-  caches.tabline.content = tabline_content
-  caches.tabline.timestamp = get_timestamp()
-  caches.tabline.buffer_hash = buffer_hash
-  vim.o.tabline = tabline_content
+  local tabline_content = table.concat({
+    "%#BufSwitchFill#", table.concat(parts, ""), "%T"
+  })
+
+  -- Update cache
+  cache_ref.content = tabline_content
+  cache_ref.timestamp = get_timestamp()
+  cache_ref.buffer_hash = buffer_hash
+
+  return tabline_content
+end
+
+local M = {}
+
+function M.update_tabline(buflist, cycle_index)
+  vim.o.tabline = render_tabline(buflist, cycle_index, caches.tabline, 100)
 end
 
 local function update_tabline_debounced(buffer_list, cycle_index)
@@ -176,7 +190,23 @@ function M.show_tabline_temporarily(_, buffer_order)
   end
   utils.stop_hide_timer()
   vim.o.showtabline = 2
-  update_tabline_debounced(buffer_order)
+
+  update_tabline_debounced(buffer_order, nil)
+
+  utils.start_hide_timer(state.config.hide_timeout, function()
+    vim.o.showtabline = 0
+  end)
+end
+
+function M.show_tabline_static()
+  if state.config.hide_in_special and utils.is_special_buffer(state.config) then
+    return
+  end
+  utils.stop_hide_timer()
+  vim.o.showtabline = 2
+
+  vim.o.tabline = render_tabline(state.tabline_order, nil, caches.static_tabline, 100)
+
   utils.start_hide_timer(state.config.hide_timeout, function()
     vim.o.showtabline = 0
   end)
@@ -220,6 +250,7 @@ local function invalidate_buffer_cache(bufnr)
     end
   end
   caches.tabline.buffer_hash = ""
+  caches.static_tabline.buffer_hash = ""
 end
 
 local function setup_cache_management()

@@ -150,7 +150,7 @@ function M.prev_buffer()
 end
 
 function M.show_tabline()
-  tabline.show_tabline_temporarily(_, state.buffer_order)
+  tabline.show_tabline_static()
 end
 
 function M.debug_buffers()
