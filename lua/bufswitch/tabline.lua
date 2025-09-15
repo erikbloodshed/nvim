@@ -17,6 +17,9 @@ local timers = {
   cache_cleanup = nil,
 }
 
+-- Persistent window offset to track the start of the visible window
+local window_offset = 1
+
 local function get_timestamp()
   return vim.loop.hrtime() / 1000000
 end
@@ -28,7 +31,7 @@ end
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
-  local parts = { tostring(current_buf), tostring(cycle_index or 0) }
+  local parts = { tostring(current_buf), tostring(cycle_index or 0), tostring(window_offset) }
   for _, bufnr in ipairs(buffer_list) do
     table.insert(parts, tostring(bufnr))
   end
@@ -112,7 +115,6 @@ function M.update_tabline(buflist, cycle_index)
     return
   end
 
-  local start_index, end_index = 1, total_buffers
   local current_index = 0
 
   -- If cycle_index is provided, use it directly as the position
@@ -129,14 +131,21 @@ function M.update_tabline(buflist, cycle_index)
     if current_index == 0 and total_buffers > 0 then current_index = 1 end
   end
 
-  if total_buffers > display_window then
-    local half_window = math.floor(display_window / 2)
-    start_index = math.max(1, current_index - half_window)
-    end_index = start_index + display_window - 1
-    if end_index > total_buffers then
-      end_index = total_buffers
-      start_index = end_index - display_window + 1
-    end
+  -- Determine start_index and end_index based on window_offset
+  local start_index = window_offset
+  local end_index = math.min(start_index + display_window - 1, total_buffers)
+
+  -- Adjust window_offset when reaching the last or first viewable buffer
+  if current_index > end_index and current_index <= total_buffers then
+    -- Scroll right when navigating past the last viewable buffer
+    window_offset = math.max(1, current_index - display_window + 1)
+    start_index = window_offset
+    end_index = math.min(start_index + display_window - 1, total_buffers)
+  elseif current_index < start_index and current_index >= 1 then
+    -- Scroll left when navigating before the first viewable buffer
+    window_offset = math.max(1, current_index)
+    start_index = window_offset
+    end_index = math.min(start_index + display_window - 1, total_buffers)
   end
 
   if start_index > 1 then
