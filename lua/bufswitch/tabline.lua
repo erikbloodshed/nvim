@@ -184,31 +184,29 @@ local function update_tabline_debounced(buffer_list, cycle_index)
   end))
 end
 
-function M.show_tabline_temporarily(_, buffer_order)
+local function show_with_hide_timer(setter)
   if state.config.hide_in_special and utils.is_special_buffer(state.config) then
     return
   end
   utils.stop_hide_timer()
   vim.o.showtabline = 2
 
-  update_tabline_debounced(buffer_order, nil)
+  setter()
 
   utils.start_hide_timer(state.config.hide_timeout, function()
     vim.o.showtabline = 0
   end)
 end
 
+function M.show_tabline_temporarily(_, buffer_order)
+  show_with_hide_timer(function()
+    update_tabline_debounced(buffer_order, nil)
+  end)
+end
+
 function M.show_tabline_static()
-  if state.config.hide_in_special and utils.is_special_buffer(state.config) then
-    return
-  end
-  utils.stop_hide_timer()
-  vim.o.showtabline = 2
-
-  vim.o.tabline = render_tabline(state.tabline_order, nil, caches.static_tabline, 100)
-
-  utils.start_hide_timer(state.config.hide_timeout, function()
-    vim.o.showtabline = 0
+  show_with_hide_timer(function()
+    vim.o.tabline = render_tabline(state.tabline_order, nil, caches.static_tabline, 100)
   end)
 end
 
