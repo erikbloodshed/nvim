@@ -158,11 +158,19 @@ local function calculate_window_bounds(current_index, total_buffers, display_win
   return window_start, window_end_final
 end
 
-local function find_current_index(buffer_order, current_buf, cycle_index)
+local function find_current_index(buffer_order, current_buf, cycle_index, list_type)
   if cycle_index then
     return cycle_index
   end
 
+  -- O(1) lookup when list type is known
+  if list_type == "mru" then
+    return state.get_buffer_mru_index(current_buf) or (#buffer_order > 0 and 1 or 0)
+  elseif list_type == "tabline" then
+    return state.get_buffer_tabline_index(current_buf) or (#buffer_order > 0 and 1 or 0)
+  end
+
+  -- Fallback for unknown list types
   for i, bufnr in ipairs(buffer_order) do
     if bufnr == current_buf then
       return i
@@ -185,7 +193,8 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   end
 
   local current_buf = vim.api.nvim_get_current_buf()
-  local current_index = find_current_index(buffer_order, current_buf, cycle_index)
+  local list_type = state.identify_buffer_list(buffer_order)
+  local current_index = find_current_index(buffer_order, current_buf, cycle_index, list_type)
   local display_window = config.tabline_display_window
   local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
 

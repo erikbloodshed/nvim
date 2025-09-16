@@ -8,39 +8,30 @@ local M = {}
 local autocmds_created = false
 local config = state.config
 
--- New: Map to store the index of each buffer in the MRU list
-local mru_index_map = {}
-
 local function update_buffer_mru(bufnr)
   if not utils.should_include_buffer(config, bufnr) then return end
 
-  -- Use hash map for faster removal
-  if mru_index_map[bufnr] then
-    table.remove(state.buffer_order, mru_index_map[bufnr])
-  end
+  -- Use state-managed MRU functions
+  state.move_buffer_to_end_mru(bufnr)
 
-  table.insert(state.buffer_order, bufnr)
-  -- Update the index map for all elements after the insertion
-  for i, b in ipairs(state.buffer_order) do
-    mru_index_map[b] = i
-  end
+  -- Validate consistency in debug mode
+  state.validate_mru_consistency()
 
   events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
 local function remove_buffer_from_order(bufnr)
-  -- Use hash map for faster removal
-  if mru_index_map[bufnr] then
-    table.remove(state.buffer_order, mru_index_map[bufnr])
-    mru_index_map[bufnr] = nil
-  end
+  -- Remove from MRU using state function
+  state.remove_buffer_from_mru(bufnr)
 
+  -- Remove from tabline order
   for i, b in ipairs(state.tabline_order) do
     if b == bufnr then
       table.remove(state.tabline_order, i)
       break
     end
   end
+
   events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
@@ -161,13 +152,25 @@ function M.debug_buffers()
   print("Current buffer order (MRU):")
   for i, bufnr in ipairs(state.buffer_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
-    print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #state.buffer_order and "<- CURRENT" or ""))
+    local index_map_value = state.mru_index_map[bufnr]
+    local consistency = (index_map_value == i) and "✓" or string.format("✗ (map says %s)", index_map_value or "nil")
+    print(string.format("%d: %s (bufnr=%d) %s %s", i, name, bufnr,
+      i == #state.buffer_order and "<- CURRENT" or "", consistency))
   end
   print("\nTabline buffer order (Fixed):")
   for i, bufnr in ipairs(state.tabline_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
     print(string.format("%d: %s (bufnr=%d)", i, name, bufnr))
   end
+
+  print("\nMRU Index Map:")
+  for bufnr, index in pairs(state.mru_index_map) do
+    local name = vim.fn.bufname(bufnr) or "[No Name]"
+    print(string.format("Buffer %d (%s) -> index %d", bufnr, name, index))
+  end
+
+  local is_consistent = state.validate_mru_consistency()
+  print(string.format("\nConsistency check: %s", is_consistent and "PASSED" or "FAILED"))
 end
 
 local function setup_autocmds()
@@ -204,14 +207,15 @@ local function setup_autocmds()
 end
 
 function M.init()
-  state.buffer_order = {}
-  state.tabline_order = {}
+  state.reset_state()
+
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if utils.should_include_buffer(config, bufnr) then
-      table.insert(state.buffer_order, bufnr)
+      state.add_buffer_to_mru(bufnr)
       table.insert(state.tabline_order, bufnr)
     end
   end
+
   update_buffer_mru(api.nvim_get_current_buf())
   setup_autocmds()
 end
