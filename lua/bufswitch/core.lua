@@ -1,12 +1,11 @@
 local utils = require('bufswitch.utils')
 local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
+local tbl_insert, tbl_remove = table.insert, table.remove
 local api = vim.api
-local tbl_insert = table.insert
 
 local M = {}
 
-local autocmds_created = false
 local config = state.config
 
 local function update_buffer_mru(bufnr)
@@ -14,7 +13,7 @@ local function update_buffer_mru(bufnr)
 
   for i, buf in ipairs(state.buf_order) do
     if buf == bufnr then
-      table.remove(state.buf_order, i)
+      tbl_remove(state.buf_order, i)
       break
     end
   end
@@ -24,13 +23,13 @@ end
 local function remove_buf(bufnr)
   for i, b in ipairs(state.buf_order) do
     if b == bufnr then
-      table.remove(state.buf_order, i)
+      tbl_remove(state.buf_order, i)
       break
     end
   end
   for i, b in ipairs(state.tabline_order) do
     if b == bufnr then
-      table.remove(state.tabline_order, i)
+      tbl_remove(state.tabline_order, i)
       break
     end
   end
@@ -138,7 +137,7 @@ function M.show_tabline()
   tabline.show_static_tabline()
 end
 
-function M.debug_buffers()
+function M.debug_bufs()
   print("Current buffer order (MRU):")
   for i, bufnr in ipairs(state.buf_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
@@ -151,6 +150,8 @@ function M.debug_buffers()
   end
 end
 
+local autocmds_created = false
+
 local function setup_autocmds()
   if autocmds_created then return end
   local ag = api.nvim_create_augroup('BufferSwitcher', { clear = true })
@@ -158,22 +159,26 @@ local function setup_autocmds()
   api.nvim_create_autocmd('BufEnter', {
     group = ag,
     callback = function()
-      if state.cycle.active then return end
-      update_buffer_mru(api.nvim_get_current_buf())
-      if config.show_tabline then
-        tabline.update_tabline(state.tabline_order)
-      end
+      vim.schedule(function()
+        if state.cycle.active then return end
+        update_buffer_mru(api.nvim_get_current_buf())
+        if config.show_tabline then
+          tabline.update_tabline(state.tabline_order)
+        end
+      end)
     end,
   })
 
   api.nvim_create_autocmd('BufAdd', {
     group = ag,
     callback = function(ev)
-      if state.cycle.active then return end
-      if utils.include_buf(config, ev.buf) then
-        tbl_insert(state.tabline_order, ev.buf)
-        update_buffer_mru(ev.buf)
-      end
+      vim.schedule(function()
+        if state.cycle.active then return end
+        if utils.include_buf(config, ev.buf) then
+          tbl_insert(state.tabline_order, ev.buf)
+          update_buffer_mru(ev.buf)
+        end
+      end)
     end,
   })
 

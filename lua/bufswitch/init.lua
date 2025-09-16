@@ -29,8 +29,8 @@ function M.show_tabline()
 end
 
 if state.config.debug then
-  function M.debug_buffers()
-    require('bufswitch.core').debug_buffers()
+  function M.debug_bufs()
+    require('bufswitch.core').debug_bufs()
   end
 end
 

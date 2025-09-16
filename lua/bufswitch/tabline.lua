@@ -1,8 +1,7 @@
 local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
 local api, fn = vim.api, vim.fn
-local tbl_insert = table.insert
-local tbl_concat = table.concat
+local tbl_insert, tbl_concat = table.insert, table.concat
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local CACHE_TTL = 5000
@@ -33,13 +32,13 @@ local function cleanup_cache_tbl(cache_tbl)
 end
 
 local cache = {
-  buffer_info = {},
+  bufinfo = {},
   tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
   static_tabline = { content = "", timestamp = 0, hash = "", window_start = 1 }
 }
 
-local function invalidate_buffer_cache(bufnr)
-  cache.buffer_info[bufnr] = nil
+local function invalidate_bufcache(bufnr)
+  cache.bufinfo[bufnr] = nil
   cache.tabline.hash = ""
   cache.tabline.window_start = 1
   cache.static_tabline.hash = ""
@@ -57,8 +56,8 @@ local function create_cache_entry(result)
   return { result = result, timestamp = get_timestamp() }
 end
 
-local function get_or_compute_buffer_info(bufnr)
-  local cached = cache.buffer_info[bufnr]
+local function get_bufinfo(bufnr)
+  local cached = cache.bufinfo[bufnr]
   if is_cache_valid(cached) then
     return cached.result
   end
@@ -94,11 +93,11 @@ local function get_or_compute_buffer_info(bufnr)
     info.devicon, info.icon_color = devicons.get_icon_color(display_name, ext)
   end
 
-  cache.buffer_info[bufnr] = create_cache_entry(info)
+  cache.bufinfo[bufnr] = create_cache_entry(info)
   return info
 end
 
-local function format_buffer_from_info(info, is_current)
+local function format_buf(info, is_current)
   if not info then return "[Invalid]" end
 
   local parts = {}
@@ -115,29 +114,29 @@ local function format_buffer_from_info(info, is_current)
   return tbl_concat(parts)
 end
 
-local function calculate_window_bounds(current_index, total_buffers, display_win, cache_ref)
-  if total_buffers <= display_win then
-    return 1, total_buffers
+local function calc_win_bounds(current_idx, total_bufs, display_win, cache_ref)
+  if total_bufs <= display_win then
+    return 1, total_bufs
   end
 
   local window_start = cache_ref.window_start or 1
   local window_end = window_start + display_win - 1
 
-  if current_index > window_end then
-    window_start = current_index - display_win + 1
-  elseif current_index < window_start then
-    window_start = current_index
+  if current_idx > window_end then
+    window_start = current_idx - display_win + 1
+  elseif current_idx < window_start then
+    window_start = current_idx
   end
 
-  window_start = math.max(1, math.min(window_start, total_buffers - display_win + 1))
-  local window_end_final = math.min(window_start + display_win - 1, total_buffers)
+  window_start = math.max(1, math.min(window_start, total_bufs - display_win + 1))
+  local window_end_final = math.min(window_start + display_win - 1, total_bufs)
 
   cache_ref.window_start = window_start
 
   return window_start, window_end_final
 end
 
-local function find_current_index(buf_order, current_buf, cycle_idx)
+local function find_current_idx(buf_order, current_buf, cycle_idx)
   if cycle_idx then
     return cycle_idx
   end
@@ -166,9 +165,9 @@ local function render_tabline(buf_order, cycle_idx, cache_ref, ttl)
   end
 
   local current_buf = api.nvim_get_current_buf()
-  local current_index = find_current_index(buf_order, current_buf, cycle_idx)
+  local current_idx = find_current_idx(buf_order, current_buf, cycle_idx)
   local display_win = config.tabline_display_window
-  local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_win, cache_ref)
+  local start_index, end_index = calc_win_bounds(current_idx, total_buffers, display_win, cache_ref)
 
   local parts = { "%#BufSwitchFill#" }
 
@@ -179,7 +178,7 @@ local function render_tabline(buf_order, cycle_idx, cache_ref, ttl)
   for i = start_index, end_index do
     local bufnr = buf_order[i]
     if api.nvim_buf_is_valid(bufnr) then
-      local info = get_or_compute_buffer_info(bufnr)
+      local info = get_bufinfo(bufnr)
       if info then
         local is_current = (cycle_idx and i == cycle_idx) or bufnr == current_buf
         local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
@@ -188,7 +187,7 @@ local function render_tabline(buf_order, cycle_idx, cache_ref, ttl)
           tbl_insert(parts, "%#BufSwitchSeparator#|")
         end
 
-        local formatted_string = format_buffer_from_info(info, is_current)
+        local formatted_string = format_buf(info, is_current)
         tbl_insert(parts, hl .. "  " .. formatted_string .. "  ")
       end
     end
@@ -270,14 +269,14 @@ function M.hide_tabline()
 end
 
 local function cleanup_expired_cache()
-  cleanup_cache_tbl(cache.buffer_info)
+  cleanup_cache_tbl(cache.bufinfo)
 end
 
 fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
 
 api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
   callback = function(args)
-    invalidate_buffer_cache(args.buf)
+    invalidate_bufcache(args.buf)
   end,
 })
 
