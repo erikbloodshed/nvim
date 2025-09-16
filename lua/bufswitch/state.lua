@@ -8,8 +8,8 @@ local M = {
     debug = false,
     tabline_display_window = 15,
     wrap_around = false,
-    special_buftypes = { "quickfix", "help", "nofile", "prompt", "terminal" },
-    special_filetypes = { "qf", "help", "netrw", "neo-tree", "NvimTree" },
+    special_buftypes = { "quickfix", "help", "nofile", "prompt" },
+    special_filetypes = { "qf", "help", "netrw", "neo-tree", "NvimTree", "terminal" },
     special_bufname_patterns = { "^term://", "^neo%-tree " },
   },
 
