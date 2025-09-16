@@ -1,5 +1,7 @@
+local api, fn = vim.api, vim.fn
 local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
+local table_insert = table.insert
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local CACHE_TTL = 5000
@@ -8,31 +10,12 @@ local TABLINE_TTL = 100
 local MAX_CACHE_SIZE = 100
 local MAX_NAME_LENGTH = 16
 
-local cache = {
-  bufname = {},
-  devicon = {},
-  tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
-  static_tabline = { content = "", timestamp = 0, hash = "", window_start = 1 }
-}
-
-local update_timer = nil
-local config = state.config
-
-if has_devicons then
-  local hl = vim.api.nvim_get_hl(0, { name = "PmenuSel" })
-  vim.api.nvim_set_hl(0, "BufSwitchDevicon", { fg = nil, bg = hl.bg })
-end
-
 local function get_timestamp()
-  return vim.fn.reltimefloat(vim.fn.reltime()) * 1000
+  return fn.reltimefloat(fn.reltime()) * 1000
 end
 
 local function is_cache_valid(entry, ttl)
   return entry and (get_timestamp() - entry.timestamp < (ttl or CACHE_TTL))
-end
-
-local function create_cache_entry(result)
-  return { result = result, timestamp = get_timestamp() }
 end
 
 local function cleanup_cache_table(cache_table)
@@ -48,17 +31,14 @@ local function cleanup_cache_table(cache_table)
   end
 end
 
-local function cleanup_expired_cache()
-  cleanup_cache_table(cache.bufname)
-  cleanup_cache_table(cache.devicon)
-end
+local cache = {
+  buffer_info = {}, -- Key: bufnr, Value: { data_object, timestamp }
+  tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
+  static_tabline = { content = "", timestamp = 0, hash = "", window_start = 1 }
+}
 
 local function invalidate_buffer_cache(bufnr)
-  for key in pairs(cache.bufname) do
-    if key:match("^" .. bufnr .. ":") then
-      cache.bufname[key] = nil
-    end
-  end
+  cache.buffer_info[bufnr] = nil
   cache.tabline.hash = ""
   cache.tabline.window_start = 1
   cache.static_tabline.hash = ""
@@ -67,39 +47,32 @@ end
 
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
-  local current_buf = vim.api.nvim_get_current_buf()
-  return string.format("%d:%d:%d", current_buf, cycle_index or 0, 1)
+  local current_buf = api.nvim_get_current_buf()
+  local buffer_ids = table.concat(buffer_list, "-")
+  return string.format("%d:%s:%d", current_buf, buffer_ids, cycle_index or 0)
 end
 
-local function get_devicon(filename, filepath, is_current, base_hl)
-  if not has_devicons then return "" end
+local function create_cache_entry(result)
+  return { result = result, timestamp = get_timestamp() }
+end
 
-  local basename = vim.fs.basename(filepath) or ""
-  local ext = basename:match("%.([^%.]+)$") or ""
-  local cache_key = filename .. ":" .. ext .. ":" .. (is_current and "1" or "0")
-
-  local cached = cache.devicon[cache_key]
+local function get_or_compute_buffer_info(bufnr)
+  local cached = cache.buffer_info[bufnr]
   if is_cache_valid(cached) then
     return cached.result
   end
 
-  local devicon, icon_color = devicons.get_icon_color(filename, ext)
-  local result = ""
-
-  if devicon then
-    vim.api.nvim_set_hl(0, "BufSwitchDevicon", {
-      fg = icon_color,
-      bg = vim.api.nvim_get_hl(0, { name = "BufSwitchDevicon" }).bg
-    })
-    local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
-    result = string.format("%%#%s#%s%%#%s# ", icon_hl, devicon, base_hl)
+  if not api.nvim_buf_is_valid(bufnr) then
+    return nil
   end
 
-  cache.devicon[cache_key] = create_cache_entry(result)
-  return result
-end
+  local name = fn.bufname(bufnr) or ""
+  if name == "" and fn.getbufvar(bufnr, '&modified') == 0 then
+    if api.nvim_buf_line_count(bufnr) <= 1 and #vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] == 0 then
+      return nil -- Skip empty, unnamed, unmodified buffers.
+    end
+  end
 
-local function get_display_name(bufnr, name)
   local buftype = vim.bo[bufnr].buftype
   local display_name = vim.fs.basename(name) or "[No Name]"
 
@@ -113,28 +86,33 @@ local function get_display_name(bufnr, name)
     display_name = display_name:sub(1, MAX_NAME_LENGTH - 3) .. "..."
   end
 
-  return display_name
+  local info = { display_name = display_name, devicon = nil, icon_color = nil }
+
+  if has_devicons then
+    local basename = vim.fs.basename(name) or ""
+    local ext = basename:match("%.([^%.]+)$") or ""
+    info.devicon, info.icon_color = devicons.get_icon_color(display_name, ext)
+  end
+
+  cache.buffer_info[bufnr] = create_cache_entry(info)
+  return info
 end
 
-local function format_bufname(bufnr, is_current)
-  local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
-  local cached = cache.bufname[cache_key]
-  if is_cache_valid(cached) then
-    return cached.result
+local function format_buffer_from_info(info, is_current)
+  if not info then return "[Invalid]" end
+
+  local parts = {}
+  if info.devicon then
+    api.nvim_set_hl(0, "BufSwitchDevicon", {
+      fg = info.icon_color,
+      bg = api.nvim_get_hl(0, { name = "BufSwitchSelected", link = false }).bg
+    })
+    local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
+    local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
+    table_insert(parts, string.format("%%#%s#%s%%#%s# ", icon_hl, info.devicon, base_hl))
   end
-
-  local name = vim.api.nvim_buf_is_valid(bufnr) and vim.fn.bufname(bufnr) or ""
-  if not name or name == "" then
-    return "[Invalid]"
-  end
-
-  local display_name = get_display_name(bufnr, name)
-  local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
-  local devicon = get_devicon(display_name, name, is_current, base_hl)
-  local result = devicon .. display_name
-
-  cache.bufname[cache_key] = create_cache_entry(result)
-  return result
+  table_insert(parts, info.display_name)
+  return table.concat(parts)
 end
 
 local function calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
@@ -173,6 +151,8 @@ local function find_current_index(buffer_order, current_buf, cycle_index)
   return #buffer_order > 0 and 1 or 0
 end
 
+local config = state.config
+
 local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   local buffer_hash = hash_buffer_list(buffer_order, cycle_index)
 
@@ -185,7 +165,7 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
     return "%#BufSwitchFill#%T"
   end
 
-  local current_buf = vim.api.nvim_get_current_buf()
+  local current_buf = api.nvim_get_current_buf()
   local current_index = find_current_index(buffer_order, current_buf, cycle_index)
   local display_window = config.tabline_display_window
   local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
@@ -193,28 +173,33 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   local parts = { "%#BufSwitchFill#" }
 
   if start_index > 1 then
-    table.insert(parts, "%#BufSwitchSeparator#<..")
+    table_insert(parts, "%#BufSwitchSeparator#<.. ")
   end
 
   for i = start_index, end_index do
     local bufnr = buffer_order[i]
-    if vim.api.nvim_buf_is_valid(bufnr) then
-      local is_current = (cycle_index and i == cycle_index) or bufnr == current_buf
-      local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
+    if api.nvim_buf_is_valid(bufnr) then
+      -- CHANGED: Rendering logic now uses the new data-oriented functions.
+      local info = get_or_compute_buffer_info(bufnr)
+      if info then
+        local is_current = (cycle_index and i == cycle_index) or bufnr == current_buf
+        local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
 
-      if i > start_index or (i == start_index and start_index > 1) then
-        table.insert(parts, "%#BufSwitchSeparator#|")
+        if i > start_index or (i == start_index and start_index > 1) then
+          table_insert(parts, "%#BufSwitchSeparator#|")
+        end
+
+        local formatted_string = format_buffer_from_info(info, is_current)
+        table_insert(parts, hl .. "  " .. formatted_string .. "  ")
       end
-
-      table.insert(parts, hl .. "  " .. format_bufname(bufnr, is_current) .. "  ")
     end
   end
 
   if end_index < total_buffers then
-    table.insert(parts, "%#BufSwitchSeparator#|..>")
+    table_insert(parts, "%#BufSwitchSeparator#| ..>")
   end
 
-  table.insert(parts, "%#BufSwitchFill#%T")
+  table_insert(parts, "%#BufSwitchFill#%T")
   local tabline_content = table.concat(parts, "")
 
   cache_ref.content = tabline_content
@@ -228,6 +213,22 @@ local M = {}
 
 function M.update_tabline(buflist, cycle_index)
   vim.o.tabline = render_tabline(buflist, cycle_index, cache.tabline, TABLINE_TTL)
+end
+
+local update_timer = nil
+
+local function show_with_hide_timer(setter)
+  if config.hide_in_special and utils.is_special_buffer(config) then
+    return
+  end
+
+  utils.stop_hide_timer()
+  vim.o.showtabline = 2
+  setter()
+
+  utils.start_hide_timer(config.hide_timeout, function()
+    vim.o.showtabline = 0
+  end)
 end
 
 local function update_tabline_debounced(buffer_list, cycle_index)
@@ -244,20 +245,6 @@ local function update_tabline_debounced(buffer_list, cycle_index)
       end
     end))
   end
-end
-
-local function show_with_hide_timer(setter)
-  if config.hide_in_special and utils.is_special_buffer(config) then
-    return
-  end
-
-  utils.stop_hide_timer()
-  vim.o.showtabline = 2
-  setter()
-
-  utils.start_hide_timer(config.hide_timeout, function()
-    vim.o.showtabline = 0
-  end)
 end
 
 function M.show_tabline_temporarily(_, buffer_order)
@@ -283,14 +270,16 @@ function M.hide_tabline()
   end
 end
 
-local function setup_cache_management()
-  vim.fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
-  vim.api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
-    callback = function(args)
-      invalidate_buffer_cache(args.buf)
-    end,
-  })
+local function cleanup_expired_cache()
+  cleanup_cache_table(cache.buffer_info)
 end
 
-setup_cache_management()
+fn.timer_start(30000, cleanup_expired_cache, { ['repeat'] = -1 })
+
+api.nvim_create_autocmd({ "BufWritePost", "BufDelete", "BufModifiedSet" }, {
+  callback = function(args)
+    invalidate_buffer_cache(args.buf)
+  end,
+})
+
 return M
