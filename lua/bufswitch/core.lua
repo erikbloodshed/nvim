@@ -2,7 +2,7 @@ local utils = require('bufswitch.utils')
 local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
 local tbl_insert, tbl_remove = table.insert, table.remove
-local api = vim.api
+local api, fn = vim.api, vim.fn
 
 local M = {}
 
@@ -67,8 +67,8 @@ M.navigate = function(move)
 
     state.cycle.active = true
 
-    local current_buf = api.nvim_get_current_buf()
     state.cycle.index = 0
+    local current_buf = api.nvim_get_current_buf()
     for i, bufnr in ipairs(state.tabline_order) do
       if bufnr == current_buf then
         state.cycle.index = i
@@ -103,8 +103,8 @@ M.navigate = function(move)
     local mru_size = #state.buf_order
     if mru_size < 2 then return end
 
-    local current_buf = api.nvim_get_current_buf()
     local target_bufnr
+    local current_buf = api.nvim_get_current_buf()
     if current_buf == state.buf_order[mru_size] then
       target_bufnr = state.buf_order[mru_size - 1]
     else
@@ -140,12 +140,12 @@ end
 function M.debug_bufs()
   print("Current buffer order (MRU):")
   for i, bufnr in ipairs(state.buf_order) do
-    local name = vim.fn.bufname(bufnr) or "[No Name]"
+    local name = fn.bufname(bufnr) or "[No Name]"
     print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #state.buf_order and "<- CURRENT" or ""))
   end
   print("\nTabline buffer order (Fixed):")
   for i, bufnr in ipairs(state.tabline_order) do
-    local name = vim.fn.bufname(bufnr) or "[No Name]"
+    local name = fn.bufname(bufnr) or "[No Name]"
     print(string.format("%d: %s (bufnr=%d)", i, name, bufnr))
   end
 end
