@@ -58,12 +58,12 @@ M.include_buf = function(config, bufnr)
   return true
 end
 
-M.start_hide_timer = function(timeout_ms, callback)
+M.start_hide_timer = function(timeout, callback)
   M.stop_hide_timer()
 
   hide_timer = vim.uv.new_timer()
   if hide_timer then
-    hide_timer:start(timeout_ms, 0, vim.schedule_wrap(callback))
+    hide_timer:start(timeout, 0, vim.schedule_wrap(callback))
   end
 end
 
