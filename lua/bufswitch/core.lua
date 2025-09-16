@@ -2,6 +2,7 @@ local utils = require('bufswitch.utils')
 local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
 local api = vim.api
+local tbl_insert = table.insert
 
 local M = {}
 
@@ -9,21 +10,21 @@ local autocmds_created = false
 local config = state.config
 
 local function update_buffer_mru(bufnr)
-  if not utils.should_include_buffer(config, bufnr) then return end
+  if not utils.include_buf(config, bufnr) then return end
 
-  for i, b in ipairs(state.buffer_order) do
-    if b == bufnr then
-      table.remove(state.buffer_order, i)
+  for i, buf in ipairs(state.buf_order) do
+    if buf == bufnr then
+      table.remove(state.buf_order, i)
       break
     end
   end
-  table.insert(state.buffer_order, bufnr)
+  tbl_insert(state.buf_order, bufnr)
 end
 
-local function remove_buffer_from_order(bufnr)
-  for i, b in ipairs(state.buffer_order) do
+local function remove_buf(bufnr)
+  for i, b in ipairs(state.buf_order) do
     if b == bufnr then
-      table.remove(state.buffer_order, i)
+      table.remove(state.buf_order, i)
       break
     end
   end
@@ -36,14 +37,14 @@ local function remove_buffer_from_order(bufnr)
 end
 
 local function end_cycle()
-  if not state.cycle.is_active then return end
+  if not state.cycle.active then return end
 
   utils.stop_hide_timer()
   vim.o.showtabline = 0
 
   local final_bufnr = state.tabline_order[state.cycle.index]
 
-  state.cycle.is_active = false
+  state.cycle.active = false
   state.cycle.index = 0
 
   if final_bufnr and api.nvim_buf_is_valid(final_bufnr) then
@@ -55,16 +56,17 @@ local function end_cycle()
   end
 end
 
-local function navigate(direction)
+M.navigate = function(move)
+  if config.disable_in_special and utils.is_special_buf(config) then return end
   utils.stop_hide_timer()
 
-  if not state.cycle.is_active then
+  if not state.cycle.active then
     if #state.tabline_order < 2 then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
+      tabline.show_temp_tabline(nil, state.tabline_order)
       return
     end
 
-    state.cycle.is_active = true
+    state.cycle.active = true
 
     local current_buf = api.nvim_get_current_buf()
     state.cycle.index = 0
@@ -80,34 +82,34 @@ local function navigate(direction)
     end
   end
 
-  if direction == "prev" then
+  if move == "prev" then
     if state.cycle.index <= 1 and not config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order)
+      tabline.show_temp_tabline(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index - 1
     if state.cycle.index < 1 then
       state.cycle.index = #state.tabline_order
     end
-  elseif direction == "next" then
+  elseif move == "next" then
     if state.cycle.index >= #state.tabline_order and not config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order)
+      tabline.show_temp_tabline(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index + 1
     if state.cycle.index > #state.tabline_order then
       state.cycle.index = 1
     end
-  elseif direction == "recent" then
-    local mru_size = #state.buffer_order
+  elseif move == "recent" then
+    local mru_size = #state.buf_order
     if mru_size < 2 then return end
 
     local current_buf = api.nvim_get_current_buf()
     local target_bufnr
-    if current_buf == state.buffer_order[mru_size] then
-      target_bufnr = state.buffer_order[mru_size - 1]
+    if current_buf == state.buf_order[mru_size] then
+      target_bufnr = state.buf_order[mru_size - 1]
     else
-      target_bufnr = state.buffer_order[mru_size]
+      target_bufnr = state.buf_order[mru_size]
     end
 
     state.cycle.index = 0
@@ -132,30 +134,15 @@ local function navigate(direction)
   utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
 
-function M.recent_buf()
-  if config.disable_in_special and utils.is_special_buffer(config) then return end
-  navigate("recent")
-end
-
-function M.next_buf()
-  if config.disable_in_special and utils.is_special_buffer(config) then return end
-  navigate("next")
-end
-
-function M.prev_buf()
-  if config.disable_in_special and utils.is_special_buffer(config) then return end
-  navigate("prev")
-end
-
 function M.show_tabline()
-  tabline.show_tabline_static()
+  tabline.show_static_tabline()
 end
 
 function M.debug_buffers()
   print("Current buffer order (MRU):")
-  for i, bufnr in ipairs(state.buffer_order) do
+  for i, bufnr in ipairs(state.buf_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
-    print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #state.buffer_order and "<- CURRENT" or ""))
+    print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #state.buf_order and "<- CURRENT" or ""))
   end
   print("\nTabline buffer order (Fixed):")
   for i, bufnr in ipairs(state.tabline_order) do
@@ -171,7 +158,7 @@ local function setup_autocmds()
   api.nvim_create_autocmd('BufEnter', {
     group = ag,
     callback = function()
-      if state.cycle.is_active then return end
+      if state.cycle.active then return end
       update_buffer_mru(api.nvim_get_current_buf())
       if config.show_tabline then
         tabline.update_tabline(state.tabline_order)
@@ -182,9 +169,9 @@ local function setup_autocmds()
   api.nvim_create_autocmd('BufAdd', {
     group = ag,
     callback = function(ev)
-      if state.cycle.is_active then return end
-      if utils.should_include_buffer(config, ev.buf) then
-        table.insert(state.tabline_order, ev.buf)
+      if state.cycle.active then return end
+      if utils.include_buf(config, ev.buf) then
+        tbl_insert(state.tabline_order, ev.buf)
         update_buffer_mru(ev.buf)
       end
     end,
@@ -193,7 +180,7 @@ local function setup_autocmds()
   api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
     group = ag,
     callback = function(ev)
-      remove_buffer_from_order(ev.buf)
+      remove_buf(ev.buf)
     end,
   })
 
@@ -201,12 +188,12 @@ local function setup_autocmds()
 end
 
 function M.init()
-  state.buffer_order = {}
+  state.buf_order = {}
   state.tabline_order = {}
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
-    if utils.should_include_buffer(config, bufnr) then
-      table.insert(state.buffer_order, bufnr)
-      table.insert(state.tabline_order, bufnr)
+    if utils.include_buf(config, bufnr) then
+      tbl_insert(state.buf_order, bufnr)
+      tbl_insert(state.tabline_order, bufnr)
     end
   end
   update_buffer_mru(api.nvim_get_current_buf())

@@ -4,7 +4,7 @@ local M = {}
 
 local hide_timer = nil
 
-M.is_special_buffer = function(config, bufnr)
+M.is_special_buf = function(config, bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   local buf_type = vim.bo[bufnr].buftype
   local buf_filetype = vim.bo[bufnr].filetype
@@ -31,12 +31,12 @@ M.is_special_buffer = function(config, bufnr)
   return vim.fn.win_gettype() ~= ""
 end
 
-M.should_include_buffer = function(config, bufnr)
+M.include_buf = function(config, bufnr)
   if not api.nvim_buf_is_valid(bufnr) or vim.fn.buflisted(bufnr) ~= 1 then
     return false
   end
 
-  if M.is_special_buffer(config, bufnr) then
+  if M.is_special_buf(config, bufnr) then
     return false
   end
 

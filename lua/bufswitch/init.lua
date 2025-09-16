@@ -13,15 +13,15 @@ state.init_config(user_config)
 require('bufswitch.core').init()
 
 function M.goto_next_buf()
-  require('bufswitch.core').next_buf()
+  require('bufswitch.core').navigate("next")
 end
 
 function M.goto_prev_buf()
-  require('bufswitch.core').prev_buf()
+  require('bufswitch.core').navigate("prev")
 end
 
 function M.recent_buf()
-  require('bufswitch.core').recent_buf()
+  require('bufswitch.core').navigate("recent")
 end
 
 function M.show_tabline()

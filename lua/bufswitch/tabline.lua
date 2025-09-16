@@ -1,8 +1,8 @@
 local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
 local api, fn = vim.api, vim.fn
-local table_insert = table.insert
-local table_concat = table.concat
+local tbl_insert = table.insert
+local tbl_concat = table.concat
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local CACHE_TTL = 5000
@@ -49,7 +49,7 @@ end
 local function hash_buflist(buflist, cycle_idx)
   if not next(buflist) then return "" end
   local current_buf = api.nvim_get_current_buf()
-  local buffer_ids = table_concat(buflist, "-")
+  local buffer_ids = tbl_concat(buflist, "-")
   return string.format("%d:%s:%d", current_buf, buffer_ids, cycle_idx or 0)
 end
 
@@ -109,10 +109,10 @@ local function format_buffer_from_info(info, is_current)
     })
     local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
     local icon_hl = is_current and "BufSwitchDevicon" or "BufSwitchInactive"
-    table_insert(parts, string.format("%%#%s#%s%%#%s# ", icon_hl, info.devicon, base_hl))
+    tbl_insert(parts, string.format("%%#%s#%s%%#%s# ", icon_hl, info.devicon, base_hl))
   end
-  table_insert(parts, info.display_name)
-  return table_concat(parts)
+  tbl_insert(parts, info.display_name)
+  return tbl_concat(parts)
 end
 
 local function calculate_window_bounds(current_index, total_buffers, display_win, cache_ref)
@@ -173,7 +173,7 @@ local function render_tabline(buf_order, cycle_idx, cache_ref, ttl)
   local parts = { "%#BufSwitchFill#" }
 
   if start_index > 1 then
-    table_insert(parts, "%#BufSwitchSeparator#<.. ")
+    tbl_insert(parts, "%#BufSwitchSeparator#<.. ")
   end
 
   for i = start_index, end_index do
@@ -185,21 +185,21 @@ local function render_tabline(buf_order, cycle_idx, cache_ref, ttl)
         local hl = is_current and "%#BufSwitchSelected#" or "%#BufSwitchInactive#"
 
         if i > start_index or (i == start_index and start_index > 1) then
-          table_insert(parts, "%#BufSwitchSeparator#|")
+          tbl_insert(parts, "%#BufSwitchSeparator#|")
         end
 
         local formatted_string = format_buffer_from_info(info, is_current)
-        table_insert(parts, hl .. "  " .. formatted_string .. "  ")
+        tbl_insert(parts, hl .. "  " .. formatted_string .. "  ")
       end
     end
   end
 
   if end_index < total_buffers then
-    table_insert(parts, "%#BufSwitchSeparator#| ..>")
+    tbl_insert(parts, "%#BufSwitchSeparator#| ..>")
   end
 
-  table_insert(parts, "%#BufSwitchFill#%T")
-  local tabline_content = table_concat(parts, "")
+  tbl_insert(parts, "%#BufSwitchFill#%T")
+  local tabline_content = tbl_concat(parts, "")
 
   cache_ref.content = tabline_content
   cache_ref.timestamp = get_timestamp()
@@ -217,7 +217,7 @@ end
 local update_timer = nil
 
 local function show_with_hide_timer(callback)
-  if config.hide_in_special and utils.is_special_buffer(config) then
+  if config.hide_in_special and utils.is_special_buf(config) then
     return
   end
 
@@ -246,13 +246,13 @@ local function update_tabline_debounced(buflist, cycle_idx)
   end
 end
 
-function M.show_tabline_temporarily(_, buf_order)
+function M.show_temp_tabline(_, buf_order)
   show_with_hide_timer(function()
     update_tabline_debounced(buf_order, nil)
   end)
 end
 
-function M.show_tabline_static()
+function M.show_static_tabline()
   show_with_hide_timer(function()
     vim.o.tabline = render_tabline(state.tabline_order, nil, cache.static_tabline, TABLINE_TTL)
   end)

@@ -13,10 +13,10 @@ local M = {
     special_bufname_patterns = { "^term://", "^neo%-tree " },
   },
 
-  buffer_order = {},
+  buf_order = {},
   tabline_order = {},
   cycle = {
-    is_active = false,
+    active = false,
     index = 0,
   },
 }
