@@ -1,33 +1,40 @@
 local api = vim.api
 local utils = require('bufswitch.utils')
 local state = require('bufswitch.state')
-local events = require('bufswitch.event') -- New dependency
+local events = require('bufswitch.event')
 
 local M = {}
 
 local autocmds_created = false
 local config = state.config
 
+-- New: Map to store the index of each buffer in the MRU list
+local mru_index_map = {}
+
 local function update_buffer_mru(bufnr)
   if not utils.should_include_buffer(config, bufnr) then return end
 
-  for i, b in ipairs(state.buffer_order) do
-    if b == bufnr then
-      table.remove(state.buffer_order, i)
-      break
-    end
+  -- Use hash map for faster removal
+  if mru_index_map[bufnr] then
+    table.remove(state.buffer_order, mru_index_map[bufnr])
   end
+
   table.insert(state.buffer_order, bufnr)
+  -- Update the index map for all elements after the insertion
+  for i, b in ipairs(state.buffer_order) do
+    mru_index_map[b] = i
+  end
+
   events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
 local function remove_buffer_from_order(bufnr)
-  for i, b in ipairs(state.buffer_order) do
-    if b == bufnr then
-      table.remove(state.buffer_order, i)
-      break
-    end
+  -- Use hash map for faster removal
+  if mru_index_map[bufnr] then
+    table.remove(state.buffer_order, mru_index_map[bufnr])
+    mru_index_map[bufnr] = nil
   end
+
   for i, b in ipairs(state.tabline_order) do
     if b == bufnr then
       table.remove(state.tabline_order, i)

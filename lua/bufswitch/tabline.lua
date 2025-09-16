@@ -55,11 +55,7 @@ local function cleanup_expired_cache()
 end
 
 local function invalidate_buffer_cache(bufnr)
-  for key in pairs(cache.bufname) do
-    if key:match("^" .. bufnr .. ":") then
-      cache.bufname[key] = nil
-    end
-  end
+  cache.bufname[bufnr] = nil
   cache.tabline.hash = ""
   cache.tabline.window_start = 1
   cache.static_tabline.hash = ""
@@ -69,7 +65,8 @@ end
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
-  return string.format("%d:%d:%d", current_buf, cycle_index or 0, 1)
+  local list_string = vim.fn.join(buffer_list, ',')
+  return string.format("%d:%d:%s", current_buf, cycle_index or 0, list_string)
 end
 
 local function get_devicon(filename, filepath, is_current, base_hl)
@@ -118,9 +115,9 @@ local function get_display_name(bufnr, name)
 end
 
 local function format_bufname(bufnr, is_current)
-  local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
+  local cache_key = bufnr
   local cached = cache.bufname[cache_key]
-  if is_cache_valid(cached) then
+  if is_cache_valid(cached) and cached.is_current == is_current then
     return cached.result
   end
 
@@ -135,6 +132,7 @@ local function format_bufname(bufnr, is_current)
   local result = devicon .. display_name
 
   cache.bufname[cache_key] = create_cache_entry(result)
+  cache.bufname[cache_key].is_current = is_current
   return result
 end
 
