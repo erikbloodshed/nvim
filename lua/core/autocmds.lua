@@ -47,11 +47,11 @@ autocmd({ "VimEnter" }, {
     require("ui.select")
     require("ui.statusline")
 
-    keyset({ 'n', 'i' }, "<Right>", function() require("bufswitch").goto_next_buffer() end,
+    keyset({ 'n', 'i' }, "<Right>", function() require("bufswitch").goto_next_buf() end,
       { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Left>", function() require("bufswitch").goto_prev_buffer() end,
+    keyset({ 'n', 'i' }, "<Left>", function() require("bufswitch").goto_prev_buf() end,
       { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Up>", function() require("bufswitch").alt_tab_buffer() end,
+    keyset({ 'n', 'i' }, "<Up>", function() require("bufswitch").recent_buf() end,
       { noremap = true, silent = true })
     keyset({ 'n', 'i' }, "<Down>", function() require("bufswitch").show_tabline() end,
       { noremap = true, silent = true })

@@ -1,7 +1,7 @@
-local api = vim.api
 local utils = require('bufswitch.utils')
 local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
+local api = vim.api
 
 local M = {}
 
@@ -98,7 +98,7 @@ local function navigate(direction)
     if state.cycle.index > #state.tabline_order then
       state.cycle.index = 1
     end
-  elseif direction == "alt" then
+  elseif direction == "recent" then
     local mru_size = #state.buffer_order
     if mru_size < 2 then return end
 
@@ -132,17 +132,17 @@ local function navigate(direction)
   utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
 
-function M.alt_tab_buffer()
+function M.recent_buf()
   if config.disable_in_special and utils.is_special_buffer(config) then return end
-  navigate("alt")
+  navigate("recent")
 end
 
-function M.next_buffer()
+function M.next_buf()
   if config.disable_in_special and utils.is_special_buffer(config) then return end
   navigate("next")
 end
 
-function M.prev_buffer()
+function M.prev_buf()
   if config.disable_in_special and utils.is_special_buffer(config) then return end
   navigate("prev")
 end

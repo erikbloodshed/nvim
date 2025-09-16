@@ -12,16 +12,16 @@ state.init_config(user_config)
 
 require('bufswitch.core').init()
 
-function M.goto_next_buffer()
-  require('bufswitch.core').next_buffer()
+function M.goto_next_buf()
+  require('bufswitch.core').next_buf()
 end
 
-function M.goto_prev_buffer()
-  require('bufswitch.core').prev_buffer()
+function M.goto_prev_buf()
+  require('bufswitch.core').prev_buf()
 end
 
-function M.alt_tab_buffer()
-  require('bufswitch.core').alt_tab_buffer()
+function M.recent_buf()
+  require('bufswitch.core').recent_buf()
 end
 
 function M.show_tabline()
