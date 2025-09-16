@@ -1,5 +1,6 @@
 local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
+local events = require("bufswitch.event") -- New dependency
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local CACHE_TTL = 5000
@@ -260,15 +261,34 @@ local function show_with_hide_timer(setter)
   end)
 end
 
-function M.show_tabline_temporarily(_, buffer_order)
-  show_with_hide_timer(function()
-    update_tabline_debounced(buffer_order, nil)
+local function setup_event_listeners()
+  events.on("CycleNavigation", function(buflist, cycle_index)
+    vim.o.showtabline = 2
+    M.update_tabline(buflist, cycle_index)
   end)
-end
 
-function M.show_tabline_static()
-  show_with_hide_timer(function()
-    vim.o.tabline = render_tabline(state.tabline_order, nil, cache.static_tabline, TABLINE_TTL)
+  events.on("ShowTablineTemporarily", function(buflist, cycle_index)
+    show_with_hide_timer(function()
+      update_tabline_debounced(buflist, cycle_index)
+    end)
+  end)
+
+  events.on("ShowTablineStatic", function()
+    show_with_hide_timer(function()
+      vim.o.tabline = render_tabline(state.tabline_order, nil, cache.static_tabline, TABLINE_TTL)
+    end)
+  end)
+
+  events.on("CycleEnded", function()
+    if config.show_tabline then
+      M.update_tabline(state.tabline_order)
+    end
+  end)
+
+  events.on("BufferOrderUpdated", function()
+    if config.show_tabline then
+      M.update_tabline(state.tabline_order)
+    end
   end)
 end
 
@@ -293,4 +313,5 @@ local function setup_cache_management()
 end
 
 setup_cache_management()
+setup_event_listeners()
 return M

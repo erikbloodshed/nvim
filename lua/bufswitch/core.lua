@@ -1,7 +1,7 @@
 local api = vim.api
 local utils = require('bufswitch.utils')
-local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
+local events = require('bufswitch.event') -- New dependency
 
 local M = {}
 
@@ -18,6 +18,7 @@ local function update_buffer_mru(bufnr)
     end
   end
   table.insert(state.buffer_order, bufnr)
+  events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
 local function remove_buffer_from_order(bufnr)
@@ -33,6 +34,7 @@ local function remove_buffer_from_order(bufnr)
       break
     end
   end
+  events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
 local function end_cycle()
@@ -50,9 +52,7 @@ local function end_cycle()
     update_buffer_mru(final_bufnr)
   end
 
-  if config.show_tabline then
-    tabline.update_tabline(state.tabline_order)
-  end
+  events.emit("CycleEnded")
 end
 
 local function navigate(direction)
@@ -60,7 +60,7 @@ local function navigate(direction)
 
   if not state.cycle.is_active then
     if #state.tabline_order < 2 then
-      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
+      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
       return
     end
 
@@ -82,7 +82,7 @@ local function navigate(direction)
 
   if direction == "prev" then
     if state.cycle.index <= 1 and not config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order)
+      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
       return
     end
     state.cycle.index = state.cycle.index - 1
@@ -91,7 +91,7 @@ local function navigate(direction)
     end
   elseif direction == "next" then
     if state.cycle.index >= #state.tabline_order and not config.wrap_around then
-      tabline.show_tabline_temporarily(nil, state.tabline_order)
+      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
       return
     end
     state.cycle.index = state.cycle.index + 1
@@ -127,8 +127,7 @@ local function navigate(direction)
   end
 
   vim.cmd('buffer ' .. target_bufnr)
-  vim.o.showtabline = 2
-  tabline.update_tabline(state.tabline_order, state.cycle.index)
+  events.emit("CycleNavigation", state.tabline_order, state.cycle.index)
   utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
 
@@ -148,7 +147,7 @@ function M.prev_buffer()
 end
 
 function M.show_tabline()
-  tabline.show_tabline_static()
+  events.emit("ShowTablineStatic")
 end
 
 function M.debug_buffers()
@@ -173,9 +172,6 @@ local function setup_autocmds()
     callback = function()
       if state.cycle.is_active then return end
       update_buffer_mru(api.nvim_get_current_buf())
-      if config.show_tabline then
-        tabline.update_tabline(state.tabline_order)
-      end
     end,
   })
 

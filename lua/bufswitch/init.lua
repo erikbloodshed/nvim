@@ -10,6 +10,7 @@ local user_config = {
 local state = require('bufswitch.state')
 state.init_config(user_config)
 
+require("bufswitch.tabline")
 require('bufswitch.core').init()
 
 function M.goto_next_buffer()
