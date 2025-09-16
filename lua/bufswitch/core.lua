@@ -1,7 +1,7 @@
 local api = vim.api
 local utils = require('bufswitch.utils')
+local tabline = require('bufswitch.tabline')
 local state = require('bufswitch.state')
-local events = require('bufswitch.event')
 
 local M = {}
 
@@ -11,28 +11,28 @@ local config = state.config
 local function update_buffer_mru(bufnr)
   if not utils.should_include_buffer(config, bufnr) then return end
 
-  -- Use state-managed MRU functions
-  state.move_buffer_to_end_mru(bufnr)
-
-  -- Validate consistency in debug mode
-  state.validate_mru_consistency()
-
-  events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
+  for i, b in ipairs(state.buffer_order) do
+    if b == bufnr then
+      table.remove(state.buffer_order, i)
+      break
+    end
+  end
+  table.insert(state.buffer_order, bufnr)
 end
 
 local function remove_buffer_from_order(bufnr)
-  -- Remove from MRU using state function
-  state.remove_buffer_from_mru(bufnr)
-
-  -- Remove from tabline order
+  for i, b in ipairs(state.buffer_order) do
+    if b == bufnr then
+      table.remove(state.buffer_order, i)
+      break
+    end
+  end
   for i, b in ipairs(state.tabline_order) do
     if b == bufnr then
       table.remove(state.tabline_order, i)
       break
     end
   end
-
-  events.emit("BufferOrderUpdated", state.buffer_order, state.tabline_order)
 end
 
 local function end_cycle()
@@ -50,7 +50,9 @@ local function end_cycle()
     update_buffer_mru(final_bufnr)
   end
 
-  events.emit("CycleEnded")
+  if config.show_tabline then
+    tabline.update_tabline(state.tabline_order)
+  end
 end
 
 local function navigate(direction)
@@ -58,7 +60,7 @@ local function navigate(direction)
 
   if not state.cycle.is_active then
     if #state.tabline_order < 2 then
-      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
+      tabline.show_tabline_temporarily(nil, state.tabline_order) -- show tabline if no other buffers
       return
     end
 
@@ -80,7 +82,7 @@ local function navigate(direction)
 
   if direction == "prev" then
     if state.cycle.index <= 1 and not config.wrap_around then
-      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
+      tabline.show_tabline_temporarily(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index - 1
@@ -89,7 +91,7 @@ local function navigate(direction)
     end
   elseif direction == "next" then
     if state.cycle.index >= #state.tabline_order and not config.wrap_around then
-      events.emit("ShowTablineTemporarily", state.tabline_order, nil)
+      tabline.show_tabline_temporarily(nil, state.tabline_order)
       return
     end
     state.cycle.index = state.cycle.index + 1
@@ -125,7 +127,8 @@ local function navigate(direction)
   end
 
   vim.cmd('buffer ' .. target_bufnr)
-  events.emit("CycleNavigation", state.tabline_order, state.cycle.index)
+  vim.o.showtabline = 2
+  tabline.update_tabline(state.tabline_order, state.cycle.index)
   utils.start_hide_timer(config.hide_timeout, end_cycle)
 end
 
@@ -145,32 +148,20 @@ function M.prev_buffer()
 end
 
 function M.show_tabline()
-  events.emit("ShowTablineStatic")
+  tabline.show_tabline_static()
 end
 
 function M.debug_buffers()
   print("Current buffer order (MRU):")
   for i, bufnr in ipairs(state.buffer_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
-    local index_map_value = state.mru_index_map[bufnr]
-    local consistency = (index_map_value == i) and "✓" or string.format("✗ (map says %s)", index_map_value or "nil")
-    print(string.format("%d: %s (bufnr=%d) %s %s", i, name, bufnr,
-      i == #state.buffer_order and "<- CURRENT" or "", consistency))
+    print(string.format("%d: %s (bufnr=%d) %s", i, name, bufnr, i == #state.buffer_order and "<- CURRENT" or ""))
   end
   print("\nTabline buffer order (Fixed):")
   for i, bufnr in ipairs(state.tabline_order) do
     local name = vim.fn.bufname(bufnr) or "[No Name]"
     print(string.format("%d: %s (bufnr=%d)", i, name, bufnr))
   end
-
-  print("\nMRU Index Map:")
-  for bufnr, index in pairs(state.mru_index_map) do
-    local name = vim.fn.bufname(bufnr) or "[No Name]"
-    print(string.format("Buffer %d (%s) -> index %d", bufnr, name, index))
-  end
-
-  local is_consistent = state.validate_mru_consistency()
-  print(string.format("\nConsistency check: %s", is_consistent and "PASSED" or "FAILED"))
 end
 
 local function setup_autocmds()
@@ -182,6 +173,9 @@ local function setup_autocmds()
     callback = function()
       if state.cycle.is_active then return end
       update_buffer_mru(api.nvim_get_current_buf())
+      if config.show_tabline then
+        tabline.update_tabline(state.tabline_order)
+      end
     end,
   })
 
@@ -207,15 +201,14 @@ local function setup_autocmds()
 end
 
 function M.init()
-  state.reset_state()
-
+  state.buffer_order = {}
+  state.tabline_order = {}
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if utils.should_include_buffer(config, bufnr) then
-      state.add_buffer_to_mru(bufnr)
+      table.insert(state.buffer_order, bufnr)
       table.insert(state.tabline_order, bufnr)
     end
   end
-
   update_buffer_mru(api.nvim_get_current_buf())
   setup_autocmds()
 end

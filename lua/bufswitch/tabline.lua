@@ -1,6 +1,5 @@
 local utils = require("bufswitch.utils")
 local state = require("bufswitch.state")
-local events = require("bufswitch.event") -- New dependency
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
 local CACHE_TTL = 5000
@@ -55,7 +54,11 @@ local function cleanup_expired_cache()
 end
 
 local function invalidate_buffer_cache(bufnr)
-  cache.bufname[bufnr] = nil
+  for key in pairs(cache.bufname) do
+    if key:match("^" .. bufnr .. ":") then
+      cache.bufname[key] = nil
+    end
+  end
   cache.tabline.hash = ""
   cache.tabline.window_start = 1
   cache.static_tabline.hash = ""
@@ -65,8 +68,7 @@ end
 local function hash_buffer_list(buffer_list, cycle_index)
   if not next(buffer_list) then return "" end
   local current_buf = vim.api.nvim_get_current_buf()
-  local list_string = vim.fn.join(buffer_list, ',')
-  return string.format("%d:%d:%s", current_buf, cycle_index or 0, list_string)
+  return string.format("%d:%d:%d", current_buf, cycle_index or 0, 1)
 end
 
 local function get_devicon(filename, filepath, is_current, base_hl)
@@ -115,9 +117,9 @@ local function get_display_name(bufnr, name)
 end
 
 local function format_bufname(bufnr, is_current)
-  local cache_key = bufnr
+  local cache_key = bufnr .. ":" .. (is_current and "1" or "0")
   local cached = cache.bufname[cache_key]
-  if is_cache_valid(cached) and cached.is_current == is_current then
+  if is_cache_valid(cached) then
     return cached.result
   end
 
@@ -132,7 +134,6 @@ local function format_bufname(bufnr, is_current)
   local result = devicon .. display_name
 
   cache.bufname[cache_key] = create_cache_entry(result)
-  cache.bufname[cache_key].is_current = is_current
   return result
 end
 
@@ -158,19 +159,11 @@ local function calculate_window_bounds(current_index, total_buffers, display_win
   return window_start, window_end_final
 end
 
-local function find_current_index(buffer_order, current_buf, cycle_index, list_type)
+local function find_current_index(buffer_order, current_buf, cycle_index)
   if cycle_index then
     return cycle_index
   end
 
-  -- O(1) lookup when list type is known
-  if list_type == "mru" then
-    return state.get_buffer_mru_index(current_buf) or (#buffer_order > 0 and 1 or 0)
-  elseif list_type == "tabline" then
-    return state.get_buffer_tabline_index(current_buf) or (#buffer_order > 0 and 1 or 0)
-  end
-
-  -- Fallback for unknown list types
   for i, bufnr in ipairs(buffer_order) do
     if bufnr == current_buf then
       return i
@@ -193,8 +186,7 @@ local function render_tabline(buffer_order, cycle_index, cache_ref, ttl)
   end
 
   local current_buf = vim.api.nvim_get_current_buf()
-  local list_type = state.identify_buffer_list(buffer_order)
-  local current_index = find_current_index(buffer_order, current_buf, cycle_index, list_type)
+  local current_index = find_current_index(buffer_order, current_buf, cycle_index)
   local display_window = config.tabline_display_window
   local start_index, end_index = calculate_window_bounds(current_index, total_buffers, display_window, cache_ref)
 
@@ -268,34 +260,15 @@ local function show_with_hide_timer(setter)
   end)
 end
 
-local function setup_event_listeners()
-  events.on("CycleNavigation", function(buflist, cycle_index)
-    vim.o.showtabline = 2
-    M.update_tabline(buflist, cycle_index)
+function M.show_tabline_temporarily(_, buffer_order)
+  show_with_hide_timer(function()
+    update_tabline_debounced(buffer_order, nil)
   end)
+end
 
-  events.on("ShowTablineTemporarily", function(buflist, cycle_index)
-    show_with_hide_timer(function()
-      update_tabline_debounced(buflist, cycle_index)
-    end)
-  end)
-
-  events.on("ShowTablineStatic", function()
-    show_with_hide_timer(function()
-      vim.o.tabline = render_tabline(state.tabline_order, nil, cache.static_tabline, TABLINE_TTL)
-    end)
-  end)
-
-  events.on("CycleEnded", function()
-    if config.show_tabline then
-      M.update_tabline(state.tabline_order)
-    end
-  end)
-
-  events.on("BufferOrderUpdated", function()
-    if config.show_tabline then
-      M.update_tabline(state.tabline_order)
-    end
+function M.show_tabline_static()
+  show_with_hide_timer(function()
+    vim.o.tabline = render_tabline(state.tabline_order, nil, cache.static_tabline, TABLINE_TTL)
   end)
 end
 
@@ -320,5 +293,4 @@ local function setup_cache_management()
 end
 
 setup_cache_management()
-setup_event_listeners()
 return M
