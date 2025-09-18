@@ -82,12 +82,11 @@ local function get_window_cache(winid)
         simple_title = 3000,
       })
     else
-      -- Full cache for regular windows
+      -- Simplified cache for regular windows - removed position and percentage
       window_caches[winid] = Cache.new({
         mode = 50,
         file_info = 200,
         directory = 60000,
-        position = 100,
         git_branch = 60000,
         diagnostics = 500,
         lsp_status = 2000,
@@ -108,8 +107,7 @@ local function cleanup_window_cache(winid)
 end
 
 local config = {
-  separators = { left = "", right = "", section = " ● " },
-  throttle_ms = 50,
+  seps = { left = "", right = "", section = " • " },
   icons = {
     modified = icons.modified,
     readonly = icons.readonly,
@@ -156,7 +154,6 @@ local modes = {
 local function hl(name, text)
   return ("%%#%s#%s%%*"):format(name, text)
 end
-
 
 local loaded = {}
 local function require_safe(mod)
@@ -272,27 +269,24 @@ local function create_components(winid, bufnr)
     end)
   end
 
+  -- Simplified file_info using built-in flags where possible
   C.file_info = function()
     return Cache.get_or_set(cache, "file_info", function()
       local name = api.nvim_buf_get_name(bufnr)
-      name = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
+      local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
+      local extension = fn.fnamemodify(filename, ":e")
+      local icon = get_file_icon(winid, filename, extension)
 
-      local extension = fn.fnamemodify(name, ":e")
-      local icon = get_file_icon(winid, name, extension)
+      -- Use built-in flags with custom styling
+      local readonly_flag = api.nvim_get_option_value("readonly", { buf = bufnr })
+        and hl("StatusLineReadonly", config.icons.readonly .. " ") or ""
 
-      local comps = {}
-      local readonly = api.nvim_get_option_value("readonly", { buf = bufnr })
-      local modified = api.nvim_get_option_value("modified", { buf = bufnr })
+      local file_part = hl("StatusLineFile", icon .. filename)
 
-      if readonly then
-        comps[#comps + 1] = hl("StatusLineReadonly", config.icons.readonly .. " ")
-      end
-      comps[#comps + 1] = hl(modified and "StatusLineModified" or "StatusLineFile",
-        icon .. name)
-      if modified then
-        comps[#comps + 1] = hl("StatusLineModified", " " .. config.icons.modified)
-      end
-      return table.concat(comps, "")
+      local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
+        and hl("StatusLineModified", " " .. config.icons.modified) or ""
+
+      return readonly_flag .. file_part .. modified_flag
     end)
   end
 
@@ -303,7 +297,7 @@ local function create_components(winid, bufnr)
       local title_map = {
         buftype = {
           terminal = icons.terminal .. " terminal",
-          popup = icons.dock .. " Popup", -- Added for popup windows
+          popup = icons.dock .. " Popup",
         },
         filetype = {
           lazy = icons.sleep .. " Lazy",
@@ -371,14 +365,12 @@ local function create_components(winid, bufnr)
       else
         dir_path = vim.fs.dirname(name)
         if dir_path == "." then
-          -- If file is in CWD, dirname is ".", so resolve to the full path.
           dir_path = fn.getcwd()
         end
       end
 
       local display_name = vim.fn.fnamemodify(dir_path, ":~")
 
-      -- vim.fs.basename('/') returns '/', which is a valid case we want to show.
       if display_name and display_name ~= "" and display_name ~= "." then
         return hl("StatusLineDirectory", icons.folder .. " " .. display_name)
       end
@@ -415,23 +407,6 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  C.position = function()
-    return Cache.get_or_set(cache, "position", function()
-      if not api.nvim_win_is_valid(winid) then return "" end
-      local pos = api.nvim_win_get_cursor(winid)
-      return table.concat({
-        hl("StatusLineLabel", "Ln "),
-        hl("StatusLineValue", tostring(pos[1])),
-        hl("StatusLineLabel", ", Col "),
-        hl("StatusLineValue", tostring(pos[2] + 1))
-      })
-    end)
-  end
-
-  C.percentage = function()
-    return hl("StatusLineValue", "%P")
-  end
-
   return C
 end
 
@@ -458,8 +433,8 @@ M.refresh_window = function(winid)
     return
   end
 
-  local main_expr = string.format('%%!v:lua.require("ui.statusline").statusline_for_window(%d)', winid)
-  local simple_expr = string.format('%%!v:lua.require("ui.statusline").simple_statusline_for_window(%d)', winid)
+  local main_expr = string.format('%%!v:lua.require("ui.statusline").status_advanced(%d)', winid)
+  local simple_expr = string.format('%%!v:lua.require("ui.statusline").status_simple(%d)', winid)
   vim.wo[winid].statusline = is_excluded_buftype(winid) and simple_expr or main_expr
 end
 
@@ -473,7 +448,7 @@ M.refresh = function(win)
   end
 end
 
-M.simple_statusline_for_window = function(winid)
+M.status_simple = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
   local bufnr = api.nvim_win_get_buf(winid)
   local C = create_components(winid, bufnr)
@@ -481,7 +456,7 @@ M.simple_statusline_for_window = function(winid)
   return "%=" .. center .. "%="
 end
 
-M.statusline_for_window = function(winid)
+M.status_advanced = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
 
   local bufnr = api.nvim_win_get_buf(winid)
@@ -497,23 +472,30 @@ M.statusline_for_window = function(winid)
   if git_branch ~= "" then left_segments[#left_segments + 1] = git_branch end
 
   local left = table.concat(left_segments, " ")
+
+  -- Build right side with built-in position/percentage
   local right_list = {}
   local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
+
   push(C.diagnostics())
   push(C.lsp_status())
-  push(C.position())
-  push(C.percentage())
-  local right = table.concat(right_list, hl("StatusLineSeparator", config.separators.section))
+
+  -- Use built-in position and percentage items
+  push(hl("StatusLineLabel", "Ln ") .. hl("StatusLineValue", "%l") ..
+    hl("StatusLineLabel", ", Col ") .. hl("StatusLineValue", "%v"))
+  push(hl("StatusLineValue", "%P"))
+
+  local right = table.concat(right_list, hl("StatusLineSeparator", config.seps.section))
 
   local center = C.file_info()
 
-  local left_width = width_for(cache, left)
-  local right_width = width_for(cache, right)
-  local center_w = cache.widths.file_info or width_for(cache, center)
-  local window_width = api.nvim_win_get_width(winid)
+  local w_left = width_for(cache, left)
+  local w_right = width_for(cache, right)
+  local w_center = cache.widths.file_info or width_for(cache, center)
+  local w_win = api.nvim_win_get_width(winid)
 
-  if (window_width - (left_width + right_width)) >= center_w + 4 then
-    local gap = math.max(1, math.floor((window_width - center_w) / 2) - left_width)
+  if (w_win - (w_left + w_right)) >= w_center + 4 then
+    local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
   return left .. " " .. center .. "%=" .. right
@@ -521,33 +503,15 @@ end
 
 M.simple_statusline = function()
   local winid = api.nvim_get_current_win()
-  return M.simple_statusline_for_window(winid)
+  return M.status_simple(winid)
 end
 
 M.statusline = function()
   local winid = api.nvim_get_current_win()
-  return M.statusline_for_window(winid)
+  return M.status_advanced(winid)
 end
 
-local last_cursor_update = {}
-
-local function cursor_update()
-  local winid = api.nvim_get_current_win()
-  local now = loop.hrtime() / 1e6
-  local last = last_cursor_update[winid] or 0
-
-  if now - last > config.throttle_ms then
-    last_cursor_update[winid] = now
-    local cache = get_window_cache(winid)
-    Cache.invalidate(cache, { "position" })
-    vim.schedule(function()
-      if api.nvim_win_is_valid(winid) then
-        M.refresh_window(winid)
-      end
-    end)
-  end
-end
-
+-- Simplified autocmds - removed cursor tracking since built-ins handle it
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 api.nvim_create_autocmd("ModeChanged", {
@@ -597,11 +561,6 @@ api.nvim_create_autocmd("DiagnosticChanged", {
   end
 })
 
-api.nvim_create_autocmd({ "CursorMoved" }, {
-  group = group,
-  callback = cursor_update
-})
-
 api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
   group = group,
   callback = function(ev)
@@ -637,7 +596,6 @@ api.nvim_create_autocmd("WinClosed", {
     local winid = tonumber(ev.match)
     if winid then
       cleanup_window_cache(winid)
-      last_cursor_update[winid] = nil
     end
   end
 })
