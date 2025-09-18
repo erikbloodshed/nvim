@@ -107,17 +107,7 @@ local function cleanup_window_cache(winid)
 end
 
 local config = {
-  seps = { left = "", right = "", section = " • " },
-  icons = {
-    modified = icons.modified,
-    readonly = icons.readonly,
-    git = icons.git,
-    lsp = icons.lsp,
-    error = icons.error,
-    warn = icons.warn,
-    info = icons.info,
-    hint = icons.hint,
-  },
+  seps = { left = "", right = "", section = " | " },
   exclude = {
     buftypes = {
       terminal = true,
@@ -152,7 +142,7 @@ local modes = {
 }
 
 local function hl(name, text)
-  return ("%%#%s#%s%%*"):format(name, text)
+  return string.format("%%#%s#%s%%*", name, text)
 end
 
 local loaded = {}
@@ -241,7 +231,7 @@ local function fetch_git_branch(winid, root)
     if not window_git_cache[winid] then
       window_git_cache[winid] = {}
     end
-    window_git_cache[winid][root] = branch ~= "" and hl("StatusLineGit", config.icons.git .. " " .. branch) or ""
+    window_git_cache[winid][root] = branch ~= "" and hl("StatusLineGit", icons.git .. " " .. branch) or ""
 
     local cache = get_window_cache(winid)
     Cache.invalidate(cache, "git_branch")
@@ -257,20 +247,18 @@ local function fetch_git_branch(winid, root)
   )
 end
 
--- Component generators that work with specific window context
 local function create_components(winid, bufnr)
   local cache = get_window_cache(winid)
-  local C = {}
+  local component = {}
 
-  C.mode = function()
+  component.mode = function()
     return Cache.get_or_set(cache, "mode", function()
       local m = modes[(api.nvim_get_mode() or {}).mode] or { " ? ", "StatusLineNormal" }
       return hl(m[2], m[1])
     end)
   end
 
-  -- Simplified file_info using built-in flags where possible
-  C.file_info = function()
+  component.file_info = function()
     return Cache.get_or_set(cache, "file_info", function()
       local name = api.nvim_buf_get_name(bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
@@ -279,18 +267,18 @@ local function create_components(winid, bufnr)
 
       -- Use built-in flags with custom styling
       local readonly_flag = api.nvim_get_option_value("readonly", { buf = bufnr })
-        and hl("StatusLineReadonly", config.icons.readonly .. " ") or ""
+        and hl("StatusLineReadonly", icons.readonly .. " ") or ""
 
       local file_part = hl("StatusLineFile", icon .. filename)
 
       local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
-        and hl("StatusLineModified", " " .. config.icons.modified) or ""
+        and hl("StatusLineModified", " " .. icons.modified) or ""
 
       return readonly_flag .. file_part .. modified_flag
     end)
   end
 
-  C.simple_title = function()
+  component.simple_title = function()
     return Cache.get_or_set(cache, "simple_title", function()
       local bt = api.nvim_get_option_value("buftype", { buf = bufnr })
       local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
@@ -324,7 +312,7 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  C.git_branch = function()
+  component.git_branch = function()
     return Cache.get_or_set(cache, "git_branch", function()
       local buf_name = api.nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
@@ -355,7 +343,7 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  C.directory = function()
+  component.directory = function()
     return Cache.get_or_set(cache, "directory", function()
       local name = api.nvim_buf_get_name(bufnr)
       local dir_path
@@ -378,15 +366,15 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  C.diagnostics = function()
+  component.diagnostics = function()
     return Cache.get_or_set(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
       local s = vim.diagnostic.severity
       local sev_map = {
-        { s.ERROR, "StatusLineDiagError", config.icons.error },
-        { s.WARN, "StatusLineDiagWarn", config.icons.warn },
-        { s.INFO, "StatusLineDiagInfo", config.icons.info },
-        { s.HINT, "StatusLineDiagHint", config.icons.hint },
+        { s.ERROR, "StatusLineDiagError", icons.error },
+        { s.WARN, "StatusLineDiagWarn", icons.warn },
+        { s.INFO, "StatusLineDiagInfo", icons.info },
+        { s.HINT, "StatusLineDiagHint", icons.hint },
       }
       local p = {}
       for _, v in ipairs(sev_map) do
@@ -397,17 +385,17 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  C.lsp_status = function()
+  component.lsp_status = function()
     return Cache.get_or_set(cache, "lsp_status", function()
       local clients = vim.lsp.get_clients({ bufnr = bufnr })
       if not clients or #clients == 0 then return "" end
       local names = {}
       for _, c in ipairs(clients) do names[#names + 1] = c.name end
-      return hl("StatusLineLsp", config.icons.lsp .. " " .. table.concat(names, ", "))
+      return hl("StatusLineLsp", icons.lsp .. " " .. table.concat(names, ", "))
     end)
   end
 
-  return C
+  return component
 end
 
 local function width_for(cache, key_or_str)
@@ -480,7 +468,6 @@ M.status_advanced = function(winid)
   push(C.diagnostics())
   push(C.lsp_status())
 
-  -- Use built-in position and percentage items
   push(hl("StatusLineLabel", "Ln ") .. hl("StatusLineValue", "%l") ..
     hl("StatusLineLabel", ", Col ") .. hl("StatusLineValue", "%v"))
   push(hl("StatusLineValue", "%P"))
@@ -511,7 +498,6 @@ M.statusline = function()
   return M.status_advanced(winid)
 end
 
--- Simplified autocmds - removed cursor tracking since built-ins handle it
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 api.nvim_create_autocmd("ModeChanged", {
