@@ -212,7 +212,7 @@ function M.get(c, o)
     ["@label"] = { link = "Label" },
 
     ["@string"] = { link = "String" },
-    ["@string.documentation"] = { fg = c.teal },
+    ["@string.documentation"] = { link = "String" },
     ["@string.regexp"] = { link = "Constant" },
     ["@string.escape"] = { link = "Special" },
     ["@string.special"] = { link = "Special" },
