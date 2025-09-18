@@ -1,10 +1,10 @@
-local api, fn, loop = vim.api, vim.fn, vim.loop
+local api, fn, uv = vim.api, vim.fn, vim.uv
 local icons = require("ui.icons")
 local M = {}
 
 local Cache = {}
 
-function Cache.new(ttl_map)
+Cache.new = function(ttl_map)
   return {
     data = {},
     ts = {},
@@ -13,11 +13,11 @@ function Cache.new(ttl_map)
   }
 end
 
-function Cache.now_ms()
-  return loop.hrtime() / 1e6
+Cache.now_ms = function()
+  return uv.hrtime() / 1e6
 end
 
-function Cache.valid(cache, key)
+Cache.valid = function(cache, key)
   local v = cache.data[key]
   if v == nil then
     return false
@@ -30,7 +30,7 @@ function Cache.valid(cache, key)
   return (Cache.now_ms() - created) < ttl
 end
 
-function Cache.update(cache, key, value)
+Cache.update = function(cache, key, value)
   cache.data[key] = value
   cache.ts[key] = Cache.now_ms()
   if type(value) == "string" then
@@ -41,7 +41,7 @@ function Cache.update(cache, key, value)
   end
 end
 
-function Cache.get_or_set(cache, key, fnc)
+Cache.get_or_set = function(cache, key, fnc)
   if Cache.valid(cache, key) then
     return cache.data[key]
   end
@@ -53,7 +53,7 @@ function Cache.get_or_set(cache, key, fnc)
   return v
 end
 
-function Cache.invalidate(cache, keys)
+Cache.invalidate = function(cache, keys)
   if not keys then
     return
   end
@@ -71,7 +71,7 @@ local window_caches = {}
 local window_git_data = {}
 local window_file_icon_data = {}
 
-local function get_window_cache(winid)
+local get_window_cache = function(winid)
   if not window_caches[winid] then
     local bt = api.nvim_get_option_value("buftype", { buf = api.nvim_win_get_buf(winid) })
     if bt == "popup" then
@@ -97,7 +97,7 @@ local function get_window_cache(winid)
   return window_caches[winid]
 end
 
-local function cleanup_window_cache(winid)
+local cleanup_window_cache = function(winid)
   window_caches[winid] = nil
   window_git_data[winid] = nil
   window_file_icon_data[winid] = nil
@@ -138,12 +138,12 @@ local modes = {
   t = { " T ", "StatusLineTerminal" },
 }
 
-local function hl(name, text)
+local hl = function(name, text)
   return string.format("%%#%s#%s%%*", name, text)
 end
 
 local loaded = {}
-local function require_safe(mod)
+local safe_require = function(mod)
   if loaded[mod] ~= nil then
     return loaded[mod]
   end
@@ -152,7 +152,7 @@ local function require_safe(mod)
   return loaded[mod]
 end
 
-local function get_file_icon(winid, filename, extension, use_colors)
+local get_file_icon = function(winid, filename, extension, use_colors)
   if not window_file_icon_data[winid] then
     window_file_icon_data[winid] = {}
   end
@@ -177,7 +177,7 @@ local function get_file_icon(winid, filename, extension, use_colors)
       return
     end
 
-    local devicons = require_safe("nvim-web-devicons")
+    local devicons = safe_require("nvim-web-devicons")
     local icon_result = ""
 
     if devicons then
@@ -205,7 +205,7 @@ local function get_file_icon(winid, filename, extension, use_colors)
   return ""
 end
 
-local function fetch_git_branch(winid, root)
+local fetch_git_branch = function(winid, root)
   local function on_exit(job_output)
     if not window_git_data[winid] then return end
 
@@ -233,7 +233,7 @@ local function fetch_git_branch(winid, root)
   )
 end
 
-local function create_components(winid, bufnr)
+local create_components = function(winid, bufnr)
   local cache = get_window_cache(winid)
   local component = {}
 
@@ -251,7 +251,6 @@ local function create_components(winid, bufnr)
       local extension = fn.fnamemodify(filename, ":e")
       local icon = get_file_icon(winid, filename, extension, true)
 
-      -- Use built-in flags with custom styling
       local readonly_flag = api.nvim_get_option_value("readonly", { buf = bufnr })
         and hl("StatusLineReadonly", icons.readonly .. " ") or ""
 
@@ -270,8 +269,6 @@ local function create_components(winid, bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
       local icon = get_file_icon(winid, filename, extension)
-
-      -- For inactive windows, we don't need explicit highlight groups since StatusLineNC is applied automatically
       local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
         and " " .. icons.modified or ""
 
@@ -313,7 +310,6 @@ local function create_components(winid, bufnr)
     end)
   end
 
-  -- Inside create_components(winid, bufnr)
   component.git_branch = function()
     return Cache.get_or_set(cache, "git_branch", function()
       local buf_name = api.nvim_buf_get_name(bufnr)
@@ -323,7 +319,6 @@ local function create_components(winid, bufnr)
       if not gitdir or not gitdir[1] then return "" end
       local root = vim.fs.dirname(gitdir[1])
 
-      -- Initialize window's git cache if it doesn't exist
       if not window_git_data[winid] then
         window_git_data[winid] = {}
       end
@@ -331,21 +326,12 @@ local function create_components(winid, bufnr)
       local git_cache = window_git_data[winid]
       local cached_value = git_cache[root]
 
-      -- 1. If cached, return it
-      if type(cached_value) == "string" then
-        return cached_value
-      end
+      if type(cached_value) == "string" then return cached_value end
+      if cached_value == false then return "" end
 
-      -- 2. If job is pending, return empty for now
-      if cached_value == false then
-        return ""
-      end
-
-      -- 3. Mark as pending and start the job
       git_cache[root] = false
       vim.schedule(function() fetch_git_branch(winid, root) end)
-
-      return "" -- Return empty on the first call
+      return ""
     end)
   end
 
@@ -404,7 +390,7 @@ local function create_components(winid, bufnr)
   return component
 end
 
-local function width_for(cache, key_or_str)
+local width_for = function(cache, key_or_str)
   if cache.widths[key_or_str] then return cache.widths[key_or_str] end
   if type(key_or_str) == "string" then
     local plain = key_or_str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
@@ -413,7 +399,7 @@ local function width_for(cache, key_or_str)
   return 0
 end
 
-local function is_excluded_buftype(win)
+local is_excluded_buftype = function(win)
   if not api.nvim_win_is_valid(win) then return false end
   local buf = api.nvim_win_get_buf(win)
   local bt = api.nvim_get_option_value("buftype", { buf = buf })
@@ -421,7 +407,7 @@ local function is_excluded_buftype(win)
   return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
 end
 
-local function is_active_window(winid)
+local is_active_window = function(winid)
   return winid == api.nvim_get_current_win()
 end
 
@@ -489,7 +475,6 @@ M.status_advanced = function(winid)
 
   local left = table.concat(left_segments, " ")
 
-  -- Build right side with built-in position/percentage
   local right_list = {}
   local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
 
@@ -501,9 +486,7 @@ M.status_advanced = function(winid)
   push(hl("StatusLineValue", "%P"))
 
   local right = table.concat(right_list, hl("StatusLineSeparator", config.seps.section))
-
   local center = C.file_info()
-
   local w_left = width_for(cache, left)
   local w_right = width_for(cache, right)
   local w_center = cache.widths.file_info or width_for(cache, center)
@@ -516,16 +499,16 @@ M.status_advanced = function(winid)
   return left .. " " .. center .. "%=" .. right
 end
 
-M.simple_statusline = function()
-  local winid = api.nvim_get_current_win()
-  return M.status_simple(winid)
-end
-
-M.statusline = function()
-  local winid = api.nvim_get_current_win()
-  return M.status_advanced(winid)
-end
-
+-- M.simple_statusline = function()
+--   local winid = api.nvim_get_current_win()
+--   return M.status_simple(winid)
+-- end
+--
+-- M.statusline = function()
+--   local winid = api.nvim_get_current_win()
+--   return M.status_advanced(winid)
+-- end
+--
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 api.nvim_create_autocmd("ModeChanged", {
@@ -592,25 +575,19 @@ api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
 
 api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
   group = group,
-  callback = function()
-    vim.cmd("redrawstatus")
-  end
+  callback = function() vim.cmd("redrawstatus") end
 })
 
 api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
   group = group,
-  callback = function()
-    M.refresh()
-  end
+  callback = function() M.refresh() end
 })
 
 api.nvim_create_autocmd("WinClosed", {
   group = group,
   callback = function(ev)
     local winid = tonumber(ev.match)
-    if winid then
-      cleanup_window_cache(winid)
-    end
+    if winid then cleanup_window_cache(winid) end
   end
 })
 
