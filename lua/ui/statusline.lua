@@ -86,6 +86,7 @@ local function get_window_cache(winid)
       window_caches[winid] = Cache.new({
         mode = 50,
         file_info = 200,
+        directory = 60000,
         position = 100,
         percentage = 100,
         git_branch = 60000,
@@ -361,6 +362,35 @@ local function create_components(winid, bufnr)
     end)
   end
 
+  C.directory = function()
+    return Cache.get_or_set(cache, "directory", function()
+      local name = api.nvim_buf_get_name(bufnr)
+      local dir_path
+
+      if name == "" then
+        -- Unnamed buffer: use the current working directory.
+        dir_path = fn.getcwd()
+      else
+        -- Named buffer: use the file's parent directory.
+        dir_path = vim.fs.dirname(name)
+        if dir_path == "." then
+          -- If file is in CWD, dirname is ".", so resolve to the full path.
+          dir_path = fn.getcwd()
+        end
+      end
+
+      -- Get the basename to display (e.g., "project" from "/home/user/project").
+      -- local display_name = vim.fs.basename(dir_path)
+      local display_name = vim.fn.fnamemodify(dir_path, ":~")
+
+      -- vim.fs.basename('/') returns '/', which is a valid case we want to show.
+      if display_name and display_name ~= "" and display_name ~= "." then
+        return hl("StatusLineDirectory", icons.folder .. " " .. display_name)
+      end
+      return ""
+    end)
+  end
+
   C.diagnostics = function()
     return Cache.get_or_set(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
@@ -487,10 +517,14 @@ M.statusline_for_window = function(winid)
   local C = create_components(winid, bufnr)
 
   local left_segments = { C.mode() }
+
+  local directory = C.directory()
+  if directory ~= "" then left_segments[#left_segments + 1] = directory end
+
   local git_branch = C.git_branch()
   if git_branch ~= "" then left_segments[#left_segments + 1] = git_branch end
-  local left = table.concat(left_segments, " ")
 
+  local left = table.concat(left_segments, " ")
   local right_list = {}
   local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
   push(C.diagnostics())
@@ -572,7 +606,7 @@ M.init = function()
     callback = function()
       local winid = api.nvim_get_current_win()
       local cache = get_window_cache(winid)
-      Cache.invalidate(cache, { "git_branch", "file_info", "lsp_status", "diagnostics", "simple_title" })
+      Cache.invalidate(cache, { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "simple_title" })
       M.refresh_window(winid)
     end
   })

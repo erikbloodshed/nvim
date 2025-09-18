@@ -77,6 +77,7 @@ function M.get(c, o)
     StatusLineDiagWarn = { link = "DiagnosticWarn" },
     StatusLineDiagHint = { link = "DiagnosticHint" },
     StatusLineDiagInfo = { link = "DiagnosticInfo" },
+    StatusLineDirectory = { link = "Directory" },
     StatusLineLsp = { fg = c.green },
     StatusLineLabel = { fg = c.subtext0 },
     StatusLineValue = { link = "StatusLineGit" },

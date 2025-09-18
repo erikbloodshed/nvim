@@ -3,6 +3,7 @@ return {
   error = "",
   file_tree = "󰙅",
   fix = "󰁨",
+  folder = "󰉋",
   git = "",
   help = "󰞋",
   hint = "",
