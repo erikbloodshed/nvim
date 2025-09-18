@@ -68,10 +68,8 @@ function Cache.invalidate(cache, keys)
 end
 
 local window_caches = {}
-local window_git_cache = {}
-local window_git_jobs = {}
-local window_file_icon_cache = {}
-local window_file_icon_jobs = {}
+local window_git_data = {}
+local window_file_icon_data = {}
 
 local function get_window_cache(winid)
   if not window_caches[winid] then
@@ -83,7 +81,6 @@ local function get_window_cache(winid)
         inactive_filename = 3000,
       })
     else
-      -- Simplified cache for regular windows - removed position and percentage
       window_caches[winid] = Cache.new({
         mode = 50,
         file_info = 200,
@@ -102,10 +99,8 @@ end
 
 local function cleanup_window_cache(winid)
   window_caches[winid] = nil
-  window_git_cache[winid] = nil
-  window_git_jobs[winid] = nil
-  window_file_icon_cache[winid] = nil
-  window_file_icon_jobs[winid] = nil
+  window_git_data[winid] = nil
+  window_file_icon_data[winid] = nil
 end
 
 local config = {
@@ -157,28 +152,34 @@ local function require_safe(mod)
   return loaded[mod]
 end
 
-local function get_file_icon(winid, filename, extension)
-  if not window_file_icon_cache[winid] then
-    window_file_icon_cache[winid] = {}
-  end
-  if not window_file_icon_jobs[winid] then
-    window_file_icon_jobs[winid] = {}
+local function get_file_icon(winid, filename, extension, use_colors)
+  if not window_file_icon_data[winid] then
+    window_file_icon_data[winid] = {}
   end
 
-  local cache_key = filename .. "." .. (extension or "")
+  local cache = window_file_icon_data[winid]
+  local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_colored" or "_plain")
 
-  if window_file_icon_cache[winid][cache_key] then
-    return window_file_icon_cache[winid][cache_key]
+  local cached_value = cache[cache_key]
+
+  if type(cached_value) == "string" then
+    return cached_value
   end
 
-  if window_file_icon_jobs[winid][cache_key] then
+  if cached_value == false then
     return ""
   end
 
-  window_file_icon_jobs[winid][cache_key] = true
+  cache[cache_key] = false
 
-  vim.defer_fn(function()
+  vim.schedule(function()
+    if not api.nvim_win_is_valid(winid) then
+      return
+    end
+
     local devicons = require_safe("nvim-web-devicons")
+    local icon_result = ""
+
     if devicons then
       if not devicons.has_loaded() then
         devicons.setup {}
@@ -186,58 +187,41 @@ local function get_file_icon(winid, filename, extension)
 
       local icon, hl_group = devicons.get_icon(filename, extension)
       if icon and icon ~= "" then
-        local colored_icon = icon .. " "
-        if hl_group and hl_group ~= "" then
-          colored_icon = hl(hl_group, icon) .. " "
+        if use_colors and hl_group and hl_group ~= "" then
+          icon_result = hl(hl_group, icon) .. " "
+        else
+          icon_result = icon .. " "
         end
-        window_file_icon_cache[winid][cache_key] = colored_icon
-      else
-        window_file_icon_cache[winid][cache_key] = ""
       end
-      window_file_icon_jobs[winid][cache_key] = nil
-
-      local cache = get_window_cache(winid)
-      Cache.invalidate(cache, { "file_info", "inactive_filename" })
-      if api.nvim_win_is_valid(winid) then
-        M.refresh_window(winid)
-      end
-    else
-      window_file_icon_jobs[winid][cache_key] = nil
-      window_file_icon_cache[winid][cache_key] = ""
     end
-  end, 10)
+
+    cache[cache_key] = icon_result
+
+    local sl_cache = get_window_cache(winid)
+    Cache.invalidate(sl_cache, { "file_info", "inactive_filename" })
+    M.refresh_window(winid)
+  end)
 
   return ""
 end
 
 local function fetch_git_branch(winid, root)
-  if not window_git_jobs[winid] then
-    window_git_jobs[winid] = {}
-  end
-
-  if window_git_jobs[winid][root] then
-    return
-  end
-
-  window_git_jobs[winid][root] = true
-
   local function on_exit(job_output)
-    if not window_git_jobs[winid] then return end
-    window_git_jobs[winid][root] = nil
+    if not window_git_data[winid] then return end
 
-    if not job_output or job_output.code ~= 0 or not job_output.stdout then
-      return
+    local branch_hl = ""
+    if job_output and job_output.code == 0 and job_output.stdout then
+      local branch = job_output.stdout:gsub("%s*$", "")
+      if branch ~= "" then
+        branch_hl = hl("StatusLineGit", icons.git .. " " .. branch)
+      end
     end
 
-    local branch = job_output.stdout:gsub("%s*$", "")
-    if not window_git_cache[winid] then
-      window_git_cache[winid] = {}
-    end
-    window_git_cache[winid][root] = branch ~= "" and hl("StatusLineGit", icons.git .. " " .. branch) or ""
+    window_git_data[winid][root] = branch_hl
 
-    local cache = get_window_cache(winid)
-    Cache.invalidate(cache, "git_branch")
     if api.nvim_win_is_valid(winid) then
+      local cache = get_window_cache(winid)
+      Cache.invalidate(cache, "git_branch")
       M.refresh_window(winid)
     end
   end
@@ -265,7 +249,7 @@ local function create_components(winid, bufnr)
       local name = api.nvim_buf_get_name(bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
-      local icon = get_file_icon(winid, filename, extension)
+      local icon = get_file_icon(winid, filename, extension, true)
 
       -- Use built-in flags with custom styling
       local readonly_flag = api.nvim_get_option_value("readonly", { buf = bufnr })
@@ -329,34 +313,39 @@ local function create_components(winid, bufnr)
     end)
   end
 
+  -- Inside create_components(winid, bufnr)
   component.git_branch = function()
     return Cache.get_or_set(cache, "git_branch", function()
       local buf_name = api.nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
-      local root = ""
-      if gitdir and gitdir[1] then
-        root = vim.fs.dirname(gitdir[1])
+
+      if not gitdir or not gitdir[1] then return "" end
+      local root = vim.fs.dirname(gitdir[1])
+
+      -- Initialize window's git cache if it doesn't exist
+      if not window_git_data[winid] then
+        window_git_data[winid] = {}
       end
 
-      if root == "" then return "" end
+      local git_cache = window_git_data[winid]
+      local cached_value = git_cache[root]
 
-      if not window_git_cache[winid] then
-        window_git_cache[winid] = {}
+      -- 1. If cached, return it
+      if type(cached_value) == "string" then
+        return cached_value
       end
 
-      if window_git_cache[winid][root] then
-        return window_git_cache[winid][root]
+      -- 2. If job is pending, return empty for now
+      if cached_value == false then
+        return ""
       end
 
-      if not window_git_jobs[winid] then
-        window_git_jobs[winid] = {}
-      end
+      -- 3. Mark as pending and start the job
+      git_cache[root] = false
+      vim.schedule(function() fetch_git_branch(winid, root) end)
 
-      if not window_git_jobs[winid][root] then
-        vim.defer_fn(function() fetch_git_branch(winid, root) end, 20)
-      end
-      return ""
+      return "" -- Return empty on the first call
     end)
   end
 
@@ -552,7 +541,7 @@ api.nvim_create_autocmd("ModeChanged", {
 api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
   group = group,
   callback = function()
-    window_git_cache = {}
+    window_git_data = {}
     for winid, cache in pairs(window_caches) do
       Cache.invalidate(cache, "git_branch")
       if api.nvim_win_is_valid(winid) then
@@ -604,14 +593,13 @@ api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
 api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
   group = group,
   callback = function()
-    vim.defer_fn(function() vim.cmd("redrawstatus") end, 10)
+    vim.cmd("redrawstatus")
   end
 })
 
 api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
   group = group,
   callback = function()
-    -- Refresh all windows when entering a new window to update active/inactive states
     M.refresh()
   end
 })
