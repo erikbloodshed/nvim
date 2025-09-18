@@ -541,7 +541,7 @@ autocmd({ "LspAttach", "LspDetach", "DiagnosticChanged" }, {
     for _, winid in ipairs(api.nvim_list_wins()) do
       if api.nvim_win_get_buf(winid) == buf then
         local cache = get_win_cache(winid)
-        cache_invalidate(cache, "lsp_status")
+        cache_invalidate(cache, {"lsp_status", "diagnostics"})
         refresh_win(winid)
       end
     end
