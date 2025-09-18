@@ -17,7 +17,6 @@ local function debounce(func, delay)
   end
 end
 
--- Simple cache with TTL
 local Cache = {}
 function Cache.new()
   return { data = {}, ts = {} }
@@ -48,7 +47,6 @@ function Cache.invalidate(cache, keys)
   end
 end
 
--- Window-specific caches
 local window_caches = {}
 local git_cache = {}
 local file_icon_cache = {}
@@ -242,7 +240,6 @@ local function create_components(winid, bufnr)
         if gitdir and gitdir[1] then
           local root = vim.fs.dirname(gitdir[1])
 
-          -- Async git branch fetch
           vim.system(
             { "git", "symbolic-ref", "--short", "HEAD" },
             { cwd = root, text = true, timeout = 2000 },
@@ -258,7 +255,7 @@ local function create_components(winid, bufnr)
             end)
           )
         end
-        git_cache[buf_dir] = "" -- Prevent multiple calls
+        git_cache[buf_dir] = ""
       end
 
       return git_cache[buf_dir] or ""
@@ -278,21 +275,22 @@ local function create_components(winid, bufnr)
     end)
   end
 
+  local severities = {
+    { vim.diagnostic.severity.ERROR, "StatusLineDiagError", config.icons.error },
+    { vim.diagnostic.severity.WARN, "StatusLineDiagWarn", config.icons.warn },
+    { vim.diagnostic.severity.INFO, "StatusLineDiagInfo", config.icons.info },
+    { vim.diagnostic.severity.HINT, "StatusLineDiagHint", config.icons.hint },
+  }
+
   C.diagnostics = function()
     return Cache.get(cache, "diagnostics", 500, function()
       local counts = vim.diagnostic.count(bufnr)
-      local severities = {
-        { vim.diagnostic.severity.ERROR, "StatusLineDiagError", config.icons.error },
-        { vim.diagnostic.severity.WARN, "StatusLineDiagWarn", config.icons.warn },
-        { vim.diagnostic.severity.INFO, "StatusLineDiagInfo", config.icons.info },
-        { vim.diagnostic.severity.HINT, "StatusLineDiagHint", config.icons.hint },
-      }
 
       local parts = {}
       for _, sev in ipairs(severities) do
         local count = counts[sev[1]]
         if count and count > 0 then
-          table.insert(parts, hl(sev[2], sev[3] .. " " .. count))
+          parts[#parts + 1] = hl(sev[2], sev[3] .. " " .. count)
         end
       end
       return table.concat(parts, " ")
@@ -344,12 +342,10 @@ local function create_components(winid, bufnr)
   return C
 end
 
--- Helper function to calculate display width
 local function display_width(str)
   return fn.strdisplaywidth(str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
 end
 
--- Main statusline functions
 M.simple_statusline_for_window = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
   local bufnr = api.nvim_win_get_buf(winid)
@@ -364,7 +360,6 @@ M.statusline_for_window = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
   local C = create_components(winid, bufnr)
 
-  -- Left side
   local left_parts = { C.mode() }
   local directory = C.directory()
   if directory ~= "" then table.insert(left_parts, directory) end
@@ -372,17 +367,14 @@ M.statusline_for_window = function(winid)
   if git_branch ~= "" then table.insert(left_parts, git_branch) end
   local left = table.concat(left_parts, " ")
 
-  -- Right side
   local right_parts = {}
   for _, component in ipairs({ C.diagnostics(), C.lsp_status(), C.position(), C.percentage() }) do
     if component ~= "" then table.insert(right_parts, component) end
   end
   local right = table.concat(right_parts, hl("StatusLineSeparator", config.separators.section))
 
-  -- Center
   local center = C.file_info()
 
-  -- Layout calculation
   local window_width = api.nvim_win_get_width(winid)
   local left_width = display_width(left)
   local right_width = display_width(right)
@@ -396,7 +388,6 @@ M.statusline_for_window = function(winid)
   return left .. " " .. center .. "%=" .. right
 end
 
--- Debounced cursor movement handler
 local cursor_debounced = debounce(function()
   local winid = api.nvim_get_current_win()
   local cache = get_cache(winid)
@@ -404,7 +395,6 @@ local cursor_debounced = debounce(function()
   refresh_window_debounced(winid)
 end, 50)
 
--- Public API
 M.refresh = function(win)
   if win then
     refresh_window_debounced(win)
@@ -417,7 +407,6 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
--- Mode changes
 api.nvim_create_autocmd("ModeChanged", {
   group = group,
   callback = function()
@@ -428,13 +417,11 @@ api.nvim_create_autocmd("ModeChanged", {
   end
 })
 
--- Git-related changes
 api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
   group = group,
   callback = refresh_git_debounced
 })
 
--- Buffer changes
 api.nvim_create_autocmd("BufEnter", {
   group = group,
   callback = function()
@@ -445,7 +432,6 @@ api.nvim_create_autocmd("BufEnter", {
   end
 })
 
--- Diagnostics
 api.nvim_create_autocmd("DiagnosticChanged", {
   group = group,
   callback = function(ev)
@@ -459,13 +445,11 @@ api.nvim_create_autocmd("DiagnosticChanged", {
   end
 })
 
--- Cursor movement
 api.nvim_create_autocmd("CursorMoved", {
   group = group,
   callback = cursor_debounced
 })
 
--- LSP changes
 api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
   group = group,
   callback = function(ev)
@@ -479,7 +463,6 @@ api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
   end
 })
 
--- Window events
 api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
   group = group,
   callback = function()
