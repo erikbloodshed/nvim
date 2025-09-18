@@ -529,7 +529,7 @@ autocmd("BufEnter", {
     local winid = api.nvim_get_current_win()
     local cache = get_win_cache(winid)
     cache_invalidate(cache,
-      { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "simple_title", "inactive_filename" })
+      { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "inactive_filename" })
     refresh_win(winid)
   end
 })
