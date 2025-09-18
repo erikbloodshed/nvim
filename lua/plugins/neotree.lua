@@ -6,6 +6,7 @@ return {
       "<leader>ef",
       function()
         require("neo-tree.command").execute({
+          dir = vim.fn.getcwd(),
           toggle = true,
           reveal = true,
           reveal_force_cwd = true,
@@ -53,7 +54,7 @@ return {
       close_if_last_window = true,
       popup_border_style = "rounded",
       filesystem = {
-        bind_to_cwd = true,
+        bind_to_cwd = false,
         follow_current_file = { enabled = true },
         filtered_items = {
           hide_by_pattern = { "*.out" },
