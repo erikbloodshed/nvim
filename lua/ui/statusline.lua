@@ -1,10 +1,10 @@
 local api, fn, uv = vim.api, vim.fn, vim.uv
+local autocmd = vim.api.nvim_create_autocmd
 local icons = require("ui.icons")
+
 local M = {}
 
-local Cache = {}
-
-Cache.new = function(ttl_map)
+local cache_new = function(ttl_map)
   return {
     data = {},
     ts = {},
@@ -13,11 +13,11 @@ Cache.new = function(ttl_map)
   }
 end
 
-Cache.now_ms = function()
+local cache_now = function()
   return uv.hrtime() / 1e6
 end
 
-Cache.valid = function(cache, key)
+local cache_valid = function(cache, key)
   local v = cache.data[key]
   if v == nil then
     return false
@@ -27,12 +27,12 @@ Cache.valid = function(cache, key)
     return false
   end
   local ttl = cache.ttl[key] or 1000
-  return (Cache.now_ms() - created) < ttl
+  return (cache_now() - created) < ttl
 end
 
-Cache.update = function(cache, key, value)
+local cache_update = function(cache, key, value)
   cache.data[key] = value
-  cache.ts[key] = Cache.now_ms()
+  cache.ts[key] = cache_now()
   if type(value) == "string" then
     local plain = value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
     cache.widths[key] = fn.strdisplaywidth(plain)
@@ -41,19 +41,19 @@ Cache.update = function(cache, key, value)
   end
 end
 
-Cache.get_or_set = function(cache, key, fnc)
-  if Cache.valid(cache, key) then
+local cache_lookup = function(cache, key, fnc)
+  if cache_valid(cache, key) then
     return cache.data[key]
   end
   local ok, v = pcall(fnc)
   if not ok then
     v = ""
   end
-  Cache.update(cache, key, v)
+  cache_update(cache, key, v)
   return v
 end
 
-Cache.invalidate = function(cache, keys)
+local cache_invalidate = function(cache, keys)
   if not keys then
     return
   end
@@ -67,21 +67,21 @@ Cache.invalidate = function(cache, keys)
   end
 end
 
-local window_caches = {}
-local window_git_data = {}
-local window_file_icon_data = {}
+local win_caches = {}
+local win_git_data = {}
+local win_file_icon_data = {}
 
-local get_window_cache = function(winid)
-  if not window_caches[winid] then
+local get_win_cache = function(winid)
+  if not win_caches[winid] then
     local bt = api.nvim_get_option_value("buftype", { buf = api.nvim_win_get_buf(winid) })
     if bt == "popup" then
-      window_caches[winid] = Cache.new({
+      win_caches[winid] = cache_new({
         mode = 50,
         simple_title = 3000,
         inactive_filename = 3000,
       })
     else
-      window_caches[winid] = Cache.new({
+      win_caches[winid] = cache_new({
         mode = 50,
         file_info = 200,
         directory = 60000,
@@ -94,13 +94,13 @@ local get_window_cache = function(winid)
       })
     end
   end
-  return window_caches[winid]
+  return win_caches[winid]
 end
 
-local cleanup_window_cache = function(winid)
-  window_caches[winid] = nil
-  window_git_data[winid] = nil
-  window_file_icon_data[winid] = nil
+local cleanup_win_cache = function(winid)
+  win_caches[winid] = nil
+  win_git_data[winid] = nil
+  win_file_icon_data[winid] = nil
 end
 
 local config = {
@@ -152,12 +152,45 @@ local safe_require = function(mod)
   return loaded[mod]
 end
 
-local get_file_icon = function(winid, filename, extension, use_colors)
-  if not window_file_icon_data[winid] then
-    window_file_icon_data[winid] = {}
+local is_excluded_buftype = function(win)
+  if not api.nvim_win_is_valid(win) then return false end
+  local buf = api.nvim_win_get_buf(win)
+  local bt = api.nvim_get_option_value("buftype", { buf = buf })
+  local ft = api.nvim_get_option_value("filetype", { buf = buf })
+  return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
+end
+
+local is_active_window = function(winid)
+  return winid == api.nvim_get_current_win()
+end
+
+local refresh_win = function(winid)
+  if not api.nvim_win_is_valid(winid) then
+    cleanup_win_cache(winid)
+    return
   end
 
-  local cache = window_file_icon_data[winid]
+  local is_active = is_active_window(winid)
+  local is_excluded = is_excluded_buftype(winid)
+
+  local expr
+  if is_excluded then
+    expr = string.format('%%!v:lua.require("ui.statusline").status_simple(%d)', winid)
+  elseif is_active then
+    expr = string.format('%%!v:lua.require("ui.statusline").status_advanced(%d)', winid)
+  else
+    expr = string.format('%%!v:lua.require("ui.statusline").status_inactive(%d)', winid)
+  end
+
+  vim.wo[winid].statusline = expr
+end
+
+local get_file_icon = function(winid, filename, extension, use_colors)
+  if not win_file_icon_data[winid] then
+    win_file_icon_data[winid] = {}
+  end
+
+  local cache = win_file_icon_data[winid]
   local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_colored" or "_plain")
 
   local cached_value = cache[cache_key]
@@ -197,9 +230,9 @@ local get_file_icon = function(winid, filename, extension, use_colors)
 
     cache[cache_key] = icon_result
 
-    local sl_cache = get_window_cache(winid)
-    Cache.invalidate(sl_cache, { "file_info", "inactive_filename" })
-    M.refresh_window(winid)
+    local sl_cache = get_win_cache(winid)
+    cache_invalidate(sl_cache, { "file_info", "inactive_filename" })
+    refresh_win(winid)
   end)
 
   return ""
@@ -207,7 +240,7 @@ end
 
 local fetch_git_branch = function(winid, root)
   local function on_exit(job_output)
-    if not window_git_data[winid] then return end
+    if not win_git_data[winid] then return end
 
     local branch_hl = ""
     if job_output and job_output.code == 0 and job_output.stdout then
@@ -217,12 +250,12 @@ local fetch_git_branch = function(winid, root)
       end
     end
 
-    window_git_data[winid][root] = branch_hl
+    win_git_data[winid][root] = branch_hl
 
     if api.nvim_win_is_valid(winid) then
-      local cache = get_window_cache(winid)
-      Cache.invalidate(cache, "git_branch")
-      M.refresh_window(winid)
+      local cache = get_win_cache(winid)
+      cache_invalidate(cache, "git_branch")
+      refresh_win(winid)
     end
   end
 
@@ -234,18 +267,18 @@ local fetch_git_branch = function(winid, root)
 end
 
 local create_components = function(winid, bufnr)
-  local cache = get_window_cache(winid)
+  local cache = get_win_cache(winid)
   local component = {}
 
   component.mode = function()
-    return Cache.get_or_set(cache, "mode", function()
+    return cache_lookup(cache, "mode", function()
       local m = modes[(api.nvim_get_mode() or {}).mode] or { " ? ", "StatusLineNormal" }
       return hl(m[2], m[1])
     end)
   end
 
   component.file_info = function()
-    return Cache.get_or_set(cache, "file_info", function()
+    return cache_lookup(cache, "file_info", function()
       local name = api.nvim_buf_get_name(bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
@@ -264,7 +297,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.inactive_filename = function()
-    return Cache.get_or_set(cache, "inactive_filename", function()
+    return cache_lookup(cache, "inactive_filename", function()
       local name = api.nvim_buf_get_name(bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
@@ -277,7 +310,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.simple_title = function()
-    return Cache.get_or_set(cache, "simple_title", function()
+    return cache_lookup(cache, "simple_title", function()
       local bt = api.nvim_get_option_value("buftype", { buf = bufnr })
       local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
       local title_map = {
@@ -311,7 +344,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.git_branch = function()
-    return Cache.get_or_set(cache, "git_branch", function()
+    return cache_lookup(cache, "git_branch", function()
       local buf_name = api.nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
@@ -319,11 +352,11 @@ local create_components = function(winid, bufnr)
       if not gitdir or not gitdir[1] then return "" end
       local root = vim.fs.dirname(gitdir[1])
 
-      if not window_git_data[winid] then
-        window_git_data[winid] = {}
+      if not win_git_data[winid] then
+        win_git_data[winid] = {}
       end
 
-      local git_cache = window_git_data[winid]
+      local git_cache = win_git_data[winid]
       local cached_value = git_cache[root]
 
       if type(cached_value) == "string" then return cached_value end
@@ -336,7 +369,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.directory = function()
-    return Cache.get_or_set(cache, "directory", function()
+    return cache_lookup(cache, "directory", function()
       local name = api.nvim_buf_get_name(bufnr)
       local dir_path
 
@@ -359,7 +392,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.diagnostics = function()
-    return Cache.get_or_set(cache, "diagnostics", function()
+    return cache_lookup(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
       local s = vim.diagnostic.severity
       local sev_map = {
@@ -378,7 +411,7 @@ local create_components = function(winid, bufnr)
   end
 
   component.lsp_status = function()
-    return Cache.get_or_set(cache, "lsp_status", function()
+    return cache_lookup(cache, "lsp_status", function()
       local clients = vim.lsp.get_clients({ bufnr = bufnr })
       if not clients or #clients == 0 then return "" end
       local names = {}
@@ -399,62 +432,18 @@ local width_for = function(cache, key_or_str)
   return 0
 end
 
-local is_excluded_buftype = function(win)
-  if not api.nvim_win_is_valid(win) then return false end
-  local buf = api.nvim_win_get_buf(win)
-  local bt = api.nvim_get_option_value("buftype", { buf = buf })
-  local ft = api.nvim_get_option_value("filetype", { buf = buf })
-  return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
-end
-
-local is_active_window = function(winid)
-  return winid == api.nvim_get_current_win()
-end
-
-M.refresh_window = function(winid)
-  if not api.nvim_win_is_valid(winid) then
-    cleanup_window_cache(winid)
-    return
-  end
-
-  local is_active = is_active_window(winid)
-  local is_excluded = is_excluded_buftype(winid)
-
-  local expr
-  if is_excluded then
-    expr = string.format('%%!v:lua.require("ui.statusline").status_simple(%d)', winid)
-  elseif is_active then
-    expr = string.format('%%!v:lua.require("ui.statusline").status_advanced(%d)', winid)
-  else
-    expr = string.format('%%!v:lua.require("ui.statusline").status_inactive(%d)', winid)
-  end
-
-  vim.wo[winid].statusline = expr
-end
-
-M.refresh = function(win)
-  if win then
-    M.refresh_window(win)
-  else
-    for _, w in ipairs(api.nvim_list_wins()) do
-      M.refresh_window(w)
-    end
-  end
-end
-
 M.status_simple = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
   local bufnr = api.nvim_win_get_buf(winid)
-  local C = create_components(winid, bufnr)
-  local center = C.simple_title()
-  return "%=" .. center .. "%="
+  local components = create_components(winid, bufnr)
+  return "%=" .. components.simple_title() .. "%="
 end
 
 M.status_inactive = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
   local bufnr = api.nvim_win_get_buf(winid)
-  local C = create_components(winid, bufnr)
-  local center = C.inactive_filename()
+  local components = create_components(winid, bufnr)
+  local center = components.inactive_filename()
   return "%=" .. center .. "%="
 end
 
@@ -462,15 +451,14 @@ M.status_advanced = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
 
   local bufnr = api.nvim_win_get_buf(winid)
-  local cache = get_window_cache(winid)
-  local C = create_components(winid, bufnr)
+  local cache = get_win_cache(winid)
+  local components = create_components(winid, bufnr)
+  local left_segments = { components.mode() }
 
-  local left_segments = { C.mode() }
-
-  local directory = C.directory()
+  local directory = components.directory()
   if directory ~= "" then left_segments[#left_segments + 1] = directory end
 
-  local git_branch = C.git_branch()
+  local git_branch = components.git_branch()
   if git_branch ~= "" then left_segments[#left_segments + 1] = git_branch end
 
   local left = table.concat(left_segments, " ")
@@ -478,15 +466,15 @@ M.status_advanced = function(winid)
   local right_list = {}
   local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
 
-  push(C.diagnostics())
-  push(C.lsp_status())
+  push(components.diagnostics())
+  push(components.lsp_status())
 
   push(hl("StatusLineLabel", "Ln ") .. hl("StatusLineValue", "%l") ..
     hl("StatusLineLabel", ", Col ") .. hl("StatusLineValue", "%v"))
   push(hl("StatusLineValue", "%P"))
 
   local right = table.concat(right_list, hl("StatusLineSeparator", config.seps.section))
-  local center = C.file_info()
+  local center = components.file_info()
   local w_left = width_for(cache, left)
   local w_right = width_for(cache, right)
   local w_center = cache.widths.file_info or width_for(cache, center)
@@ -496,98 +484,84 @@ M.status_advanced = function(winid)
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
-  return left .. " " .. center .. "%=" .. right
+  return left .. "%=" .. center .. "%=" .. right
 end
 
--- M.simple_statusline = function()
---   local winid = api.nvim_get_current_win()
---   return M.status_simple(winid)
--- end
---
--- M.statusline = function()
---   local winid = api.nvim_get_current_win()
---   return M.status_advanced(winid)
--- end
---
+local refresh = function(win)
+  if win then
+    refresh_win(win)
+  else
+    for _, w in ipairs(api.nvim_list_wins()) do
+      refresh_win(w)
+    end
+  end
+end
+
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-api.nvim_create_autocmd("ModeChanged", {
+autocmd("ModeChanged", {
   group = group,
   callback = function()
     local winid = api.nvim_get_current_win()
-    local cache = get_window_cache(winid)
-    Cache.invalidate(cache, "mode")
-    M.refresh_window(winid)
+    local cache = get_win_cache(winid)
+    cache_invalidate(cache, "mode")
+    refresh_win(winid)
   end
 })
 
-api.nvim_create_autocmd({ "FocusGained", "DirChanged" }, {
+autocmd({ "FocusGained", "DirChanged" }, {
   group = group,
   callback = function()
-    window_git_data = {}
-    for winid, cache in pairs(window_caches) do
-      Cache.invalidate(cache, "git_branch")
+    win_git_data = {}
+    for winid, cache in pairs(win_caches) do
+      cache_invalidate(cache, "git_branch")
       if api.nvim_win_is_valid(winid) then
-        M.refresh_window(winid)
+        refresh_win(winid)
       end
     end
   end,
 })
 
-api.nvim_create_autocmd("BufEnter", {
+autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = api.nvim_get_current_win()
-    local cache = get_window_cache(winid)
-    Cache.invalidate(cache,
+    local cache = get_win_cache(winid)
+    cache_invalidate(cache,
       { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "simple_title", "inactive_filename" })
-    M.refresh_window(winid)
+    refresh_win(winid)
   end
 })
 
-api.nvim_create_autocmd("DiagnosticChanged", {
+autocmd({ "LspAttach", "LspDetach", "DiagnosticChanged" }, {
   group = group,
   callback = function(ev)
     local buf = ev.buf
     for _, winid in ipairs(api.nvim_list_wins()) do
       if api.nvim_win_get_buf(winid) == buf then
-        local cache = get_window_cache(winid)
-        Cache.invalidate(cache, "diagnostics")
-        M.refresh_window(winid)
+        local cache = get_win_cache(winid)
+        cache_invalidate(cache, "lsp_status")
+        refresh_win(winid)
       end
     end
   end
 })
 
-api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
-  group = group,
-  callback = function(ev)
-    local buf = ev.buf
-    for _, winid in ipairs(api.nvim_list_wins()) do
-      if api.nvim_win_get_buf(winid) == buf then
-        local cache = get_window_cache(winid)
-        Cache.invalidate(cache, "lsp_status")
-        M.refresh_window(winid)
-      end
-    end
-  end
-})
-
-api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
+autocmd({ "VimResized", "WinResized" }, {
   group = group,
   callback = function() vim.cmd("redrawstatus") end
 })
 
-api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
+autocmd({ "BufWinEnter", "WinEnter" }, {
   group = group,
-  callback = function() M.refresh() end
+  callback = function() refresh() end
 })
 
-api.nvim_create_autocmd("WinClosed", {
+autocmd("WinClosed", {
   group = group,
   callback = function(ev)
     local winid = tonumber(ev.match)
-    if winid then cleanup_window_cache(winid) end
+    if winid then cleanup_win_cache(winid) end
   end
 })
 
