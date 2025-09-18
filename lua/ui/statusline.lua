@@ -143,6 +143,7 @@ local hl = function(name, text)
 end
 
 local loaded = {}
+
 local safe_require = function(mod)
   if loaded[mod] ~= nil then
     return loaded[mod]
@@ -160,7 +161,7 @@ local is_excluded_buftype = function(win)
   return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
 end
 
-local is_active_window = function(winid)
+local is_active_win = function(winid)
   return winid == api.nvim_get_current_win()
 end
 
@@ -170,7 +171,7 @@ local refresh_win = function(winid)
     return
   end
 
-  local is_active = is_active_window(winid)
+  local is_active = is_active_win(winid)
   local is_excluded = is_excluded_buftype(winid)
 
   local expr
@@ -484,7 +485,7 @@ M.status_advanced = function(winid)
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
-  return left .. "%=" .. center .. "%=" .. right
+  return table.concat({left, center, right}, "%=")
 end
 
 local refresh = function(win)
