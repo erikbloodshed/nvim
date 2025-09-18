@@ -80,6 +80,7 @@ local function get_window_cache(winid)
       window_caches[winid] = Cache.new({
         mode = 50,
         simple_title = 3000,
+        inactive_filename = 3000,
       })
     else
       -- Simplified cache for regular windows - removed position and percentage
@@ -92,6 +93,7 @@ local function get_window_cache(winid)
         lsp_status = 2000,
         encoding = 120000,
         simple_title = 3000,
+        inactive_filename = 3000,
       })
     end
   end
@@ -195,7 +197,7 @@ local function get_file_icon(winid, filename, extension)
       window_file_icon_jobs[winid][cache_key] = nil
 
       local cache = get_window_cache(winid)
-      Cache.invalidate(cache, "file_info")
+      Cache.invalidate(cache, { "file_info", "inactive_filename" })
       if api.nvim_win_is_valid(winid) then
         M.refresh_window(winid)
       end
@@ -275,6 +277,21 @@ local function create_components(winid, bufnr)
         and hl("StatusLineModified", " " .. icons.modified) or ""
 
       return readonly_flag .. file_part .. modified_flag
+    end)
+  end
+
+  component.inactive_filename = function()
+    return Cache.get_or_set(cache, "inactive_filename", function()
+      local name = api.nvim_buf_get_name(bufnr)
+      local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
+      local extension = fn.fnamemodify(filename, ":e")
+      local icon = get_file_icon(winid, filename, extension)
+
+      -- For inactive windows, we don't need explicit highlight groups since StatusLineNC is applied automatically
+      local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
+        and " " .. icons.modified or ""
+
+      return icon .. filename .. modified_flag
     end)
   end
 
@@ -415,15 +432,29 @@ local function is_excluded_buftype(win)
   return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
 end
 
+local function is_active_window(winid)
+  return winid == api.nvim_get_current_win()
+end
+
 M.refresh_window = function(winid)
   if not api.nvim_win_is_valid(winid) then
     cleanup_window_cache(winid)
     return
   end
 
-  local main_expr = string.format('%%!v:lua.require("ui.statusline").status_advanced(%d)', winid)
-  local simple_expr = string.format('%%!v:lua.require("ui.statusline").status_simple(%d)', winid)
-  vim.wo[winid].statusline = is_excluded_buftype(winid) and simple_expr or main_expr
+  local is_active = is_active_window(winid)
+  local is_excluded = is_excluded_buftype(winid)
+
+  local expr
+  if is_excluded then
+    expr = string.format('%%!v:lua.require("ui.statusline").status_simple(%d)', winid)
+  elseif is_active then
+    expr = string.format('%%!v:lua.require("ui.statusline").status_advanced(%d)', winid)
+  else
+    expr = string.format('%%!v:lua.require("ui.statusline").status_inactive(%d)', winid)
+  end
+
+  vim.wo[winid].statusline = expr
 end
 
 M.refresh = function(win)
@@ -441,6 +472,14 @@ M.status_simple = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
   local C = create_components(winid, bufnr)
   local center = C.simple_title()
+  return "%=" .. center .. "%="
+end
+
+M.status_inactive = function(winid)
+  if not api.nvim_win_is_valid(winid) then return "" end
+  local bufnr = api.nvim_win_get_buf(winid)
+  local C = create_components(winid, bufnr)
+  local center = C.inactive_filename()
   return "%=" .. center .. "%="
 end
 
@@ -528,7 +567,8 @@ api.nvim_create_autocmd("BufEnter", {
   callback = function()
     local winid = api.nvim_get_current_win()
     local cache = get_window_cache(winid)
-    Cache.invalidate(cache, { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "simple_title" })
+    Cache.invalidate(cache,
+      { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "simple_title", "inactive_filename" })
     M.refresh_window(winid)
   end
 })
@@ -571,8 +611,8 @@ api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
 api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
   group = group,
   callback = function()
-    local winid = api.nvim_get_current_win()
-    M.refresh_window(winid)
+    -- Refresh all windows when entering a new window to update active/inactive states
+    M.refresh()
   end
 })
 
