@@ -409,7 +409,7 @@ local create_components = function(winid, bufnr)
         local count = counts[val[1]]
         if count and count > 0 then
           idx = idx + 1
-          p[idx] = hl(val[2], val[3] .. " " .. count)
+          p[idx] = hl(val[2], val[3] .. ":" .. count)
         end
       end
       return table.concat(p, " ", 1, idx)
