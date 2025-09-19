@@ -392,7 +392,7 @@ local create_components = function(winid, bufnr)
       end
 
       local parts = {}
-      for severity, opts in pairs(sev_map) do
+      for severity, opts in ipairs(sev_map) do
         local count = counts[severity]
         if count and count > 0 then
           tbl_insert(parts, hl(opts[1], opts[2] .. ":" .. count))
@@ -424,16 +424,14 @@ local width_for = function(cache, key_or_str)
   if width then return width end
 
   if type(key_or_str) == "string" then
-    local plain = key_or_str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
-    return fn.strdisplaywidth(plain)
+    return fn.strdisplaywidth(key_or_str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
   end
   return 0
 end
 
 M.status_simple = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
-  local bufnr = nvim_win_get_buf(winid)
-  local components = create_components(winid, bufnr)
+  local components = create_components(winid, nvim_win_get_buf(winid))
   return "%=" .. components.simple_title() .. "%="
 end
 
