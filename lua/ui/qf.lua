@@ -3,14 +3,14 @@ local M = {}
 
 local signs = {
   error = { text = icons.error, hl = 'DiagnosticSignError' },
-  warn  = { text = icons.warn, hl = 'DiagnosticSignWarn' },
-  info  = { text = icons.info, hl = 'DiagnosticSignInfo' },
-  hint  = { text = icons.hint, hl = 'DiagnosticSignHint' },
+  warn = { text = icons.warn, hl = 'DiagnosticSignWarn' },
+  info = { text = icons.info, hl = 'DiagnosticSignInfo' },
+  hint = { text = icons.hint, hl = 'DiagnosticSignHint' },
 }
 
 local namespace = vim.api.nvim_create_namespace('custom_qf')
-local show_multiple_lines = false
-local max_filename_length = 0
+local show_multiple_lines = true
+local max_filename_length = 30
 local filename_truncate_prefix = '...'
 
 local function pad_right(string, pad_to)
@@ -33,7 +33,7 @@ local function trim_path(path)
 
   if max_filename_length > 0 and len > max_filename_length then
     fname = filename_truncate_prefix
-        .. vim.fn.strpart(fname, len - max_filename_length, max_filename_length, 1)
+      .. vim.fn.strpart(fname, len - max_filename_length, max_filename_length, 1)
   end
 
   return fname
@@ -49,8 +49,7 @@ end
 
 local function apply_highlights(bufnr, highlights)
   if not vim.api.nvim_buf_is_valid(bufnr) then
-    -- print("Warning: Quickfix buffer invalidated before applying highlights")
-    return -- Exit the function if the buffer is not valid
+    return
   end
 
   for _, hl in ipairs(highlights) do
@@ -64,13 +63,12 @@ local function apply_highlights(bufnr, highlights)
     if #lines > 0 then
       line_length = lines[1]:len()
     else
-      goto continue -- Skip this highlight if the line is gone
+      goto continue
     end
 
     local end_col = hl.end_col
     if end_col < hl.col or end_col > line_length then
-      -- print("Warning: Invalid end_col value for highlight:", hl)
-      goto continue -- Skip if end_col is invalid
+      goto continue
     end
 
     vim.api.nvim_buf_set_extmark(
@@ -259,45 +257,6 @@ function M.format(info)
   return lines
 end
 
-local function create_highlight_groups()
-  local exists = pcall(function() return vim.api.nvim_get_hl(0, { name = 'QfAnnotation' }) end)
-
-  if not exists then
-    vim.api.nvim_set_hl(0, 'QfAnnotation', { link = 'Comment' })
-  end
-end
-
-function M.setup(opts)
-  opts = opts or {}
-
-  if opts.signs then
-    assert(type(opts.signs) == 'table', 'the "signs" option must be a table')
-    signs = vim.tbl_deep_extend('force', signs, opts.signs)
-  end
-
-  if opts.show_multiple_lines then
-    show_multiple_lines = true
-  end
-
-  if opts.max_filename_length then
-    max_filename_length = opts.max_filename_length
-    assert(
-      type(max_filename_length) == 'number',
-      'the "max_filename_length" option must be a number'
-    )
-  end
-
-  if opts.filename_truncate_prefix then
-    filename_truncate_prefix = opts.filename_truncate_prefix
-    assert(
-      type(filename_truncate_prefix) == 'string',
-      'the "filename_truncate_prefix" option must be a string'
-    )
-  end
-
-  create_highlight_groups()
-
-  vim.opt.quickfixtextfunc = "v:lua.require'ui.qf'.format"
-end
+vim.opt.quickfixtextfunc = "v:lua.require'ui.qf'.format"
 
 return M

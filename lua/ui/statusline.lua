@@ -12,6 +12,8 @@ local nvim_list_wins = api.nvim_list_wins
 local nvim_win_get_width = api.nvim_win_get_width
 local nvim_get_mode = api.nvim_get_mode
 local autocmd = api.nvim_create_autocmd
+local strformat = string.format
+local tbl_concat = table.concat
 
 local sev_map = {
   { severity.ERROR, "DiagnosticError", icons.error },
@@ -119,7 +121,7 @@ local modes = {
 }
 
 local hl = function(name, text)
-  return string.format(HL_FORMAT, name, text)
+  return strformat(HL_FORMAT, name, text)
 end
 
 local loaded = {}
@@ -170,11 +172,11 @@ local refresh_win = function(winid)
 
   local expr
   if is_excluded then
-    expr = string.format(STATUS_EXPR_SIMPLE, winid)
+    expr = strformat(STATUS_EXPR_SIMPLE, winid)
   elseif is_active then
-    expr = string.format(STATUS_EXPR_ADVANCED, winid)
+    expr = strformat(STATUS_EXPR_ADVANCED, winid)
   else
-    expr = string.format(STATUS_EXPR_INACTIVE, winid)
+    expr = strformat(STATUS_EXPR_INACTIVE, winid)
   end
 
   vim.wo[winid].statusline = expr
@@ -187,7 +189,7 @@ local get_file_icon = function(winid, filename, extension, use_colors)
     win_file_icon_data[winid] = file_icon_cache
   end
 
-  local cache_key = string.format("%s.%s%s", filename, extension or "", use_colors and "_c" or "_p")
+  local cache_key = strformat("%s.%s%s", filename, extension or "", use_colors and "_c" or "_p")
   local cached_value = file_icon_cache[cache_key]
 
   if type(cached_value) == "string" then return cached_value end
@@ -257,14 +259,6 @@ local fetch_git_branch = function(winid, root)
   )
 end
 
-local get_file_parts = function(winid, bufnr, is_active)
-  local name = nvim_buf_get_name(bufnr)
-  local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
-  local extension = fn.fnamemodify(filename, ":e")
-  local icon = get_file_icon(winid, filename, extension, is_active)
-  return filename, icon
-end
-
 local STATUS_FLAGS = {
   readonly = " " .. icons.readonly,
   modified = " " .. icons.modified,
@@ -282,36 +276,46 @@ local create_components = function(winid, bufnr)
     end)
   end
 
+  component.file_parts = function()
+    return cache_lookup(cache, "file_parts", function()
+      local name = nvim_buf_get_name(bufnr)
+      if name == "" then
+        return { filename = "[No Name]", extension = "" }
+      end
+      local filename = fn.fnamemodify(name, ":t")
+      local extension = fn.fnamemodify(filename, ":e")
+      return { filename = filename, extension = extension }
+    end)
+  end
+
   component.file_info = function()
     return cache_lookup(cache, "file_info", function()
-      local filename, icon = get_file_parts(winid, bufnr, true)
+      local parts = component.file_parts()
+      local icon = get_file_icon(winid, parts.filename, parts.extension, true)
       local props = get_buf_props(bufnr)
-
       local status_flag = ""
       if props.readonly then
         status_flag = hl("StatusLineReadonly", STATUS_FLAGS.readonly)
       elseif props.modified then
         status_flag = hl("StatusLineModified", STATUS_FLAGS.modified)
       end
-
-      local file_part = hl("StatusLineFile", icon .. filename)
+      local file_part = hl("StatusLineFile", icon .. parts.filename)
       return file_part .. status_flag
     end)
   end
 
   component.inactive_filename = function()
     return cache_lookup(cache, "inactive_filename", function()
-      local filename, icon = get_file_parts(winid, bufnr, false)
+      local parts = component.file_parts()
+      local icon = get_file_icon(winid, parts.filename, parts.extension, false)
       local props = get_buf_props(bufnr)
-
       local status_flag = ""
       if props.readonly then
         status_flag = STATUS_FLAGS.readonly
       elseif props.modified then
         status_flag = STATUS_FLAGS.modified
       end
-
-      return icon .. filename .. status_flag
+      return string.format("%s%s%s", icon, parts.filename, status_flag)
     end)
   end
 
@@ -328,7 +332,6 @@ local create_components = function(winid, bufnr)
           lazy = icons.sleep .. " Lazy",
           ["neo-tree"] = icons.file_tree .. " File Explorer",
           ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
-          NvimTree = icons.file_tree .. " Files Explorer",
           lspinfo = icons.info .. " LSP Info",
           checkhealth = icons.status .. " Health",
           man = icons.book .. " Manual",
@@ -338,8 +341,7 @@ local create_components = function(winid, bufnr)
       }
 
       local title = title_map.buftype[props.buftype] or
-        title_map.filetype[props.filetype] or
-        "no file"
+        title_map.filetype[props.filetype] or "no file"
 
       return hl("String", title)
     end)
@@ -412,7 +414,7 @@ local create_components = function(winid, bufnr)
           p[idx] = hl(val[2], val[3] .. ":" .. count)
         end
       end
-      return table.concat(p, " ", 1, idx)
+      return tbl_concat(p, " ", 1, idx)
     end)
   end
 
@@ -425,7 +427,7 @@ local create_components = function(winid, bufnr)
       for i = 1, #clients do
         names[i] = clients[i].name
       end
-      return hl("StatusLineLsp", icons.lsp .. " " .. table.concat(names, ", "))
+      return hl("StatusLineLsp", icons.lsp .. " " .. tbl_concat(names, ", "))
     end)
   end
 
@@ -458,7 +460,7 @@ M.status_inactive = function(winid)
   return "%=" .. center .. "%="
 end
 
-local POSITION_FORMAT = table.concat({
+local POSITION_FORMAT = tbl_concat({
   hl("StatusLineLabel", "Ln "),
   hl("StatusLineValue", "%l"),
   hl("StatusLineLabel", ", Col "),
@@ -486,7 +488,7 @@ M.status_advanced = function(winid)
     left_segments[left_idx] = git_branch
   end
 
-  local left = table.concat(left_segments, " ", 1, left_idx)
+  local left = tbl_concat(left_segments, " ", 1, left_idx)
 
   local right_list = {}
   local right_idx = 0
@@ -509,7 +511,8 @@ M.status_advanced = function(winid)
   right_idx = right_idx + 1
   right_list[right_idx] = hl("StatusLineValue", "%P")
 
-  local right = table.concat(right_list, hl("StatusLineSeparator", config.seps.section), 1, right_idx)
+  local right = tbl_concat(
+    right_list, hl("StatusLineSeparator", config.seps.section), 1, right_idx)
   local center = components.file_info()
 
   local w_left = width_for(cache, left)
@@ -519,10 +522,10 @@ M.status_advanced = function(winid)
 
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return left .. string.rep(" ", gap) .. center .. "%=" .. right
+    return strformat("%s%s%s%%=%s", left, string.rep(" ", gap), center, right)
   end
 
-  return table.concat({ left, center, right }, "%=")
+  return tbl_concat({ left, center, right }, "%=")
 end
 
 local refresh = function(win)
@@ -570,7 +573,8 @@ autocmd("BufEnter", {
     local winid = nvim_get_current_win()
     local cache = get_win_cache(winid)
     cache_invalidate(cache,
-      { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "inactive_filename" })
+      { "git_branch", "file_parts", "file_info", "directory", "lsp_status",
+        "diagnostics", "inactive_filename" })
     refresh_win(winid)
   end
 })

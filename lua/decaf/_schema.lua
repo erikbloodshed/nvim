@@ -208,7 +208,7 @@ function M.get(c, o)
     ["@label"] = { link = "Label" },
 
     ["@string"] = { link = "String" },
-    ["@string.documentation"] = { link = "String" },
+    ["@string.documentation"] = { link = "Character" },
     ["@string.regexp"] = { link = "Constant" },
     ["@string.escape"] = { link = "Special" },
     ["@string.special"] = { link = "Special" },

@@ -14,7 +14,7 @@ lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {
   callback = function(args)
-    require("ui.qf").setup({ show_multiple_lines = false, max_filename_length = 30, })
+    require("ui.qf")
 
     local icons = require("ui.icons")
     local x = diagnostic.severity
