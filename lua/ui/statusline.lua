@@ -108,8 +108,8 @@ end
 local is_excluded_buftype = function(win)
   if not api.nvim_win_is_valid(win) then return false end
   local buf = api.nvim_win_get_buf(win)
-  local bt = api.nvim_get_option_value("buftype", { buf = buf })
-  local ft = api.nvim_get_option_value("filetype", { buf = buf })
+  local bt = vim.bo[buf].buftype
+  local ft = vim.bo[buf].filetype
   return config.exclude.buftypes[bt] or config.exclude.filetypes[ft]
 end
 
@@ -213,6 +213,15 @@ local fetch_git_branch = function(winid, root)
   )
 end
 
+local get_file_parts = function(winid, bufnr, is_active)
+  local name = api.nvim_buf_get_name(bufnr)
+  local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
+  local extension = fn.fnamemodify(filename, ":e")
+  local icon = get_file_icon(winid, filename, extension, is_active)
+
+  return filename, icon
+end
+
 local create_components = function(winid, bufnr)
   local cache = get_win_cache(winid)
   local component = {}
@@ -226,10 +235,8 @@ local create_components = function(winid, bufnr)
 
   component.file_info = function()
     return cache_lookup(cache, "file_info", function()
-      local name = api.nvim_buf_get_name(bufnr)
-      local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
-      local extension = fn.fnamemodify(filename, ":e")
-      local icon = get_file_icon(winid, filename, extension, true)
+      local filename, icon = get_file_parts(winid, bufnr, true)
+
       local status_flag = (vim.bo[bufnr].readonly and hl("StatusLineReadonly", " " .. icons.readonly)) or
         (vim.bo[bufnr].modified and hl("StatusLineModified", " " .. icons.modified)) or ""
       local file_part = hl("StatusLineFile", icon .. filename)
@@ -239,15 +246,12 @@ local create_components = function(winid, bufnr)
 
   component.inactive_filename = function()
     return cache_lookup(cache, "inactive_filename", function()
-      local name = api.nvim_buf_get_name(bufnr)
-      local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
-      local extension = fn.fnamemodify(filename, ":e")
-      local icon = get_file_icon(winid, filename, extension)
+      local filename, icon = get_file_parts(winid, bufnr, false)
 
       local status_flag = ""
-      if api.nvim_get_option_value("readonly", { buf = bufnr }) then
+      if vim.bo[bufnr].readonly then
         status_flag = " " .. icons.readonly
-      elseif api.nvim_get_option_value("modified", { buf = bufnr }) then
+      elseif vim.bo[bufnr].modified then
         status_flag = " " .. icons.modified
       end
 
@@ -257,8 +261,8 @@ local create_components = function(winid, bufnr)
 
   component.simple_title = function()
     return cache_lookup(cache, "simple_title", function()
-      local bt = api.nvim_get_option_value("buftype", { buf = bufnr })
-      local ft = api.nvim_get_option_value("filetype", { buf = bufnr })
+      local bt = vim.bo[bufnr].buftype
+      local ft = vim.bo[bufnr].filetype
       local title_map = {
         buftype = {
           terminal = icons.terminal .. " terminal",
