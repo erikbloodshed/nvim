@@ -6,11 +6,9 @@ return {
 
     autopairs.setup()
 
-    -- Autoclosing angle-brackets.
     local rule = require("nvim-autopairs.rule")
     local conds = require("nvim-autopairs.conds")
     autopairs.add_rule(rule("<", ">", {
-      -- Avoid conflicts with nvim-ts-autotag.
       "-html",
       "-javascriptreact",
       "-typescriptreact",

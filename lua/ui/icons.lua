@@ -16,4 +16,5 @@ return {
   warn = "󱈸",
   terminal = "",
   dock = "󱂬",
+  ok = ""
 }

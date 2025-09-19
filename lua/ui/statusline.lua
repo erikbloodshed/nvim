@@ -1,8 +1,16 @@
 local api, fn = vim.api, vim.fn
 local autocmd = vim.api.nvim_create_autocmd
+local severity = vim.diagnostic.severity
 local icons = require("ui.icons")
 
 local M = {}
+
+local sev_map = {
+  { severity.ERROR, "DiagnosticError", icons.error },
+  { severity.WARN, "DiagnosticWarn", icons.warn },
+  { severity.INFO, "DiagnosticInfo", icons.info },
+  { severity.HINT, "DiagnosticHint", icons.hint },
+}
 
 local cache_new = function()
   return {
@@ -337,17 +345,14 @@ local create_components = function(winid, bufnr)
   component.diagnostics = function()
     return cache_lookup(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
-      local s = vim.diagnostic.severity
-      local sev_map = {
-        { s.ERROR, "StatusLineDiagError", icons.error },
-        { s.WARN, "StatusLineDiagWarn", icons.warn },
-        { s.INFO, "StatusLineDiagInfo", icons.info },
-        { s.HINT, "StatusLineDiagHint", icons.hint },
-      }
+
+      if not counts or vim.tbl_isempty(counts) then
+        return hl("DiagnosticOk", icons.ok)
+      end
       local p = {}
-      for _, v in ipairs(sev_map) do
-        local c = counts[v[1]]
-        if c and c > 0 then p[#p + 1] = hl(v[2], v[3] .. " " .. c) end
+      for _, val in ipairs(sev_map) do
+        local count = counts[val[1]]
+        if count and count > 0 then p[#p + 1] = hl(val[2], val[3] .. " " .. count) end
       end
       return table.concat(p, " ")
     end)
@@ -404,8 +409,8 @@ M.status_advanced = function(winid)
   if git_branch ~= "" then left_segments[#left_segments + 1] = git_branch end
 
   local left = table.concat(left_segments, " ")
-
   local right_list = {}
+
   local push = function(val)
     if val and val ~= "" then
       right_list[#right_list + 1] = val
@@ -415,8 +420,12 @@ M.status_advanced = function(winid)
   push(components.diagnostics())
   push(components.lsp_status())
 
-  push(hl("StatusLineLabel", "Ln ") .. hl("StatusLineValue", "%l") ..
-    hl("StatusLineLabel", ", Col ") .. hl("StatusLineValue", "%v"))
+  push(table.concat({
+    hl("StatusLineLabel", "Ln "),
+    hl("StatusLineValue", "%l"),
+    hl("StatusLineLabel", ", Col "),
+    hl("StatusLineValue", "%v")
+  }, ""))
   push(hl("StatusLineValue", "%P"))
 
   local right = table.concat(right_list, hl("StatusLineSeparator", config.seps.section))
@@ -510,7 +519,9 @@ autocmd({ "LspAttach", "LspDetach", "DiagnosticChanged" }, {
 
 autocmd({ "VimResized", "WinResized" }, {
   group = group,
-  callback = function() vim.cmd("redrawstatus") end
+  callback = function()
+    api.nvim_cmd({ cmd = "redrawstatus" }, {})
+  end
 })
 
 autocmd({ "BufWinEnter", "WinEnter" }, {
