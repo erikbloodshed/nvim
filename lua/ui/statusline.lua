@@ -74,12 +74,7 @@ local win_git_data = setmetatable({}, { __mode = "k" })
 local win_file_icon_data = setmetatable({}, { __mode = "k" })
 
 local get_win_cache = function(winid)
-  local cache = win_caches[winid]
-  if not cache then
-    cache = cache_new()
-    win_caches[winid] = cache
-  end
-  return cache
+  return win_caches[winid] or cache_new()
 end
 
 local cleanup_win_cache = function(winid)
