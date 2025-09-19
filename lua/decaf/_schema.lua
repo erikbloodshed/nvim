@@ -74,7 +74,6 @@ function M.get(c, o)
     StatusLineModified = { fg = c.yellow },
     StatusLineReadonly = { fg = c.red },
     StatusLineFile = { fg = c.text },
-    StatusLineDirectory = { link = "Directory" },
     StatusLineLsp = { fg = c.mauve },
     StatusLineLabel = { fg = c.subtext0 },
     StatusLineValue = { link = "StatusLineGit" },
