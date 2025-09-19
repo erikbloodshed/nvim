@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-local severity = vim.diagnostic.severity
 local icons = require("ui.icons")
 
 local M = {}
@@ -14,12 +13,16 @@ local nvim_get_mode = api.nvim_get_mode
 local autocmd = api.nvim_create_autocmd
 local strformat = string.format
 local tbl_concat = table.concat
+local tbl_insert = table.insert
+local tbl_filter = vim.tbl_filter
+local tbl_isempty = vim.tbl_isempty
 
+local x = vim.diagnostic.severity
 local sev_map = {
-  { severity.ERROR, "DiagnosticError", icons.error },
-  { severity.WARN, "DiagnosticWarn", icons.warn },
-  { severity.INFO, "DiagnosticInfo", icons.info },
-  { severity.HINT, "DiagnosticHint", icons.hint },
+  [x.ERROR] = { "DiagnosticError", icons.error },
+  [x.WARN] = { "DiagnosticWarn", icons.warn },
+  [x.INFO] = { "DiagnosticInfo", icons.info },
+  [x.HINT] = { "DiagnosticHint", icons.hint },
 }
 
 local HL_FORMAT = "%%#%s#%s%%*"
@@ -152,8 +155,7 @@ end
 
 local is_excluded_buftype = function(win)
   if not nvim_win_is_valid(win) then return false end
-  local buf = nvim_win_get_buf(win)
-  local props = get_buf_props(buf)
+  local props = get_buf_props(nvim_win_get_buf(win))
   return config.exclude.buftypes[props.buftype] or config.exclude.filetypes[props.filetype]
 end
 
@@ -259,10 +261,8 @@ local fetch_git_branch = function(winid, root)
   )
 end
 
-local STATUS_FLAGS = {
-  readonly = " " .. icons.readonly,
-  modified = " " .. icons.modified,
-}
+local HL_READONLY = " " .. hl("StatusLineReadonly", icons.readonly)
+local HL_MODIFIED = " " .. hl("StatusLineModified", icons.modified)
 
 local create_components = function(winid, bufnr)
   local cache = get_win_cache(winid)
@@ -293,12 +293,8 @@ local create_components = function(winid, bufnr)
       local parts = component.file_parts()
       local icon = get_file_icon(winid, parts.filename, parts.extension, true)
       local props = get_buf_props(bufnr)
-      local status_flag = ""
-      if props.readonly then
-        status_flag = hl("StatusLineReadonly", STATUS_FLAGS.readonly)
-      elseif props.modified then
-        status_flag = hl("StatusLineModified", STATUS_FLAGS.modified)
-      end
+      local status_flag = props.readonly and HL_READONLY or
+        props.modified and HL_MODIFIED or ""
       local file_part = hl("StatusLineFile", icon .. parts.filename)
       return file_part .. status_flag
     end)
@@ -309,12 +305,8 @@ local create_components = function(winid, bufnr)
       local parts = component.file_parts()
       local icon = get_file_icon(winid, parts.filename, parts.extension, false)
       local props = get_buf_props(bufnr)
-      local status_flag = ""
-      if props.readonly then
-        status_flag = STATUS_FLAGS.readonly
-      elseif props.modified then
-        status_flag = STATUS_FLAGS.modified
-      end
+      local status_flag = props.readonly and " " .. icons.readonly or
+        props.modified and " " .. icons.modified or ""
       return string.format("%s%s%s", icon, parts.filename, status_flag)
     end)
   end
@@ -400,21 +392,19 @@ local create_components = function(winid, bufnr)
     return cache_lookup(cache, "diagnostics", function()
       local counts = vim.diagnostic.count(bufnr)
 
-      if not counts or vim.tbl_isempty(counts) then
+      if tbl_isempty(counts) then
         return hl("DiagnosticOk", icons.ok)
       end
 
-      local p = {}
-      local idx = 0
-      for i = 1, #sev_map do
-        local val = sev_map[i]
-        local count = counts[val[1]]
+      local parts = {}
+      for severity, opts in ipairs(sev_map) do
+        local count = counts[severity]
         if count and count > 0 then
-          idx = idx + 1
-          p[idx] = hl(val[2], val[3] .. ":" .. count)
+          tbl_insert(parts, hl(opts[1], opts[2] .. ":" .. count))
         end
       end
-      return tbl_concat(p, " ", 1, idx)
+
+      return tbl_concat(parts, " ")
     end)
   end
 
@@ -460,12 +450,13 @@ M.status_inactive = function(winid)
   return "%=" .. center .. "%="
 end
 
-local POSITION_FORMAT = tbl_concat({
-  hl("StatusLineLabel", "Ln "),
-  hl("StatusLineValue", "%l"),
-  hl("StatusLineLabel", ", Col "),
-  hl("StatusLineValue", "%v")
-}, "")
+local POS_FORMAT = tbl_concat({
+  hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
+  hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v") })
+local PERCENT_FORMAT = hl("StatusLineValue", "%P")
+local SEP = hl("StatusLineSeparator", config.seps.section)
+
+local filter = function(v) return v ~= "" end
 
 M.status_advanced = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
@@ -473,48 +464,15 @@ M.status_advanced = function(winid)
   local cache = get_win_cache(winid)
   local components = create_components(winid, bufnr)
 
-  local left_segments = { components.mode() }
-  local left_idx = 1
+  local left = tbl_concat(tbl_filter(filter, {
+    components.mode(), components.directory(), components.git_branch()
+  }), " ")
 
-  local directory = components.directory()
-  if directory ~= "" then
-    left_idx = left_idx + 1
-    left_segments[left_idx] = directory
-  end
+  local right = tbl_concat(tbl_filter(filter, {
+    components.diagnostics(), components.lsp_status(), POS_FORMAT, PERCENT_FORMAT
+  }), SEP)
 
-  local git_branch = components.git_branch()
-  if git_branch ~= "" then
-    left_idx = left_idx + 1
-    left_segments[left_idx] = git_branch
-  end
-
-  local left = tbl_concat(left_segments, " ", 1, left_idx)
-
-  local right_list = {}
-  local right_idx = 0
-
-  local diag = components.diagnostics()
-  if diag and diag ~= "" then
-    right_idx = right_idx + 1
-    right_list[right_idx] = diag
-  end
-
-  local lsp = components.lsp_status()
-  if lsp and lsp ~= "" then
-    right_idx = right_idx + 1
-    right_list[right_idx] = lsp
-  end
-
-  right_idx = right_idx + 1
-  right_list[right_idx] = POSITION_FORMAT
-
-  right_idx = right_idx + 1
-  right_list[right_idx] = hl("StatusLineValue", "%P")
-
-  local right = tbl_concat(
-    right_list, hl("StatusLineSeparator", config.seps.section), 1, right_idx)
   local center = components.file_info()
-
   local w_left = width_for(cache, left)
   local w_right = width_for(cache, right)
   local w_center = cache.widths.file_info or width_for(cache, center)
