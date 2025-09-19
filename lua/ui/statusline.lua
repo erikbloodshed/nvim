@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-local autocmd = vim.api.nvim_create_autocmd
 local severity = vim.diagnostic.severity
 local icons = require("ui.icons")
 
@@ -12,6 +11,7 @@ local nvim_get_current_win = api.nvim_get_current_win
 local nvim_list_wins = api.nvim_list_wins
 local nvim_win_get_width = api.nvim_win_get_width
 local nvim_get_mode = api.nvim_get_mode
+local autocmd = api.nvim_create_autocmd
 
 local sev_map = {
   { severity.ERROR, "DiagnosticError", icons.error },
@@ -20,7 +20,6 @@ local sev_map = {
   { severity.HINT, "DiagnosticHint", icons.hint },
 }
 
--- Pre-compile format strings
 local HL_FORMAT = "%%#%s#%s%%*"
 local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
 local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
@@ -35,9 +34,7 @@ end
 
 local cache_update = function(cache, key, value)
   cache.data[key] = value
-  -- Optimize string width calculation
   if type(value) == "string" then
-    -- Pre-compile regex patterns for better performance
     local plain = value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
     cache.widths[key] = fn.strdisplaywidth(plain)
   else
@@ -67,7 +64,6 @@ local cache_invalidate = function(cache, keys)
   end
 end
 
--- Use weak tables for automatic garbage collection
 local win_caches = setmetatable({}, { __mode = "k" })
 local win_git_data = setmetatable({}, { __mode = "k" })
 local win_file_icon_data = setmetatable({}, { __mode = "k" })
@@ -136,7 +132,6 @@ local safe_require = function(mod)
   return loaded[mod]
 end
 
--- Cache buffer properties to avoid repeated vim.bo lookups
 local buf_cache = setmetatable({}, { __mode = "k" })
 
 local get_buf_props = function(buf)
@@ -192,7 +187,7 @@ local get_file_icon = function(winid, filename, extension, use_colors)
     win_file_icon_data[winid] = file_icon_cache
   end
 
-  local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_c" or "_p")
+  local cache_key = string.format("%s.%s%s", filename, extension or "", use_colors and "_c" or "_p")
   local cached_value = file_icon_cache[cache_key]
 
   if type(cached_value) == "string" then return cached_value end
@@ -270,7 +265,6 @@ local get_file_parts = function(winid, bufnr, is_active)
   return filename, icon
 end
 
--- Pre-create commonly used strings
 local STATUS_FLAGS = {
   readonly = " " .. icons.readonly,
   modified = " " .. icons.modified,
@@ -325,7 +319,6 @@ local create_components = function(winid, bufnr)
     return cache_lookup(cache, "simple_title", function()
       local props = get_buf_props(bufnr)
 
-      -- Static lookup table
       local title_map = {
         buftype = {
           terminal = icons.terminal .. " terminal",
@@ -409,7 +402,6 @@ local create_components = function(winid, bufnr)
         return hl("DiagnosticOk", icons.ok)
       end
 
-      -- Pre-allocate table with max size
       local p = {}
       local idx = 0
       for i = 1, #sev_map do
@@ -429,7 +421,6 @@ local create_components = function(winid, bufnr)
       local clients = vim.lsp.get_clients({ bufnr = bufnr })
       if not clients or #clients == 0 then return "" end
 
-      -- Pre-allocate table
       local names = {}
       for i = 1, #clients do
         names[i] = clients[i].name
@@ -467,7 +458,6 @@ M.status_inactive = function(winid)
   return "%=" .. center .. "%="
 end
 
--- Pre-create static strings
 local POSITION_FORMAT = table.concat({
   hl("StatusLineLabel", "Ln "),
   hl("StatusLineValue", "%l"),
@@ -481,7 +471,6 @@ M.status_advanced = function(winid)
   local cache = get_win_cache(winid)
   local components = create_components(winid, bufnr)
 
-  -- Build left segments
   local left_segments = { components.mode() }
   local left_idx = 1
 
@@ -499,7 +488,6 @@ M.status_advanced = function(winid)
 
   local left = table.concat(left_segments, " ", 1, left_idx)
 
-  -- Build right segments efficiently
   local right_list = {}
   local right_idx = 0
 
@@ -549,7 +537,6 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
--- Invalidate buffer cache when buffer properties change
 local invalidate_buf_cache = function(buf)
   buf_cache[buf] = nil
 end
@@ -637,7 +624,6 @@ autocmd("WinClosed", {
   end
 })
 
--- Add autocmd to invalidate buffer cache on property changes
 autocmd({ "BufWritePost", "FileType", "BufReadPost" }, {
   group = group,
   callback = function(ev)
