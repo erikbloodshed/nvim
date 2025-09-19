@@ -1,38 +1,18 @@
-local api, fn, uv = vim.api, vim.fn, vim.uv
+local api, fn = vim.api, vim.fn
 local autocmd = vim.api.nvim_create_autocmd
 local icons = require("ui.icons")
 
 local M = {}
 
-local cache_new = function(ttl_map)
+local cache_new = function()
   return {
     data = {},
-    ts = {},
     widths = {},
-    ttl = ttl_map or {},
   }
-end
-
-local cache_now = function()
-  return uv.hrtime() / 1e6
-end
-
-local cache_valid = function(cache, key)
-  local v = cache.data[key]
-  if v == nil then
-    return false
-  end
-  local created = cache.ts[key]
-  if not created then
-    return false
-  end
-  local ttl = cache.ttl[key] or 1000
-  return (cache_now() - created) < ttl
 end
 
 local cache_update = function(cache, key, value)
   cache.data[key] = value
-  cache.ts[key] = cache_now()
   if type(value) == "string" then
     local plain = value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
     cache.widths[key] = fn.strdisplaywidth(plain)
@@ -42,15 +22,16 @@ local cache_update = function(cache, key, value)
 end
 
 local cache_lookup = function(cache, key, fnc)
-  if cache_valid(cache, key) then
-    return cache.data[key]
+  local v = cache.data[key]
+  if v ~= nil then
+    return v
   end
-  local ok, v = pcall(fnc)
+  local ok, res = pcall(fnc)
   if not ok then
-    v = ""
+    res = ""
   end
-  cache_update(cache, key, v)
-  return v
+  cache_update(cache, key, res)
+  return res
 end
 
 local cache_invalidate = function(cache, keys)
@@ -62,7 +43,6 @@ local cache_invalidate = function(cache, keys)
   end
   for _, k in ipairs(keys) do
     cache.data[k] = nil
-    cache.ts[k] = nil
     cache.widths[k] = nil
   end
 end
@@ -73,26 +53,7 @@ local win_file_icon_data = {}
 
 local get_win_cache = function(winid)
   if not win_caches[winid] then
-    local bt = api.nvim_get_option_value("buftype", { buf = api.nvim_win_get_buf(winid) })
-    if bt == "popup" then
-      win_caches[winid] = cache_new({
-        mode = 50,
-        simple_title = 3000,
-        inactive_filename = 3000,
-      })
-    else
-      win_caches[winid] = cache_new({
-        mode = 50,
-        file_info = 200,
-        directory = 60000,
-        git_branch = 60000,
-        diagnostics = 500,
-        lsp_status = 2000,
-        encoding = 120000,
-        simple_title = 3000,
-        inactive_filename = 3000,
-      })
-    end
+    win_caches[winid] = cache_new()
   end
   return win_caches[winid]
 end
@@ -171,8 +132,8 @@ local refresh_win = function(winid)
     return
   end
 
-  local is_active = is_active_win(winid)
   local is_excluded = is_excluded_buftype(winid)
+  local is_active = is_active_win(winid)
 
   local expr
   if is_excluded then
@@ -193,7 +154,6 @@ local get_file_icon = function(winid, filename, extension, use_colors)
 
   local cache = win_file_icon_data[winid]
   local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_colored" or "_plain")
-
   local cached_value = cache[cache_key]
 
   if type(cached_value) == "string" then
@@ -531,6 +491,21 @@ autocmd("BufEnter", {
     cache_invalidate(cache,
       { "git_branch", "file_info", "directory", "lsp_status", "diagnostics", "inactive_filename" })
     refresh_win(winid)
+  end
+})
+
+-- Added autocmd for updating the modified flag
+autocmd("BufModifiedSet", {
+  group = group,
+  callback = function(ev)
+    local buf = ev.buf
+    for _, winid in ipairs(api.nvim_list_wins()) do
+      if api.nvim_win_get_buf(winid) == buf then
+        local cache = get_win_cache(winid)
+        cache_invalidate(cache, {"file_info", "inactive_filename"})
+        refresh_win(winid)
+      end
+    end
   end
 })
 
