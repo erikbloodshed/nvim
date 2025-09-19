@@ -14,8 +14,7 @@ end
 local cache_update = function(cache, key, value)
   cache.data[key] = value
   if type(value) == "string" then
-    local plain = value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
-    cache.widths[key] = fn.strdisplaywidth(plain)
+    cache.widths[key] = fn.strdisplaywidth(value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
   else
     cache.widths[key] = nil
   end
@@ -218,7 +217,6 @@ local get_file_parts = function(winid, bufnr, is_active)
   local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
   local extension = fn.fnamemodify(filename, ":e")
   local icon = get_file_icon(winid, filename, extension, is_active)
-
   return filename, icon
 end
 
@@ -261,8 +259,8 @@ local create_components = function(winid, bufnr)
 
   component.simple_title = function()
     return cache_lookup(cache, "simple_title", function()
-      local bt = vim.bo[bufnr].buftype
-      local ft = vim.bo[bufnr].filetype
+      local buftype = vim.bo[bufnr].buftype
+      local filetype = vim.bo[bufnr].filetype
       local title_map = {
         buftype = {
           terminal = icons.terminal .. " terminal",
@@ -283,10 +281,10 @@ local create_components = function(winid, bufnr)
 
       local title = "no file"
 
-      if title_map.buftype[bt] then
-        title = title_map.buftype[bt]
-      elseif title_map.filetype[ft] then
-        title = title_map.filetype[ft]
+      if title_map.buftype[buftype] then
+        title = title_map.buftype[buftype]
+      elseif title_map.filetype[filetype] then
+        title = title_map.filetype[filetype]
       end
 
       return hl("String", title)
@@ -399,7 +397,6 @@ end
 
 M.status_advanced = function(winid)
   if not api.nvim_win_is_valid(winid) then return "" end
-
   local bufnr = api.nvim_win_get_buf(winid)
   local cache = get_win_cache(winid)
   local components = create_components(winid, bufnr)
