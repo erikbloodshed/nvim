@@ -397,7 +397,7 @@ local create_components = function(winid, bufnr)
       end
 
       local parts = {}
-      for severity, opts in ipairs(sev_map) do
+      for severity, opts in pairs(sev_map) do
         local count = counts[severity]
         if count and count > 0 then
           tbl_insert(parts, hl(opts[1], opts[2] .. ":" .. count))
@@ -498,10 +498,6 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-local invalidate_buf_cache = function(buf)
-  buf_cache[buf] = nil
-end
-
 autocmd("ModeChanged", {
   group = group,
   callback = function()
@@ -537,32 +533,34 @@ autocmd("BufEnter", {
   end
 })
 
+local update_win_for_buf = function(buf, cache_keys)
+  for _, winid in ipairs(nvim_list_wins()) do
+    if nvim_win_get_buf(winid) == buf then
+      cache_invalidate(get_win_cache(winid), cache_keys)
+      refresh_win(winid)
+    end
+  end
+end
+
 autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
-    local buf = ev.buf
-    invalidate_buf_cache(buf)
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_win_get_buf(winid) == buf then
-        local cache = get_win_cache(winid)
-        cache_invalidate(cache, { "file_info", "inactive_filename" })
-        refresh_win(winid)
-      end
-    end
+    buf_cache[ev.buf] = nil
+    update_win_for_buf(ev.buf, { "file_info", "inactive_filename" })
   end
 })
 
-autocmd({ "LspAttach", "LspDetach", "DiagnosticChanged" }, {
+autocmd({ "LspAttach", "LspDetach" }, {
   group = group,
   callback = function(ev)
-    local buf = ev.buf
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_win_get_buf(winid) == buf then
-        local cache = get_win_cache(winid)
-        cache_invalidate(cache, { "lsp_status", "diagnostics" })
-        refresh_win(winid)
-      end
-    end
+    update_win_for_buf(ev.buf, "lsp_status")
+  end
+})
+
+autocmd({ "DiagnosticChanged" }, {
+  group = group,
+  callback = function(ev)
+    update_win_for_buf(ev.buf, "diagnostics")
   end
 })
 
@@ -589,7 +587,7 @@ autocmd("WinClosed", {
 autocmd({ "BufWritePost", "FileType", "BufReadPost" }, {
   group = group,
   callback = function(ev)
-    invalidate_buf_cache(ev.buf)
+    buf_cache[ev.buf] = nil
   end
 })
 
