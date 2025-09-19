@@ -22,25 +22,16 @@ local cache_update = function(cache, key, value)
 end
 
 local cache_lookup = function(cache, key, fnc)
-  local v = cache.data[key]
-  if v ~= nil then
-    return v
-  end
+  local value = cache.data[key]
+  if value ~= nil then return value end
   local ok, res = pcall(fnc)
-  if not ok then
-    res = ""
-  end
-  cache_update(cache, key, res)
+  cache_update(cache, key, ok and res or "")
   return res
 end
 
 local cache_invalidate = function(cache, keys)
-  if not keys then
-    return
-  end
-  if type(keys) == "string" then
-    keys = { keys }
-  end
+  if not keys then return end
+  if type(keys) == "string" then keys = { keys } end
   for _, k in ipairs(keys) do
     cache.data[k] = nil
     cache.widths[k] = nil
@@ -156,13 +147,8 @@ local get_file_icon = function(winid, filename, extension, use_colors)
   local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_colored" or "_plain")
   local cached_value = cache[cache_key]
 
-  if type(cached_value) == "string" then
-    return cached_value
-  end
-
-  if cached_value == false then
-    return ""
-  end
+  if type(cached_value) == "string" then return cached_value end
+  if cached_value == false then return "" end
 
   cache[cache_key] = false
 
@@ -244,16 +230,10 @@ local create_components = function(winid, bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
       local icon = get_file_icon(winid, filename, extension, true)
-
-      local readonly_flag = api.nvim_get_option_value("readonly", { buf = bufnr })
-        and hl("StatusLineReadonly", icons.readonly .. " ") or ""
-
+      local status_flag = (vim.bo[bufnr].readonly and hl("StatusLineReadonly", " " .. icons.readonly)) or
+        (vim.bo[bufnr].modified and hl("StatusLineModified", " " .. icons.modified)) or ""
       local file_part = hl("StatusLineFile", icon .. filename)
-
-      local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
-        and hl("StatusLineModified", " " .. icons.modified) or ""
-
-      return readonly_flag .. file_part .. modified_flag
+      return file_part .. status_flag
     end)
   end
 
@@ -263,10 +243,15 @@ local create_components = function(winid, bufnr)
       local filename = name == "" and "[No Name]" or fn.fnamemodify(name, ":t")
       local extension = fn.fnamemodify(filename, ":e")
       local icon = get_file_icon(winid, filename, extension)
-      local modified_flag = api.nvim_get_option_value("modified", { buf = bufnr })
-        and " " .. icons.modified or ""
 
-      return icon .. filename .. modified_flag
+      local status_flag = ""
+      if api.nvim_get_option_value("readonly", { buf = bufnr }) then
+        status_flag = " " .. icons.readonly
+      elseif api.nvim_get_option_value("modified", { buf = bufnr }) then
+        status_flag = " " .. icons.modified
+      end
+
+      return icon .. filename .. status_flag
     end)
   end
 
@@ -445,7 +430,7 @@ M.status_advanced = function(winid)
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
-  return table.concat({left, center, right}, "%=")
+  return table.concat({ left, center, right }, "%=")
 end
 
 local refresh = function(win)
@@ -494,7 +479,6 @@ autocmd("BufEnter", {
   end
 })
 
--- Added autocmd for updating the modified flag
 autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
@@ -502,7 +486,7 @@ autocmd("BufModifiedSet", {
     for _, winid in ipairs(api.nvim_list_wins()) do
       if api.nvim_win_get_buf(winid) == buf then
         local cache = get_win_cache(winid)
-        cache_invalidate(cache, {"file_info", "inactive_filename"})
+        cache_invalidate(cache, { "file_info", "inactive_filename" })
         refresh_win(winid)
       end
     end
@@ -516,7 +500,7 @@ autocmd({ "LspAttach", "LspDetach", "DiagnosticChanged" }, {
     for _, winid in ipairs(api.nvim_list_wins()) do
       if api.nvim_win_get_buf(winid) == buf then
         local cache = get_win_cache(winid)
-        cache_invalidate(cache, {"lsp_status", "diagnostics"})
+        cache_invalidate(cache, { "lsp_status", "diagnostics" })
         refresh_win(winid)
       end
     end

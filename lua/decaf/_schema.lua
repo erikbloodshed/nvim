@@ -72,6 +72,7 @@ function M.get(c, o)
     StatusLineTerminal = { bg = c.green, fg = c.crust, bold = true },
     StatusLineGit = { fg = c.peach },
     StatusLineModified = { fg = c.yellow },
+    StatusLineReadonly = { fg = c.red },
     StatusLineFile = { fg = c.text },
     StatusLineDiagError = { link = "DiagnosticError" },
     StatusLineDiagWarn = { link = "DiagnosticWarn" },
@@ -82,7 +83,6 @@ function M.get(c, o)
     StatusLineLabel = { fg = c.subtext0 },
     StatusLineValue = { link = "StatusLineGit" },
     StatusLineSeparator = { fg = c.surface0 },
-
     TabLine = { bg = c.crust, fg = c.overlay0 },
     TabLineFill = { bg = t_co or c.mantle },
     TabLineSel = { link = "Normal" },
