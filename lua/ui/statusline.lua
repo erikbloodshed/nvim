@@ -13,11 +13,8 @@ end
 
 local cache_update = function(cache, key, value)
   cache.data[key] = value
-  if type(value) == "string" then
-    cache.widths[key] = fn.strdisplaywidth(value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
-  else
-    cache.widths[key] = nil
-  end
+  cache.widths[key] = type(value) == "string" and
+    fn.strdisplaywidth(value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")) or nil
 end
 
 local cache_lookup = function(cache, key, fnc)
@@ -96,9 +93,7 @@ end
 local loaded = {}
 
 local safe_require = function(mod)
-  if loaded[mod] ~= nil then
-    return loaded[mod]
-  end
+  if loaded[mod] ~= nil then return loaded[mod] end
   local ok, res = pcall(require, mod)
   loaded[mod] = ok and res or false
   return loaded[mod]
@@ -411,7 +406,11 @@ M.status_advanced = function(winid)
   local left = table.concat(left_segments, " ")
 
   local right_list = {}
-  local function push(v) if v and v ~= "" then right_list[#right_list + 1] = v end end
+  local push = function(val)
+    if val and val ~= "" then
+      right_list[#right_list + 1] = val
+    end
+  end
 
   push(components.diagnostics())
   push(components.lsp_status())
@@ -431,6 +430,7 @@ M.status_advanced = function(winid)
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
+
   return table.concat({ left, center, right }, "%=")
 end
 
