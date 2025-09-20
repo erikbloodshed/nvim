@@ -15,19 +15,23 @@ local strformat = string.format
 local tbl_concat = table.concat
 local tbl_insert = table.insert
 local tbl_isempty = vim.tbl_isempty
-
 local severity = vim.diagnostic.severity
-local sev_map = {
-  [severity.ERROR] = { "DiagnosticError", icons.error },
-  [severity.WARN] = { "DiagnosticWarn", icons.warn },
-  [severity.INFO] = { "DiagnosticInfo", icons.info },
-  [severity.HINT] = { "DiagnosticHint", icons.hint },
-}
 
 local HL_FORMAT = "%%#%s#%s%%*"
 local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
 local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
 local STATUS_EXPR_INACTIVE = '%%!v:lua.require("ui.statusline").status_inactive(%d)'
+
+local hl = function(name, text)
+  return strformat(HL_FORMAT, name, text)
+end
+
+local severity_tbl = {
+  hl("DiagnosticError", icons.error),
+  hl("DiagnosticWarn", icons.warn),
+  hl("DiagnosticInfo", icons.info),
+  hl("DiagnosticHint", icons.hint),
+}
 
 local cache_new = function()
   return {
@@ -116,10 +120,6 @@ local modes = {
   ["\19"] = { " S ", "StatusLineVisual" },
   t = { " T ", "StatusLineTerminal" },
 }
-
-local hl = function(name, text)
-  return strformat(HL_FORMAT, name, text)
-end
 
 local loaded = {}
 
@@ -399,10 +399,10 @@ local create_components = function(winid, bufnr)
       end
 
       local parts = {}
-      for sev, opts in ipairs(sev_map) do
-        local count = counts[sev]
+      for idx = severity.ERROR, severity.INFO do
+        local count = counts[idx]
         if count and count > 0 then
-          tbl_insert(parts, hl(opts[1], opts[2] .. ":" .. count))
+          tbl_insert(parts, severity_tbl[idx] .. ":" .. count)
         end
       end
       return tbl_concat(parts, " ")
@@ -430,13 +430,10 @@ local create_components = function(winid, bufnr)
 end
 
 local width_for = function(cache, key_or_str)
-  local width = cache.widths[key_or_str]
-  if width then return width end
-
   if type(key_or_str) == "string" then
     return fn.strdisplaywidth(key_or_str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
   end
-  return 0
+  return cache.widths[key_or_str] or 0
 end
 
 M.status_simple = function(winid)
@@ -593,7 +590,7 @@ autocmd("WinClosed", {
   end
 })
 
-autocmd({ "BufWritePost", "FileType", "BufReadPost" }, {
+autocmd({ "BufWritePost", "BufReadPost" }, {
   group = group,
   callback = function(ev)
     buf_cache[ev.buf] = nil
