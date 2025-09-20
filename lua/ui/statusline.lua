@@ -14,77 +14,20 @@ local autocmd = api.nvim_create_autocmd
 local strformat = string.format
 local tbl_concat = table.concat
 local tbl_insert = table.insert
-local tbl_filter = vim.tbl_filter
 local tbl_isempty = vim.tbl_isempty
 
-local x = vim.diagnostic.severity
+local severity = vim.diagnostic.severity
 local sev_map = {
-  [x.ERROR] = { "DiagnosticError", icons.error },
-  [x.WARN] = { "DiagnosticWarn", icons.warn },
-  [x.INFO] = { "DiagnosticInfo", icons.info },
-  [x.HINT] = { "DiagnosticHint", icons.hint },
+  [severity.ERROR] = { "DiagnosticError", icons.error },
+  [severity.WARN] = { "DiagnosticWarn", icons.warn },
+  [severity.INFO] = { "DiagnosticInfo", icons.info },
+  [severity.HINT] = { "DiagnosticHint", icons.hint },
 }
 
 local HL_FORMAT = "%%#%s#%s%%*"
 local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
 local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
 local STATUS_EXPR_INACTIVE = '%%!v:lua.require("ui.statusline").status_inactive(%d)'
-
-local component_pool = {
-  diagnostics = {},
-  mode = {},
-  lsp_status = {},
-  file_info = {},
-  git_branch = {},
-  directory = {},
-  pool_size = 15,
-}
-
-local pooled_component = {
-  parts = {},
-  text = "",
-  width = 0,
-  icon = "",
-  name = "",
-  status = "",
-  highlight = "",
-}
-
-local get_pooled_component = function(type_name)
-  local pool = component_pool[type_name]
-  if pool and type(pool) == "table" and #pool > 0 then
-    return table.remove(pool)
-  end
-  return pooled_component
-end
-
-local return_to_pool = function(type_name, component)
-  if not component then return end
-
-  local pool = component_pool[type_name]
-  if not pool or type(pool) ~= "table" then
-    pool = {}
-    component_pool[type_name] = pool
-  end
-
-  local pool_size = component_pool.pool_size
-  if type(pool_size) == "number" and #pool < pool_size then
-    component.text = ""
-    component.width = 0
-    component.icon = ""
-    component.name = ""
-    component.status = ""
-    component.highlight = ""
-
-    if component.parts then
-      for i = #component.parts, 1, -1 do
-        component.parts[i] = nil
-      end
-    end
-
-    tbl_insert(pool, component)
-  end
-end
 
 local cache_new = function()
   return {
@@ -321,18 +264,9 @@ local create_components = function(winid, bufnr)
 
   component.mode = function()
     return cache_lookup(cache, "mode", function()
-      local mode_comp = get_pooled_component("mode")
-
       local mode = (nvim_get_mode() or {}).mode
       local m = modes[mode] or { " ? ", "StatusLineNormal" }
-
-      mode_comp.text = hl(m[2], m[1])
-      mode_comp.highlight = m[2]
-      mode_comp.name = m[1]
-
-      local result = mode_comp.text
-      return_to_pool("mode", mode_comp)
-      return result
+      return hl(m[2], m[1])
     end)
   end
 
@@ -350,22 +284,14 @@ local create_components = function(winid, bufnr)
 
   component.file_info = function()
     return cache_lookup(cache, "file_info", function()
-      local file_comp = get_pooled_component("file_info")
-
       local parts = component.file_parts()
-      file_comp.icon = get_file_icon(winid, parts.filename, parts.extension, true)
-      file_comp.name = parts.filename
-
+      local icon = get_file_icon(winid, parts.filename, parts.extension, true)
+      local name = parts.filename
       local props = get_buf_props(bufnr)
-      file_comp.status = props.readonly and HL_READONLY or
+      local status = props.readonly and HL_READONLY or
         props.modified and HL_MODIFIED or ""
-
-      local file_part = hl("StatusLineFile", file_comp.icon .. file_comp.name)
-      file_comp.text = file_part .. file_comp.status
-
-      local result = file_comp.text
-      return_to_pool("file_info", file_comp)
-      return result
+      local file_part = hl("StatusLineFile", icon .. name)
+      return file_part .. status
     end)
   end
 
@@ -410,14 +336,11 @@ local create_components = function(winid, bufnr)
 
   component.git_branch = function()
     return cache_lookup(cache, "git_branch", function()
-      local git_comp = get_pooled_component("git_branch")
-
       local buf_name = nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
 
       if not gitdir or not gitdir[1] then
-        return_to_pool("git_branch", git_comp)
         return ""
       end
 
@@ -429,29 +352,22 @@ local create_components = function(winid, bufnr)
       end
 
       local cached_value = git_data[root]
-
       if type(cached_value) == "string" then
-        return_to_pool("git_branch", git_comp)
         return cached_value
       end
-
       if cached_value == false then
-        return_to_pool("git_branch", git_comp)
         return ""
       end
 
       git_data[root] = false
       vim.schedule(function() fetch_git_branch(winid, root) end)
 
-      return_to_pool("git_branch", git_comp)
       return ""
     end)
   end
 
   component.directory = function()
     return cache_lookup(cache, "directory", function()
-      local dir_comp = get_pooled_component("directory")
-
       local name = nvim_buf_get_name(bufnr)
       local dir_path
 
@@ -467,60 +383,46 @@ local create_components = function(winid, bufnr)
       local display_name = fn.fnamemodify(dir_path, ":~")
 
       if display_name and display_name ~= "" and display_name ~= "." then
-        dir_comp.text = hl("Directory", icons.folder .. " " .. display_name)
-        dir_comp.name = display_name
+        return hl("Directory", icons.folder .. " " .. display_name)
       else
-        dir_comp.text = ""
+        return ""
       end
-
-      local result = dir_comp.text
-      return_to_pool("directory", dir_comp)
-      return result
     end)
   end
 
   component.diagnostics = function()
     return cache_lookup(cache, "diagnostics", function()
-      local diag_comp = get_pooled_component("diagnostics")
       local counts = vim.diagnostic.count(bufnr)
 
       if tbl_isempty(counts) then
-        diag_comp.text = hl("DiagnosticOk", icons.ok)
-      else
-        for severity, opts in ipairs(sev_map) do
-          local count = counts[severity]
-          if count and count > 0 then
-            tbl_insert(diag_comp.parts, hl(opts[1], opts[2] .. ":" .. count))
-          end
-        end
-        diag_comp.text = tbl_concat(diag_comp.parts, " ")
+        return hl("DiagnosticOk", icons.ok)
       end
 
-      local result = diag_comp.text
-      return_to_pool("diagnostics", diag_comp)
-      return result
+      local parts = {}
+      for sev, opts in ipairs(sev_map) do
+        local count = counts[sev]
+        if count and count > 0 then
+          tbl_insert(parts, hl(opts[1], opts[2] .. ":" .. count))
+        end
+      end
+      return tbl_concat(parts, " ")
     end)
   end
 
   component.lsp_status = function()
     return cache_lookup(cache, "lsp_status", function()
-      local lsp_comp = get_pooled_component("lsp_status")
       local clients = vim.lsp.get_clients({ bufnr = bufnr })
 
       if not clients or #clients == 0 then
-        return_to_pool("lsp_status", lsp_comp)
         return ""
       end
 
+      local parts = {}
       for i = 1, #clients do
-        tbl_insert(lsp_comp.parts, clients[i].name)
+        tbl_insert(parts, clients[i].name)
       end
 
-      lsp_comp.text = hl("StatusLineLsp", icons.lsp .. " " .. tbl_concat(lsp_comp.parts, ", "))
-
-      local result = lsp_comp.text
-      return_to_pool("lsp_status", lsp_comp)
-      return result
+      return hl("StatusLineLsp", icons.lsp .. " " .. tbl_concat(parts, ", "))
     end)
   end
 
@@ -557,7 +459,13 @@ local POS_FORMAT = tbl_concat({
 local PERCENT_FORMAT = hl("StatusLineValue", "%P")
 local SEP = hl("StatusLineSeparator", config.seps.section)
 
-local filter = function(v) return v ~= "" end
+local assemble = function(parts, sep)
+  local tbl = {}
+  for _, part in ipairs(parts) do
+    if part ~= "" then tbl_insert(tbl, part) end
+  end
+  return tbl_concat(tbl, sep)
+end
 
 M.status_advanced = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
@@ -565,13 +473,13 @@ M.status_advanced = function(winid)
   local cache = get_win_cache(winid)
   local components = create_components(winid, bufnr)
 
-  local left = tbl_concat(tbl_filter(filter, {
+  local left = assemble({
     components.mode(), components.directory(), components.git_branch()
-  }), " ")
+  }, " ")
 
-  local right = tbl_concat(tbl_filter(filter, {
+  local right = assemble({
     components.diagnostics(), components.lsp_status(), POS_FORMAT, PERCENT_FORMAT
-  }), SEP)
+  }, SEP)
 
   local center = components.file_info()
   local w_left = width_for(cache, left)
@@ -584,7 +492,7 @@ M.status_advanced = function(winid)
     return strformat("%s%s%s%%=%s", left, string.rep(" ", gap), center, right)
   end
 
-  return tbl_concat({ left, center, right }, "%=")
+  return assemble({ left, center, right }, "%=")
 end
 
 local refresh = function(win)
