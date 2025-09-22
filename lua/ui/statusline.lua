@@ -107,44 +107,33 @@ local config = {
 }
 
 local modes = setmetatable({
-  -- Normal modes
   ['n'] = { display = " NOR ", hl = "StatusLineNormal" },
-  ['no'] = { display = " NOR ", hl = "StatusLineNormal" },       -- Operator-pending
+  ['no'] = { display = " NOR ", hl = "StatusLineNormal" },
   ['nov'] = { display = " NOR ", hl = "StatusLineNormal" },
   ['noV'] = { display = " NOR ", hl = "StatusLineNormal" },
   ['no\22'] = { display = " NOR ", hl = "StatusLineNormal" },
-
-  -- Insert modes
   ['i'] = { display = " INS ", hl = "StatusLineInsert" },
-  ['ic'] = { display = " INS ", hl = "StatusLineInsert" },       -- Insert completion
-  ['ix'] = { display = " INS ", hl = "StatusLineInsert" },       -- Insert completion (generic)
-
-  -- Visual modes
+  ['ic'] = { display = " INS ", hl = "StatusLineInsert" },
+  ['ix'] = { display = " INS ", hl = "StatusLineInsert" },
   ['v'] = { display = " VIS ", hl = "StatusLineVisual" },
   ['vs'] = { display = " VIS ", hl = "StatusLineVisual" },
-  ['V'] = { display = " V-L ", hl = "StatusLineVisual" },        -- Visual Line
+  ['V'] = { display = " V-L ", hl = "StatusLineVisual" },
   ['Vs'] = { display = " V-L ", hl = "StatusLineVisual" },
-  ['\22'] = { display = " V-B ", hl = "StatusLineVisual" },     -- Visual Block
+  ['\22'] = { display = " V-B ", hl = "StatusLineVisual" },
   ['\22s'] = { display = " V-B ", hl = "StatusLineVisual" },
-
-  -- Select modes
   ['s'] = { display = " SEL ", hl = "StatusLineSelect" },
-  ['S'] = { display = " S-L ", hl = "StatusLineSelect" },        -- Select Line
-  ['\19'] = { display = " S-B ", hl = "StatusLineSelect" },     -- Select Block
-
-  -- Replace modes
+  ['S'] = { display = " S-L ", hl = "StatusLineSelect" },
+  ['\19'] = { display = " S-B ", hl = "StatusLineSelect" },
   ['r'] = { display = " REP ", hl = "StatusLineReplace" },
   ['R'] = { display = " REP ", hl = "StatusLineReplace" },
   ['Rc'] = { display = " REP ", hl = "StatusLineReplace" },
   ['Rx'] = { display = " REP ", hl = "StatusLineReplace" },
-  ['Rv'] = { display = " R-V ", hl = "StatusLineReplace" },       -- Virtual Replace
+  ['Rv'] = { display = " R-V ", hl = "StatusLineReplace" },
   ['Rvc'] = { display = " R-V ", hl = "StatusLineReplace" },
   ['Rvx'] = { display = " R-V ", hl = "StatusLineReplace" },
-
-  -- Command modes
   ['c'] = { display = " CMD ", hl = "StatusLineCommand" },
-  ['cv'] = { display = " CMD ", hl = "StatusLineCommand" },       -- Vim Ex mode
-  ['ce'] = { display = " CMD ", hl = "StatusLineCommand" },       -- Normal Ex mode
+  ['cv'] = { display = " CMD ", hl = "StatusLineCommand" },
+  ['ce'] = { display = " CMD ", hl = "StatusLineCommand" },
 }, {
   __index = function()
     return { display = " ??? ", hl = "StatusLineNormal" }
