@@ -8,6 +8,7 @@ return {
         useLibraryCodeForTypes = true,
         diagnosticMode = "openFilesOnly",
         typeCheckingMode = "standard",
+        autoFormatStrings = true
       },
       disableTaggedHints = true,
     },

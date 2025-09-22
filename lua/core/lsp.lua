@@ -6,15 +6,20 @@ vim.lsp.config("*", {
     general = {
       positionEncodings = { "utf-16" },
     },
+    textDocument = {
+      onTypeFormatting = {
+        dynamicRegistration = false,
+      }
+    }
   },
 })
 
--- lsp.enable({ "pyrefly", "ruff", "clangd", "luals" })
 lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {
   callback = function(args)
     require("ui.qf")
+    vim.lsp.on_type_formatting.enable()
 
     local icons = require("ui.icons")
     local x = diagnostic.severity
