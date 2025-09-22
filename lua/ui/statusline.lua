@@ -39,9 +39,9 @@ local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v"),
 })
 local SEP = hl("StatusLineSeparator", config.seps)
-local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
-local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
-local STATUS_EXPR_INACTIVE = '%%!v:lua.require("ui.statusline").status_inactive(%d)'
+local STATUS_EXPR_SIMPLE = '%%!v:lua.require"ui.statusline".status_simple(%d)'
+local STATUS_EXPR_ADVANCED = '%%!v:lua.require"ui.statusline".status_advanced(%d)'
+local STATUS_EXPR_INACTIVE = '%%!v:lua.require"ui.statusline".status_inactive(%d)'
 
 local HL_READONLY = " " .. hl("StatusLineReadonly", icons.readonly)
 local HL_MODIFIED = " " .. hl("StatusLineModified", icons.modified)
@@ -53,11 +53,9 @@ local severity_tbl = {
   hl("DiagnosticHint", icons.hint),
 }
 
--- unified weak tables
 local win_data = setmetatable({}, { __mode = "k" }) -- per-window: { cache, git, icons }
 local buf_data = setmetatable({}, { __mode = "k" }) -- per-buffer: { lsp_clients }
 
--- cache helpers
 local function cache_lookup(cache, key, fnc)
   local value = cache[key]
   if value ~= nil then return value end
@@ -409,8 +407,11 @@ autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    cache_invalidate(get_win_data(winid).cache,
-      { "directory", "git_branch", "file_info", "inactive_filename", "lsp_status" })
+    local bufnr = nvim_win_get_buf(winid)
+    local name = nvim_buf_get_name(bufnr)
+    local cache_keys = name == "" and { "directory", "git_branch", "file_info", "inactive_filename" }
+      or { "file_info", "inactive_filename" }
+    cache_invalidate(get_win_data(winid).cache, cache_keys)
     refresh_win(winid)
   end,
 })
