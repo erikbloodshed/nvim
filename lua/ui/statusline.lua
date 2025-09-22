@@ -53,44 +53,51 @@ local severity_tbl = {
   hl("DiagnosticHint", icons.hint),
 }
 
-local function cache_new() return { data = {} } end
-local function cache_update(cache, key, value) cache.data[key] = value end
+-- unified weak tables
+local win_data = setmetatable({}, { __mode = "k" }) -- per-window: { cache, git, icons }
+local buf_data = setmetatable({}, { __mode = "k" }) -- per-buffer: { lsp_clients }
 
+-- cache helpers
 local function cache_lookup(cache, key, fnc)
-  local value = cache.data[key]
+  local value = cache[key]
   if value ~= nil then return value end
   local ok, res = pcall(fnc)
-  cache_update(cache, key, ok and res or "")
-  return res
+  cache[key] = ok and res or ""
+  return cache[key]
 end
 
 local function cache_invalidate(cache, keys)
   if not keys then return end
   if type(keys) == "string" then
-    cache.data[keys] = nil
+    cache[keys] = nil
   else
-    for i = 1, #keys do cache.data[keys[i]] = nil end
+    for i = 1, #keys do cache[keys[i]] = nil end
   end
 end
 
-local win_caches = setmetatable({}, { __mode = "k" })
-local win_git_data = setmetatable({}, { __mode = "k" })
-local win_file_icon_data = setmetatable({}, { __mode = "k" })
-
-local function get_win_cache(winid)
-  local c = win_caches[winid]
-  if not c then
-    c = cache_new()
-    win_caches[winid] = c
+-- window data access
+local function get_win_data(winid)
+  local d = win_data[winid]
+  if not d then
+    d = { cache = {}, git = {}, icons = {} }
+    win_data[winid] = d
   end
-  return c
+  return d
 end
 
-local function cleanup_win_cache(winid)
-  win_caches[winid] = nil
-  win_git_data[winid] = nil
-  win_file_icon_data[winid] = nil
+local function cleanup_win(winid) win_data[winid] = nil end
+
+-- buffer data access
+local function get_buf_data(bufnr)
+  local d = buf_data[bufnr]
+  if not d then
+    d = { lsp_clients = {} }
+    buf_data[bufnr] = d
+  end
+  return d
 end
+
+local function cleanup_buf(bufnr) buf_data[bufnr] = nil end
 
 -- mode map
 local modes = setmetatable({
@@ -110,7 +117,7 @@ local modes = setmetatable({
   __index = function() return { display = " ??? ", hl = "StatusLineNormal" } end
 })
 
--- buffer props (no caching, direct bo lookups)
+-- buffer props (no caching)
 local function get_buf_props(buf)
   return {
     buftype = vim.bo[buf].buftype,
@@ -131,7 +138,7 @@ local function is_active_win(winid) return winid == nvim_get_current_win() end
 
 local function refresh_win(winid)
   if not nvim_win_is_valid(winid) then
-    cleanup_win_cache(winid)
+    cleanup_win(winid)
     return
   end
   local expr
@@ -147,16 +154,12 @@ end
 
 -- icons
 local function get_file_icon(winid, filename, extension, use_colors)
-  local file_icon_cache = win_file_icon_data[winid]
-  if not file_icon_cache then
-    file_icon_cache = {}
-    win_file_icon_data[winid] = file_icon_cache
-  end
-  local cache_key = strformat("%s.%s%s", filename, extension or "", use_colors and "_c" or "_p")
-  local cached_value = file_icon_cache[cache_key]
+  local icons_cache = get_win_data(winid).icons
+  local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_c" or "_p")
+  local cached_value = icons_cache[cache_key]
   if type(cached_value) == "string" then return cached_value end
   if cached_value == false then return "" end
-  file_icon_cache[cache_key] = false
+  icons_cache[cache_key] = false
 
   vim.schedule(function()
     if not nvim_win_is_valid(winid) then return end
@@ -172,8 +175,8 @@ local function get_file_icon(winid, filename, extension, use_colors)
         end
       end
     end
-    file_icon_cache[cache_key] = icon_result
-    cache_invalidate(get_win_cache(winid), { "file_info", "inactive_filename" })
+    icons_cache[cache_key] = icon_result
+    cache_invalidate(get_win_data(winid).cache, { "file_info", "inactive_filename" })
     refresh_win(winid)
   end)
   return ""
@@ -181,7 +184,7 @@ end
 
 local function fetch_git_branch(winid, root)
   local function on_exit(job_output)
-    local git_data = win_git_data[winid]
+    local git_data = get_win_data(winid).git
     if not git_data then return end
     local branch_hl = ""
     if job_output and job_output.code == 0 and job_output.stdout then
@@ -192,7 +195,7 @@ local function fetch_git_branch(winid, root)
     end
     git_data[root] = branch_hl
     if nvim_win_is_valid(winid) then
-      cache_invalidate(get_win_cache(winid), "git_branch")
+      cache_invalidate(get_win_data(winid).cache, "git_branch")
       refresh_win(winid)
     end
   end
@@ -217,7 +220,8 @@ local function file_parts(bufnr)
 end
 
 local function create_components(winid, bufnr)
-  local cache = get_win_cache(winid)
+  local wdata = get_win_data(winid)
+  local cache = wdata.cache
   local component = {}
 
   component.mode = function()
@@ -274,8 +278,7 @@ local function create_components(winid, bufnr)
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
       if not gitdir or not gitdir[1] then return "" end
       local root = vim.fs.dirname(gitdir[1])
-      local git_data = win_git_data[winid] or {}
-      win_git_data[winid] = git_data
+      local git_data = wdata.git
       local cached_value = git_data[root]
       if type(cached_value) == "string" then return cached_value end
       if cached_value == false then return "" end
@@ -298,10 +301,12 @@ local function create_components(winid, bufnr)
 
   component.lsp_status = function()
     return cache_lookup(cache, "lsp_status", function()
-      local clients = vim.lsp.get_clients({ bufnr = bufnr })
-      if not clients or #clients == 0 then return "" end
+      local clients = get_buf_data(bufnr).lsp_clients
+      if not clients or vim.tbl_isempty(clients) then return "" end
       local parts = {}
-      for i = 1, #clients do tbl_insert(parts, clients[i].name) end
+      for _, name in pairs(clients) do
+        tbl_insert(parts, name)
+      end
       return hl("StatusLineLsp", icons.lsp .. " " .. tbl_concat(parts, ", "))
     end)
   end
@@ -348,7 +353,6 @@ M.status_inactive = function(winid)
   return strformat("%%=%s%%=", components.inactive_filename())
 end
 
-
 local function assemble(parts, sep)
   local tbl = {}
   for _, part in ipairs(parts) do
@@ -389,26 +393,27 @@ local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 local function update_win_for_buf(buf, cache_keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    cache_invalidate(get_win_cache(winid), cache_keys)
+    cache_invalidate(get_win_data(winid).cache, cache_keys)
     refresh_win(winid)
   end
 end
 
+-- autocmds
 autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    cache_invalidate(get_win_cache(winid),
-      { "git_branch", "file_info", "directory", "lsp_status", "inactive_filename" })
+    cache_invalidate(get_win_data(winid).cache,
+      { "directory", "git_branch", "file_info", "inactive_filename", "lsp_status" })
     refresh_win(winid)
   end,
 })
 
-autocmd({ "FocusGained" }, {
+autocmd("FocusGained", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    cache_invalidate(get_win_cache(winid), "git_branch")
+    cache_invalidate(get_win_data(winid).cache, "git_branch")
     refresh_win(winid)
   end,
 })
@@ -420,9 +425,21 @@ autocmd("BufModifiedSet", {
   end,
 })
 
-autocmd({ "LspAttach", "LspDetach" }, {
+autocmd("LspAttach", {
   group = group,
   callback = function(ev)
+    local clients = get_buf_data(ev.buf).lsp_clients
+    local client = vim.lsp.get_client_by_id(ev.data.client_id)
+    if client then clients[client.id] = client.name end
+    update_win_for_buf(ev.buf, "lsp_status")
+  end,
+})
+
+autocmd("LspDetach", {
+  group = group,
+  callback = function(ev)
+    local clients = get_buf_data(ev.buf).lsp_clients
+    clients[ev.data.client_id] = nil
     update_win_for_buf(ev.buf, "lsp_status")
   end,
 })
@@ -450,8 +467,13 @@ autocmd("WinClosed", {
   group = group,
   callback = function(ev)
     local winid = tonumber(ev.match)
-    if winid then cleanup_win_cache(winid) end
+    if winid then cleanup_win(winid) end
   end,
+})
+
+autocmd("BufWipeout", {
+  group = group,
+  callback = function(ev) cleanup_buf(ev.buf) end,
 })
 
 return M
