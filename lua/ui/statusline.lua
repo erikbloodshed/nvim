@@ -38,6 +38,7 @@ local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
   hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v"),
 })
+
 local SEP = hl("StatusLineSeparator", config.seps)
 local STATUS_EXPR_SIMPLE = "%%!v:lua.require'ui.statusline'.status_simple(%d)"
 local STATUS_EXPR_ADVANCED = "%%!v:lua.require'ui.statusline'.status_advanced(%d)"
@@ -238,7 +239,7 @@ local function create_components(winid, bufnr)
       local icon = get_file_icon(winid, parts.filename, parts.extension, true)
       local props = get_buf_props(bufnr)
       local status = props.readonly and HL_READONLY or
-        props.modified and HL_MODIFIED or ""
+        props.modified and HL_MODIFIED or " "
       return hl("StatusLineFile", icon .. parts.filename) .. status
     end)
   end

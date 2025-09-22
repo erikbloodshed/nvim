@@ -9,7 +9,7 @@ return {
   hint = "",
   info = "",
   lsp = "",
-  modified = "[+]",
+  modified = "󱇬",
   readonly = "",
   sleep = "󰒲",
   status = "󱖫",
