@@ -106,20 +106,50 @@ local config = {
   },
 }
 
-local modes = {
-  n = { " N ", "StatusLineNormal" },
-  i = { " I ", "StatusLineInsert" },
-  v = { " V ", "StatusLineVisual" },
-  V = { " V ", "StatusLineVisual" },
-  ["\22"] = { " V ", "StatusLineVisual" },
-  c = { " C ", "StatusLineCommand" },
-  R = { " R ", "StatusLineReplace" },
-  r = { " R ", "StatusLineReplace" },
-  s = { " S ", "StatusLineVisual" },
-  S = { " S ", "StatusLineVisual" },
-  ["\19"] = { " S ", "StatusLineVisual" },
-  t = { " T ", "StatusLineTerminal" },
-}
+local modes = setmetatable({
+  -- Normal modes
+  ['n'] = { display = " NOR ", hl = "StatusLineNormal" },
+  ['no'] = { display = " NOR ", hl = "StatusLineNormal" },       -- Operator-pending
+  ['nov'] = { display = " NOR ", hl = "StatusLineNormal" },
+  ['noV'] = { display = " NOR ", hl = "StatusLineNormal" },
+  ['no\22'] = { display = " NOR ", hl = "StatusLineNormal" },
+
+  -- Insert modes
+  ['i'] = { display = " INS ", hl = "StatusLineInsert" },
+  ['ic'] = { display = " INS ", hl = "StatusLineInsert" },       -- Insert completion
+  ['ix'] = { display = " INS ", hl = "StatusLineInsert" },       -- Insert completion (generic)
+
+  -- Visual modes
+  ['v'] = { display = " VIS ", hl = "StatusLineVisual" },
+  ['vs'] = { display = " VIS ", hl = "StatusLineVisual" },
+  ['V'] = { display = " V-L ", hl = "StatusLineVisual" },        -- Visual Line
+  ['Vs'] = { display = " V-L ", hl = "StatusLineVisual" },
+  ['\22'] = { display = " V-B ", hl = "StatusLineVisual" },     -- Visual Block
+  ['\22s'] = { display = " V-B ", hl = "StatusLineVisual" },
+
+  -- Select modes
+  ['s'] = { display = " SEL ", hl = "StatusLineSelect" },
+  ['S'] = { display = " S-L ", hl = "StatusLineSelect" },        -- Select Line
+  ['\19'] = { display = " S-B ", hl = "StatusLineSelect" },     -- Select Block
+
+  -- Replace modes
+  ['r'] = { display = " REP ", hl = "StatusLineReplace" },
+  ['R'] = { display = " REP ", hl = "StatusLineReplace" },
+  ['Rc'] = { display = " REP ", hl = "StatusLineReplace" },
+  ['Rx'] = { display = " REP ", hl = "StatusLineReplace" },
+  ['Rv'] = { display = " R-V ", hl = "StatusLineReplace" },       -- Virtual Replace
+  ['Rvc'] = { display = " R-V ", hl = "StatusLineReplace" },
+  ['Rvx'] = { display = " R-V ", hl = "StatusLineReplace" },
+
+  -- Command modes
+  ['c'] = { display = " CMD ", hl = "StatusLineCommand" },
+  ['cv'] = { display = " CMD ", hl = "StatusLineCommand" },       -- Vim Ex mode
+  ['ce'] = { display = " CMD ", hl = "StatusLineCommand" },       -- Normal Ex mode
+}, {
+  __index = function()
+    return { display = " ??? ", hl = "StatusLineNormal" }
+  end
+})
 
 local loaded = {}
 
@@ -263,20 +293,16 @@ local create_components = function(winid, bufnr)
   local cache = get_win_cache(winid)
   local component = {}
 
-  component.mode = function()
-    return cache_lookup(cache, "mode", function()
+  component.mode_details = function()
+    return cache_lookup(cache, "mode_details", function()
       local mode = (nvim_get_mode() or {}).mode
-      local m = modes[mode] or { " ? ", "StatusLineNormal" }
-      return hl(m[2], m[1])
+      return modes[mode] or { " ? ", "StatusLineNormal" }
     end)
   end
 
-  component.mode_hl = function()
-    return cache_lookup(cache, "mode_hl", function()
-      local mode = (nvim_get_mode() or {}).mode
-      local m = modes[mode] or { " ? ", "StatusLineNormal" }
-      return m[2]
-    end)
+  component.mode = function()
+    local m = component.mode_details()
+    return hl(m.hl, m.display)
   end
 
   component.file_parts = function()
@@ -480,10 +506,10 @@ M.status_advanced = function(winid)
 
   local left = assemble({
     components.mode(), components.directory(), components.git_branch()
-  }, " ")
+  }, SEP)
 
-  local mode_hl_group = components.mode_hl()
-  local percent_format = hl(mode_hl_group, " %P ") -- Create percentage with mode's highlight
+  local m = components.mode_details()
+  local percent_format = hl(m.hl, " %P ")
 
   local right = assemble({
     components.diagnostics(), components.lsp_status(), POS_FORMAT, percent_format
@@ -520,7 +546,7 @@ autocmd("ModeChanged", {
   callback = function()
     local winid = nvim_get_current_win()
     local cache = get_win_cache(winid)
-    cache_invalidate(cache, { "mode", "mode_hl" })
+    cache_invalidate(cache, { "mode_details" })
     refresh_win(winid)
   end
 })
