@@ -87,7 +87,7 @@ local cleanup_win_cache = function(winid)
 end
 
 local config = {
-  seps = { left = "", right = "", section = " | " },
+  seps = " | ",
   exclude = {
     buftypes = {
       terminal = true,
@@ -150,7 +150,8 @@ end
 local is_excluded_buftype = function(win)
   if not nvim_win_is_valid(win) then return false end
   local props = get_buf_props(nvim_win_get_buf(win))
-  return config.exclude.buftypes[props.buftype] or config.exclude.filetypes[props.filetype]
+  local exclude = config.exclude
+  return exclude.buftypes[props.buftype] or exclude.filetypes[props.filetype]
 end
 
 local is_active_win = function(winid)
@@ -302,7 +303,7 @@ local create_components = function(winid, bufnr)
       local props = get_buf_props(bufnr)
       local status_flag = props.readonly and " " .. icons.readonly or
         props.modified and " " .. icons.modified or ""
-      return string.format("%s%s%s", icon, parts.filename, status_flag)
+      return strformat("%s%s%s", icon, parts.filename, status_flag)
     end)
   end
 
@@ -439,7 +440,7 @@ end
 M.status_simple = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
   local components = create_components(winid, nvim_win_get_buf(winid))
-  return "%=" .. components.simple_title() .. "%="
+  return strformat("%%=%s%%=", components.simple_title())
 end
 
 M.status_inactive = function(winid)
@@ -447,14 +448,14 @@ M.status_inactive = function(winid)
   local bufnr = nvim_win_get_buf(winid)
   local components = create_components(winid, bufnr)
   local center = components.inactive_filename()
-  return "%=" .. center .. "%="
+  return strformat("%%=%s%%=", center)
 end
 
 local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
   hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v") })
 local PERCENT_FORMAT = hl("StatusLineValue", "%P")
-local SEP = hl("StatusLineSeparator", config.seps.section)
+local SEP = hl("StatusLineSeparator", config.seps)
 
 local assemble = function(parts, sep)
   local tbl = {}
