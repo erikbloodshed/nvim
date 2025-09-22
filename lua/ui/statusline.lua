@@ -377,7 +377,6 @@ M.status_advanced = function(winid)
   return assemble({ left, center, right }, "%=")
 end
 
--- refresh
 local function refresh(win)
   if win then
     refresh_win(win)
@@ -386,8 +385,14 @@ local function refresh(win)
   end
 end
 
--- autocmds
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
+
+local function update_win_for_buf(buf, cache_keys)
+  for _, winid in ipairs(fn.win_findbuf(buf)) do
+    cache_invalidate(get_win_cache(winid), cache_keys)
+    refresh_win(winid)
+  end
+end
 
 autocmd("BufEnter", {
   group = group,
@@ -399,47 +404,34 @@ autocmd("BufEnter", {
   end,
 })
 
-autocmd({ "FocusGained", "DirChanged" }, {
+autocmd({ "FocusGained" }, {
   group = group,
   callback = function()
-    win_git_data = {}
-    for winid, cache in pairs(win_caches) do
-      cache_invalidate(cache, "git_branch")
-      if nvim_win_is_valid(winid) then refresh_win(winid) end
-    end
+    local winid = nvim_get_current_win()
+    cache_invalidate(get_win_cache(winid), "git_branch")
+    refresh_win(winid)
   end,
 })
 
 autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
-    -- no buf_cache invalidation anymore, just refresh
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_win_get_buf(winid) == ev.buf then
-        cache_invalidate(get_win_cache(winid), { "file_info", "inactive_filename" })
-        refresh_win(winid)
-      end
-    end
+    update_win_for_buf(ev.buf, { "file_info", "inactive_filename" })
   end,
 })
 
 autocmd({ "LspAttach", "LspDetach" }, {
   group = group,
   callback = function(ev)
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_win_get_buf(winid) == ev.buf then
-        cache_invalidate(get_win_cache(winid), "lsp_status")
-        refresh_win(winid)
-      end
-    end
+    update_win_for_buf(ev.buf, "lsp_status")
   end,
 })
 
 autocmd("DiagnosticChanged", {
   group = group,
   callback = function(ev)
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_win_get_buf(winid) == ev.buf then refresh_win(winid) end
+    for _, winid in ipairs(fn.win_findbuf(ev.buf)) do
+      refresh_win(winid)
     end
   end,
 })
