@@ -100,7 +100,7 @@ end
 local function cleanup_buf(bufnr) buf_data[bufnr] = nil end
 
 -- mode map
-local modes = setmetatable({
+local modes = {
   n = { display = " NOR ", hl = "StatusLineNormal" },
   i = { display = " INS ", hl = "StatusLineInsert" },
   v = { display = " VIS ", hl = "StatusLineVisual" },
@@ -113,8 +113,12 @@ local modes = setmetatable({
   R = { display = " REP ", hl = "StatusLineReplace" },
   Rv = { display = " R-V ", hl = "StatusLineReplace" },
   c = { display = " CMD ", hl = "StatusLineCommand" },
-}, {
-  __index = function() return { display = " ??? ", hl = "StatusLineNormal" } end
+}
+
+setmetatable(modes, {
+  __index = function()
+    return { display = " ??? ", hl = "StatusLineNormal" }
+  end
 })
 
 -- buffer props (no caching)
@@ -224,9 +228,11 @@ local function create_components(winid, bufnr)
   local cache = wdata.cache
   local component = {}
 
+  -- Precompute mode details once for both mode and percentage components
+  local mode_info = mode_details()
+
   component.mode = function()
-    local m = mode_details()
-    return hl(m.hl, m.display)
+    return hl(mode_info.hl, mode_info.display)
   end
 
   component.file_info = function()
@@ -329,7 +335,7 @@ local function create_components(winid, bufnr)
   end
 
   component.percentage = function()
-    return hl(mode_details().hl, " %P ")
+    return hl(mode_info.hl, " %P ")
   end
 
   return component
