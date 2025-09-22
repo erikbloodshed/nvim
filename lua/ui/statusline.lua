@@ -431,6 +431,26 @@ autocmd("BufModifiedSet", {
   end,
 })
 
+autocmd({ "BufWritePost", "BufFilePost" }, {
+  group = group,
+  callback = function(ev)
+    update_win_for_buf(ev.buf, { "file_info", "inactive_filename", "directory", "git_branch" })
+  end,
+})
+
+autocmd("DirChanged", {
+  group = group,
+  callback = function()
+    for _, winid in ipairs(nvim_list_wins()) do
+      local bufnr = nvim_win_get_buf(winid)
+      if nvim_buf_get_name(bufnr) == "" then
+        cache_invalidate(get_win_data(winid).cache, { "directory", "git_branch" })
+        refresh_win(winid)
+      end
+    end
+  end,
+})
+
 autocmd("LspAttach", {
   group = group,
   callback = function(ev)
