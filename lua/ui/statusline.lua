@@ -87,7 +87,7 @@ local cleanup_win_cache = function(winid)
 end
 
 local config = {
-  seps = " | ",
+  seps = " • ",
   exclude = {
     buftypes = {
       terminal = true,
@@ -268,6 +268,14 @@ local create_components = function(winid, bufnr)
       local mode = (nvim_get_mode() or {}).mode
       local m = modes[mode] or { " ? ", "StatusLineNormal" }
       return hl(m[2], m[1])
+    end)
+  end
+
+  component.mode_hl = function()
+    return cache_lookup(cache, "mode_hl", function()
+      local mode = (nvim_get_mode() or {}).mode
+      local m = modes[mode] or { " ? ", "StatusLineNormal" }
+      return m[2]
     end)
   end
 
@@ -454,7 +462,6 @@ end
 local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
   hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v") })
-local PERCENT_FORMAT = hl("StatusLineValue", "%P")
 local SEP = hl("StatusLineSeparator", config.seps)
 
 local assemble = function(parts, sep)
@@ -475,8 +482,11 @@ M.status_advanced = function(winid)
     components.mode(), components.directory(), components.git_branch()
   }, " ")
 
+  local mode_hl_group = components.mode_hl()
+  local percent_format = hl(mode_hl_group, " %P ") -- Create percentage with mode's highlight
+
   local right = assemble({
-    components.diagnostics(), components.lsp_status(), POS_FORMAT, PERCENT_FORMAT
+    components.diagnostics(), components.lsp_status(), POS_FORMAT, percent_format
   }, SEP)
 
   local center = components.file_info()
@@ -510,7 +520,7 @@ autocmd("ModeChanged", {
   callback = function()
     local winid = nvim_get_current_win()
     local cache = get_win_cache(winid)
-    cache_invalidate(cache, "mode")
+    cache_invalidate(cache, { "mode", "mode_hl" })
     refresh_win(winid)
   end
 })
