@@ -36,13 +36,16 @@ local tbl_isempty = vim.tbl_isempty
 local severity = vim.diagnostic.severity
 
 local HL_FORMAT = "%%#%s#%s%%*"
-local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
-local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
-local STATUS_EXPR_INACTIVE = '%%!v:lua.require("ui.statusline").status_inactive(%d)'
 
 local hl = function(name, text)
   return strformat(HL_FORMAT, name, text)
 end
+
+local STATUS_EXPR_SIMPLE = '%%!v:lua.require("ui.statusline").status_simple(%d)'
+local STATUS_EXPR_ADVANCED = '%%!v:lua.require("ui.statusline").status_advanced(%d)'
+local STATUS_EXPR_INACTIVE = '%%!v:lua.require("ui.statusline").status_inactive(%d)'
+local HL_READONLY = " " .. hl("StatusLineReadonly", icons.readonly)
+local HL_MODIFIED = " " .. hl("StatusLineModified", icons.modified)
 
 local severity_tbl = {
   hl("DiagnosticError", icons.error),
@@ -273,40 +276,33 @@ local fetch_git_branch = function(winid, root)
   )
 end
 
-local HL_READONLY = " " .. hl("StatusLineReadonly", icons.readonly)
-local HL_MODIFIED = " " .. hl("StatusLineModified", icons.modified)
+local mode_details = function()
+  local mode = (nvim_get_mode() or {}).mode
+  return modes[mode] or { " ? ", "StatusLineNormal" }
+end
+
+local file_parts = function(bufnr)
+  local name = nvim_buf_get_name(bufnr)
+  if name == "" then
+    return { filename = "[No Name]", extension = "" }
+  end
+  local filename = fn.fnamemodify(name, ":t")
+  local extension = fn.fnamemodify(filename, ":e")
+  return { filename = filename, extension = extension }
+end
 
 local create_components = function(winid, bufnr)
   local cache = get_win_cache(winid)
   local component = {}
 
-  component.mode_details = function()
-    return cache_lookup(cache, "mode_details", function()
-      local mode = (nvim_get_mode() or {}).mode
-      return modes[mode] or { " ? ", "StatusLineNormal" }
-    end)
-  end
-
   component.mode = function()
-    local m = component.mode_details()
+    local m = mode_details()
     return hl(m.hl, m.display)
-  end
-
-  component.file_parts = function()
-    return cache_lookup(cache, "file_parts", function()
-      local name = nvim_buf_get_name(bufnr)
-      if name == "" then
-        return { filename = "[No Name]", extension = "" }
-      end
-      local filename = fn.fnamemodify(name, ":t")
-      local extension = fn.fnamemodify(filename, ":e")
-      return { filename = filename, extension = extension }
-    end)
   end
 
   component.file_info = function()
     return cache_lookup(cache, "file_info", function()
-      local parts = component.file_parts()
+      local parts = file_parts(bufnr)
       local icon = get_file_icon(winid, parts.filename, parts.extension, true)
       local name = parts.filename
       local props = get_buf_props(bufnr)
@@ -319,7 +315,7 @@ local create_components = function(winid, bufnr)
 
   component.inactive_filename = function()
     return cache_lookup(cache, "inactive_filename", function()
-      local parts = component.file_parts()
+      local parts = file_parts(bufnr)
       local icon = get_file_icon(winid, parts.filename, parts.extension, false)
       local props = get_buf_props(bufnr)
       local status_flag = props.readonly and " " .. icons.readonly or
@@ -329,31 +325,29 @@ local create_components = function(winid, bufnr)
   end
 
   component.simple_title = function()
-    return cache_lookup(cache, "simple_title", function()
-      local props = get_buf_props(bufnr)
+    local props = get_buf_props(bufnr)
 
-      local title_map = {
-        buftype = {
-          terminal = icons.terminal .. " terminal",
-          popup = icons.dock .. " Popup",
-        },
-        filetype = {
-          lazy = icons.sleep .. " Lazy",
-          ["neo-tree"] = icons.file_tree .. " File Explorer",
-          ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
-          lspinfo = icons.info .. " LSP Info",
-          checkhealth = icons.status .. " Health",
-          man = icons.book .. " Manual",
-          qf = icons.fix .. " Quickfix",
-          help = icons.help .. " Help",
-        },
-      }
+    local title_map = {
+      buftype = {
+        terminal = icons.terminal .. " terminal",
+        popup = icons.dock .. " Popup",
+      },
+      filetype = {
+        lazy = icons.sleep .. " Lazy",
+        ["neo-tree"] = icons.file_tree .. " File Explorer",
+        ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
+        lspinfo = icons.info .. " LSP Info",
+        checkhealth = icons.status .. " Health",
+        man = icons.book .. " Manual",
+        qf = icons.fix .. " Quickfix",
+        help = icons.help .. " Help",
+      },
+    }
 
-      local title = title_map.buftype[props.buftype] or
-        title_map.filetype[props.filetype] or "no file"
+    local title = title_map.buftype[props.buftype] or
+      title_map.filetype[props.filetype] or "no file"
 
-      return hl("String", title)
-    end)
+    return hl("String", title)
   end
 
   component.git_branch = function()
@@ -389,46 +383,42 @@ local create_components = function(winid, bufnr)
   end
 
   component.directory = function()
-    return cache_lookup(cache, "directory", function()
-      local name = nvim_buf_get_name(bufnr)
-      local dir_path
+    local name = nvim_buf_get_name(bufnr)
+    local dir_path
 
-      if name == "" then
+    if name == "" then
+      dir_path = fn.getcwd()
+    else
+      dir_path = vim.fs.dirname(name)
+      if dir_path == "." then
         dir_path = fn.getcwd()
-      else
-        dir_path = vim.fs.dirname(name)
-        if dir_path == "." then
-          dir_path = fn.getcwd()
-        end
       end
+    end
 
-      local display_name = fn.fnamemodify(dir_path, ":~")
+    local display_name = fn.fnamemodify(dir_path, ":~")
 
-      if display_name and display_name ~= "" and display_name ~= "." then
-        return hl("Directory", icons.folder .. " " .. display_name)
-      else
-        return ""
-      end
-    end)
+    if display_name and display_name ~= "" and display_name ~= "." then
+      return hl("Directory", icons.folder .. " " .. display_name)
+    else
+      return ""
+    end
   end
 
   component.diagnostics = function()
-    return cache_lookup(cache, "diagnostics", function()
-      local counts = vim.diagnostic.count(bufnr)
+    local counts = vim.diagnostic.count(bufnr)
 
-      if tbl_isempty(counts) then
-        return hl("DiagnosticOk", icons.ok)
-      end
+    if tbl_isempty(counts) then
+      return hl("DiagnosticOk", icons.ok)
+    end
 
-      local parts = {}
-      for idx = severity.ERROR, severity.INFO do
-        local count = counts[idx]
-        if count and count > 0 then
-          tbl_insert(parts, severity_tbl[idx] .. ":" .. count)
-        end
+    local parts = {}
+    for idx = severity.ERROR, severity.INFO do
+      local count = counts[idx]
+      if count and count > 0 then
+        tbl_insert(parts, severity_tbl[idx] .. ":" .. count)
       end
-      return tbl_concat(parts, " ")
-    end)
+    end
+    return tbl_concat(parts, " ")
   end
 
   component.lsp_status = function()
@@ -497,7 +487,7 @@ M.status_advanced = function(winid)
     components.mode(), components.directory(), components.git_branch()
   }, SEP)
 
-  local m = components.mode_details()
+  local m = mode_details()
   local percent_format = hl(m.hl, " %P ")
 
   local right = assemble({
@@ -530,22 +520,12 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-autocmd("ModeChanged", {
-  group = group,
-  callback = function()
-    local winid = nvim_get_current_win()
-    cache_invalidate(get_win_cache(winid), { "mode_details" })
-    refresh_win(winid)
-  end
-})
-
 autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
     cache_invalidate(get_win_cache(winid),
-      { "git_branch", "file_parts", "file_info", "directory", "lsp_status",
-        "diagnostics", "inactive_filename" })
+      { "git_branch", "file_info", "directory", "lsp_status", "inactive_filename" })
     refresh_win(winid)
   end
 })
@@ -591,7 +571,11 @@ autocmd({ "LspAttach", "LspDetach" }, {
 autocmd({ "DiagnosticChanged" }, {
   group = group,
   callback = function(ev)
-    update_win_for_buf(ev.buf, "diagnostics")
+    for _, winid in ipairs(nvim_list_wins()) do
+      if nvim_win_get_buf(winid) == ev.buf then
+        refresh_win(winid)
+      end
+    end
   end
 })
 
