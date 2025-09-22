@@ -39,9 +39,9 @@ local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v"),
 })
 local SEP = hl("StatusLineSeparator", config.seps)
-local STATUS_EXPR_SIMPLE = '%%!v:lua.require"ui.statusline".status_simple(%d)'
-local STATUS_EXPR_ADVANCED = '%%!v:lua.require"ui.statusline".status_advanced(%d)'
-local STATUS_EXPR_INACTIVE = '%%!v:lua.require"ui.statusline".status_inactive(%d)'
+local STATUS_EXPR_SIMPLE = "%%!v:lua.require'ui.statusline'.status_simple(%d)"
+local STATUS_EXPR_ADVANCED = "%%!v:lua.require'ui.statusline'.status_advanced(%d)"
+local STATUS_EXPR_INACTIVE = "%%!v:lua.require'ui.statusline'.status_inactive(%d)"
 
 local HL_READONLY = " " .. hl("StatusLineReadonly", icons.readonly)
 local HL_MODIFIED = " " .. hl("StatusLineModified", icons.modified)
