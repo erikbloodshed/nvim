@@ -25,14 +25,14 @@ local nvim_list_wins = api.nvim_list_wins
 local nvim_win_get_width = api.nvim_win_get_width
 local nvim_get_mode = api.nvim_get_mode
 local autocmd = api.nvim_create_autocmd
-local strformat = string.format
+local format = string.format
 local tbl_concat = table.concat
 local tbl_insert = table.insert
 local tbl_isempty = vim.tbl_isempty
 local severity = vim.diagnostic.severity
 
 local HL_FORMAT = "%%#%s#%s%%*"
-local function hl(name, text) return strformat(HL_FORMAT, name, text) end
+local function hl(name, text) return format(HL_FORMAT, name, text) end
 
 local POS_FORMAT = tbl_concat({
   hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
@@ -53,8 +53,8 @@ local severity_tbl = {
   hl("DiagnosticHint", icons.hint),
 }
 
-local win_data = setmetatable({}, { __mode = "k" }) -- per-window: { cache, git, icons }
-local buf_data = setmetatable({}, { __mode = "k" }) -- per-buffer: { lsp_clients }
+local win_data = setmetatable({}, { __mode = "k" })
+local buf_data = setmetatable({}, { __mode = "k" })
 
 local function cache_lookup(cache, key, fnc)
   local value = cache[key]
@@ -73,7 +73,6 @@ local function cache_invalidate(cache, keys)
   end
 end
 
--- window data access
 local function get_win_data(winid)
   local d = win_data[winid]
   if not d then
@@ -85,7 +84,6 @@ end
 
 local function cleanup_win(winid) win_data[winid] = nil end
 
--- buffer data access
 local function get_buf_data(bufnr)
   local d = buf_data[bufnr]
   if not d then
@@ -97,7 +95,6 @@ end
 
 local function cleanup_buf(bufnr) buf_data[bufnr] = nil end
 
--- mode map
 local modes = {
   n = { display = " NOR ", hl = "StatusLineNormal" },
   i = { display = " INS ", hl = "StatusLineInsert" },
@@ -119,7 +116,6 @@ setmetatable(modes, {
   end
 })
 
--- buffer props (no caching)
 local function get_buf_props(buf)
   return {
     buftype = vim.bo[buf].buftype,
@@ -139,48 +135,41 @@ end
 local function is_active_win(winid) return winid == nvim_get_current_win() end
 
 local function refresh_win(winid)
-  if not nvim_win_is_valid(winid) then
-    cleanup_win(winid)
-    return
-  end
+  if not nvim_win_is_valid(winid) then cleanup_win(winid) return end
   local expr
   if is_excluded_buftype(winid) then
-    expr = strformat(STATUS_EXPR_SIMPLE, winid)
+    expr = format(STATUS_EXPR_SIMPLE, winid)
   elseif is_active_win(winid) then
-    expr = strformat(STATUS_EXPR_ADVANCED, winid)
+    expr = format(STATUS_EXPR_ADVANCED, winid)
   else
-    expr = strformat(STATUS_EXPR_INACTIVE, winid)
+    expr = format(STATUS_EXPR_INACTIVE, winid)
   end
   vim.wo[winid].statusline = expr
 end
 
--- icons
-local function get_file_icon(winid, filename, extension, use_colors)
+local function get_file_icon(winid, filename, extension, colored)
   local icons_cache = get_win_data(winid).icons
-  local cache_key = filename .. "." .. (extension or "") .. (use_colors and "_c" or "_p")
+  local cache_key = filename .. "." .. (extension or "") .. (colored and "_c" or "_p")
   local cached_value = icons_cache[cache_key]
-  if type(cached_value) == "string" then return cached_value end
-  if cached_value == false then return "" end
+  if cached_value ~= nil then
+    return type(cached_value) == "string" and cached_value or ""
+  end
   icons_cache[cache_key] = false
-
   vim.schedule(function()
     if not nvim_win_is_valid(winid) then return end
-    local devicons = require("nvim-web-devicons")
+    local ok, icon_module = pcall(require, "nvim-web-devicons")
     local icon_result = ""
-    if devicons then
-      local icon, hl_group = devicons.get_icon(filename, extension)
-      if icon and icon ~= "" then
-        if use_colors and hl_group and hl_group ~= "" then
-          icon_result = hl(hl_group, icon) .. " "
-        else
-          icon_result = icon .. " "
-        end
+    if ok and icon_module then
+      local icon, hl_group = icon_module.get_icon(filename, extension)
+      if icon then
+        icon_result = (colored and hl_group and hl(hl_group, icon) or icon) .. " "
       end
     end
     icons_cache[cache_key] = icon_result
     cache_invalidate(get_win_data(winid).cache, { "file_info", "inactive_filename" })
     refresh_win(winid)
   end)
+
   return ""
 end
 
@@ -216,17 +205,15 @@ end
 local function file_parts(bufnr)
   local name = nvim_buf_get_name(bufnr)
   if name == "" then return { filename = "[No Name]", extension = "" } end
-  local filename = fn.fnamemodify(name, ":t")
-  local extension = fn.fnamemodify(filename, ":e")
-  return { filename = filename, extension = extension }
+  local fname = fn.fnamemodify(name, ":t")
+  local ext = fn.fnamemodify(fname, ":e")
+  return { filename = fname, extension = ext }
 end
 
 local function create_components(winid, bufnr)
   local wdata = get_win_data(winid)
   local cache = wdata.cache
   local component = {}
-
-  -- Precompute mode details once for both mode and percentage components
   local mode_info = mode_details()
 
   component.mode = function()
@@ -251,7 +238,7 @@ local function create_components(winid, bufnr)
       local props = get_buf_props(bufnr)
       local status_flag = props.readonly and " " .. icons.readonly or
         props.modified and " " .. icons.modified or ""
-      return strformat("%s%s%s", icon, parts.filename, status_flag)
+      return icon .. parts.filename .. status_flag
     end)
   end
 
@@ -347,14 +334,14 @@ local M = {}
 
 M.status_simple = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
-  local components = create_components(winid, nvim_win_get_buf(winid))
-  return strformat("%%=%s%%=", components.simple_title())
+  local c = create_components(winid, nvim_win_get_buf(winid))
+  return "%=" .. c.simple_title() .. "%="
 end
 
 M.status_inactive = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
-  local components = create_components(winid, nvim_win_get_buf(winid))
-  return strformat("%%=%s%%=", components.inactive_filename())
+  local c = create_components(winid, nvim_win_get_buf(winid))
+  return "%=" .. c.inactive_filename() .. "%="
 end
 
 local function assemble(parts, sep)
@@ -379,7 +366,7 @@ M.status_advanced = function(winid)
 
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return strformat("%s%s%s%%=%s", left, string.rep(" ", gap), center, right)
+    return left .. string.rep(" ", gap) .. center .. "%=" .. right
   end
 
   return assemble({ left, center, right }, "%=")
@@ -402,13 +389,11 @@ local function update_win_for_buf(buf, cache_keys)
   end
 end
 
--- autocmds
 autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    local bufnr = nvim_win_get_buf(winid)
-    local name = nvim_buf_get_name(bufnr)
+    local name = nvim_buf_get_name(nvim_win_get_buf(winid))
     local cache_keys = name == "" and { "directory", "git_branch", "file_info", "inactive_filename" }
       or { "file_info", "inactive_filename" }
     cache_invalidate(get_win_data(winid).cache, cache_keys)
@@ -443,8 +428,7 @@ autocmd("DirChanged", {
   group = group,
   callback = function()
     for _, winid in ipairs(nvim_list_wins()) do
-      local bufnr = nvim_win_get_buf(winid)
-      if nvim_buf_get_name(bufnr) == "" then
+      if nvim_buf_get_name(nvim_win_get_buf(winid)) == "" then
         cache_invalidate(get_win_data(winid).cache, { "directory", "git_branch" })
         refresh_win(winid)
       end
