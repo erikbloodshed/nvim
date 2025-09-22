@@ -1,7 +1,25 @@
 local api, fn = vim.api, vim.fn
 local icons = require("ui.icons")
 
-local M = {}
+local config = {
+  seps = " • ",
+  exclude = {
+    buftypes = {
+      terminal = true,
+      prompt = true
+    },
+    filetypes = {
+      ["neo-tree"] = true,
+      NvimTree = true,
+      lazy = true,
+      lspinfo = true,
+      checkhealth = true,
+      help = true,
+      man = true,
+      qf = true,
+    },
+  },
+}
 
 local nvim_win_is_valid = api.nvim_win_is_valid
 local nvim_win_get_buf = api.nvim_win_get_buf
@@ -85,26 +103,6 @@ local cleanup_win_cache = function(winid)
   win_git_data[winid] = nil
   win_file_icon_data[winid] = nil
 end
-
-local config = {
-  seps = " • ",
-  exclude = {
-    buftypes = {
-      terminal = true,
-      prompt = true
-    },
-    filetypes = {
-      ["neo-tree"] = true,
-      NvimTree = true,
-      lazy = true,
-      lspinfo = true,
-      checkhealth = true,
-      help = true,
-      man = true,
-      qf = true,
-    },
-  },
-}
 
 local modes = setmetatable({
   ['n'] = { display = " NOR ", hl = "StatusLineNormal" },
@@ -460,6 +458,8 @@ local width_for = function(cache, key_or_str)
   return cache.widths[key_or_str] or 0
 end
 
+local M = {}
+
 M.status_simple = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
   local components = create_components(winid, nvim_win_get_buf(winid))
@@ -534,11 +534,22 @@ autocmd("ModeChanged", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    local cache = get_win_cache(winid)
-    cache_invalidate(cache, { "mode_details" })
+    cache_invalidate(get_win_cache(winid), { "mode_details" })
     refresh_win(winid)
   end
 })
+
+autocmd("BufEnter", {
+  group = group,
+  callback = function()
+    local winid = nvim_get_current_win()
+    cache_invalidate(get_win_cache(winid),
+      { "git_branch", "file_parts", "file_info", "directory", "lsp_status",
+        "diagnostics", "inactive_filename" })
+    refresh_win(winid)
+  end
+})
+
 
 autocmd({ "FocusGained", "DirChanged" }, {
   group = group,
@@ -551,18 +562,6 @@ autocmd({ "FocusGained", "DirChanged" }, {
       end
     end
   end,
-})
-
-autocmd("BufEnter", {
-  group = group,
-  callback = function()
-    local winid = nvim_get_current_win()
-    local cache = get_win_cache(winid)
-    cache_invalidate(cache,
-      { "git_branch", "file_parts", "file_info", "directory", "lsp_status",
-        "diagnostics", "inactive_filename" })
-    refresh_win(winid)
-  end
 })
 
 local update_win_for_buf = function(buf, cache_keys)
