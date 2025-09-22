@@ -56,6 +56,15 @@ local severity_tbl = {
 local win_data = setmetatable({}, { __mode = "k" })
 local buf_data = setmetatable({}, { __mode = "k" })
 
+local cache_keys = {
+  all = { "file_info", "inactive_filename", "lsp_status", "directory", "git_branch" },
+  git = "git_branch",
+  file = { "file_info", "inactive_filename" },
+  lsp = "lsp_status",
+  nolsp = { "file_info", "inactive_filename", "directory", "git_branch" },
+  dir = { "git_branch", "directory" }
+}
+
 local function cache_lookup(cache, key, fnc)
   local value = cache[key]
   if value ~= nil then return value end
@@ -135,7 +144,10 @@ end
 local function is_active_win(winid) return winid == nvim_get_current_win() end
 
 local function refresh_win(winid)
-  if not nvim_win_is_valid(winid) then cleanup_win(winid) return end
+  if not nvim_win_is_valid(winid) then
+    cleanup_win(winid)
+    return
+  end
   local expr
   if is_excluded_buftype(winid) then
     expr = format(STATUS_EXPR_SIMPLE, winid)
@@ -166,7 +178,7 @@ local function get_file_icon(winid, filename, extension, colored)
       end
     end
     icons_cache[cache_key] = icon_result
-    cache_invalidate(get_win_data(winid).cache, { "file_info", "inactive_filename" })
+    cache_invalidate(get_win_data(winid).cache, cache_keys.file)
     refresh_win(winid)
   end)
 
@@ -186,7 +198,7 @@ local function fetch_git_branch(winid, root)
     end
     git_data[root] = branch_hl
     if nvim_win_is_valid(winid) then
-      cache_invalidate(get_win_data(winid).cache, "git_branch")
+      cache_invalidate(get_win_data(winid).cache, cache_keys.git)
       refresh_win(winid)
     end
   end
@@ -280,11 +292,10 @@ local function create_components(winid, bufnr)
   end
 
   component.directory = function()
-    local name = nvim_buf_get_name(bufnr)
-    local dir_path = (name == "") and fn.getcwd() or vim.fs.dirname(name)
-    if dir_path == "." then dir_path = fn.getcwd() end
-    local display_name = fn.fnamemodify(dir_path, ":~")
-    if display_name and display_name ~= "" and display_name ~= "." then
+    local buf_name = nvim_buf_get_name(bufnr)
+    local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
+    local display_name = fn.fnamemodify(full_path, ":~")
+    if display_name and display_name ~= "" then
       return hl("Directory", icons.folder .. " " .. display_name)
     end
     return ""
@@ -382,9 +393,9 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-local function update_win_for_buf(buf, cache_keys)
+local function update_win_for_buf(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    cache_invalidate(get_win_data(winid).cache, cache_keys)
+    cache_invalidate(get_win_data(winid).cache, keys)
     refresh_win(winid)
   end
 end
@@ -393,10 +404,7 @@ autocmd("BufEnter", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    local name = nvim_buf_get_name(nvim_win_get_buf(winid))
-    local cache_keys = name == "" and { "directory", "git_branch", "file_info", "inactive_filename" }
-      or { "file_info", "inactive_filename" }
-    cache_invalidate(get_win_data(winid).cache, cache_keys)
+    cache_invalidate(get_win_data(winid).cache, cache_keys.all)
     refresh_win(winid)
   end,
 })
@@ -405,7 +413,7 @@ autocmd("FocusGained", {
   group = group,
   callback = function()
     local winid = nvim_get_current_win()
-    cache_invalidate(get_win_data(winid).cache, "git_branch")
+    cache_invalidate(get_win_data(winid).cache, cache_keys.git)
     refresh_win(winid)
   end,
 })
@@ -413,14 +421,14 @@ autocmd("FocusGained", {
 autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
-    update_win_for_buf(ev.buf, { "file_info", "inactive_filename" })
+    update_win_for_buf(ev.buf, cache_keys.file)
   end,
 })
 
 autocmd({ "BufWritePost", "BufFilePost" }, {
   group = group,
   callback = function(ev)
-    update_win_for_buf(ev.buf, { "file_info", "inactive_filename", "directory", "git_branch" })
+    update_win_for_buf(ev.buf, cache_keys.nolsp)
   end,
 })
 
@@ -429,7 +437,7 @@ autocmd("DirChanged", {
   callback = function()
     for _, winid in ipairs(nvim_list_wins()) do
       if nvim_buf_get_name(nvim_win_get_buf(winid)) == "" then
-        cache_invalidate(get_win_data(winid).cache, { "directory", "git_branch" })
+        cache_invalidate(get_win_data(winid).cache, cache_keys.dir)
         refresh_win(winid)
       end
     end
@@ -442,7 +450,7 @@ autocmd("LspAttach", {
     local clients = get_buf_data(ev.buf).lsp_clients
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client then clients[client.id] = client.name end
-    update_win_for_buf(ev.buf, "lsp_status")
+    update_win_for_buf(ev.buf, cache_keys.lsp)
   end,
 })
 
@@ -451,7 +459,7 @@ autocmd("LspDetach", {
   callback = function(ev)
     local clients = get_buf_data(ev.buf).lsp_clients
     clients[ev.data.client_id] = nil
-    update_win_for_buf(ev.buf, "lsp_status")
+    update_win_for_buf(ev.buf, cache_keys.lsp)
   end,
 })
 
