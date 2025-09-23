@@ -3,6 +3,7 @@ local icons = require("ui.icons")
 
 local config = {
   seps = " • ",
+  use_advanced_inactive = true, -- Set to true to use advanced layout for inactive windows
   exclude = {
     buftypes = { terminal = true, prompt = true },
     filetypes = {
@@ -17,7 +18,6 @@ local config = {
   },
 }
 
--- Highlight mapping - separate from content
 local highlight_map = {
   mode_normal = "StatusLineNormal",
   mode_insert = "StatusLineInsert",
@@ -47,7 +47,8 @@ local component_data = {
     n = { text = " NOR ", hl_key = "mode_normal" },
     i = { text = " INS ", hl_key = "mode_insert" },
     v = { text = " VIS ", hl_key = "mode_visual" },
-    V = { text = " V-L ", hl_key = "mode_visual" }, ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
+    V = { text = " V-L ", hl_key = "mode_visual" },
+    ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
     s = { text = " SEL ", hl_key = "mode_select" },
     S = { text = " S-L ", hl_key = "mode_select" },
     ["\19"] = { text = " S-B ", hl_key = "mode_select" },
@@ -102,7 +103,6 @@ local tbl_concat = table.concat
 local tbl_insert = table.insert
 local tbl_isempty = vim.tbl_isempty
 
--- Highlighting utility - applies highlight to content
 local function apply_highlight(content, hl_key)
   local hl_group = highlight_map[hl_key]
   if not hl_group or not content or content == "" then
@@ -145,7 +145,7 @@ content_builders.get_file_status_content = function(props)
   elseif props.modified then
     return " " .. icons.modified, "modified"
   else
-    return "  ", nil
+    return " ", nil
   end
 end
 
@@ -198,21 +198,22 @@ content_builders.get_diagnostics_content = function(bufnr)
 end
 
 -- Status expression templates
-local STATUS_EXPR_SIMPLE = "%%!v:lua.require'ui.statusline'.status_simple(%d)"
-local STATUS_EXPR_ADVANCED = "%%!v:lua.require'ui.statusline'.status_advanced(%d)"
-local STATUS_EXPR_INACTIVE = "%%!v:lua.require'ui.statusline'.status_inactive(%d)"
+local STATUS_EXPR_SIMPLE = "%%!v:lua.require'ui.statusline_refactored'.status_simple(%d)"
+local STATUS_EXPR_ADVANCED = "%%!v:lua.require'ui.statusline_refactored'.status_advanced(%d)"
+local STATUS_EXPR_INACTIVE = "%%!v:lua.require'ui.statusline_refactored'.status_inactive(%d)"
+local STATUS_EXPR_ADVANCED_INACTIVE = "%%!v:lua.require'ui.statusline_refactored'.status_advanced_inactive(%d)"
 
 -- Cache and data management (unchanged structure)
 local win_data = setmetatable({}, { __mode = "k" })
 local buf_data = setmetatable({}, { __mode = "k" })
 
 local cache_keys = {
-  all = { "file_info", "inactive_filename", "lsp_status", "directory", "git_branch" },
-  git = "git_branch",
-  file = { "file_info", "inactive_filename" },
-  lsp = "lsp_status",
-  nolsp = { "file_info", "inactive_filename", "directory", "git_branch" },
-  dir = { "git_branch", "directory" }
+  all = { "file_info", "file_info_plain", "inactive_filename", "lsp_status", "lsp_status_plain", "directory", "git_branch", "git_branch_plain" },
+  git = { "git_branch", "git_branch_plain" },
+  file = { "file_info", "file_info_plain", "inactive_filename" },
+  lsp = { "lsp_status", "lsp_status_plain" },
+  nolsp = { "file_info", "file_info_plain", "inactive_filename", "directory", "git_branch", "git_branch_plain" },
+  dir = { "git_branch", "git_branch_plain", "directory" }
 }
 
 local function cache_lookup(cache, key, fnc)
@@ -273,6 +274,8 @@ local function refresh_win(winid)
     expr = format(STATUS_EXPR_SIMPLE, winid)
   elseif is_active_win(winid) then
     expr = format(STATUS_EXPR_ADVANCED, winid)
+  elseif config.use_advanced_inactive then
+    expr = format(STATUS_EXPR_ADVANCED_INACTIVE, winid)
   else
     expr = format(STATUS_EXPR_INACTIVE, winid)
   end
@@ -311,7 +314,8 @@ local function get_file_icon(winid, filename, extension, colored)
 end
 
 -- Git branch handling (decoupled)
-local function fetch_git_branch(winid, root)
+local function fetch_git_branch(winid, root, apply_hl)
+  apply_hl = apply_hl or true -- Default to true for backward compatibility
   local function on_exit(job_output)
     local git_data = get_win_data(winid).git
     if not git_data then return end
@@ -320,7 +324,11 @@ local function fetch_git_branch(winid, root)
       local branch = job_output.stdout:gsub("%s*$", "")
       if branch ~= "" then
         local content = icons.git .. " " .. branch
-        branch_content = apply_highlight(content, "git")
+        if apply_hl then
+          branch_content = apply_highlight(content, "git")
+        else
+          branch_content = content
+        end
       end
     end
     git_data[root] = branch_content
@@ -337,24 +345,26 @@ local function fetch_git_branch(winid, root)
 end
 
 -- Component creation with separated highlighting
-local function create_components(winid, bufnr)
+local function create_components(winid, bufnr, apply_hl)
   local wdata = get_win_data(winid)
   local cache = wdata.cache
   local component = {}
+  local highlight_fn = apply_hl and apply_highlight or function(content, _) return content end
 
   component.mode = function()
     local content, hl_key = content_builders.get_mode_content()
-    return apply_highlight(content, hl_key)
+    return highlight_fn(content, hl_key)
   end
 
   component.file_info = function()
-    return cache_lookup(cache, "file_info", function()
+    local cache_key = apply_hl and "file_info" or "file_info_plain"
+    return cache_lookup(cache, cache_key, function()
       local parts = content_builders.get_file_parts(bufnr)
-      local icon = get_file_icon(winid, parts.filename, parts.extension, true)
+      local icon = get_file_icon(winid, parts.filename, parts.extension, apply_hl)
       local props = content_builders.get_buf_props(bufnr)
       local status_content, status_hl_key = content_builders.get_file_status_content(props)
-      local status = status_hl_key and apply_highlight(status_content, status_hl_key) or status_content
-      local file_content = apply_highlight(icon .. parts.filename, "file")
+      local status = status_hl_key and highlight_fn(status_content, status_hl_key) or status_content
+      local file_content = highlight_fn(icon .. parts.filename, "file")
       return file_content .. status
     end)
   end
@@ -373,11 +383,12 @@ local function create_components(winid, bufnr)
   component.simple_title = function()
     local props = content_builders.get_buf_props(bufnr)
     local content, hl_key = content_builders.get_simple_title_content(props)
-    return apply_highlight(content, hl_key)
+    return highlight_fn(content, hl_key)
   end
 
   component.git_branch = function()
-    return cache_lookup(cache, "git_branch", function()
+    local cache_key = apply_hl and "git_branch" or "git_branch_plain"
+    return cache_lookup(cache, cache_key, function()
       local buf_name = nvim_buf_get_name(bufnr)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
@@ -385,10 +396,20 @@ local function create_components(winid, bufnr)
       local root = vim.fs.dirname(gitdir[1])
       local git_data = wdata.git
       local cached_value = git_data[root]
-      if type(cached_value) == "string" then return cached_value end
+      if type(cached_value) == "string" then
+        if apply_hl then
+          return cached_value
+        else
+          -- Strip highlighting from cached git content
+          local plain_content = cached_value:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
+          return plain_content
+        end
+      end
       if cached_value == false then return "" end
       git_data[root] = false
-      vim.schedule(function() fetch_git_branch(winid, root) end)
+      vim.schedule(function()
+        fetch_git_branch(winid, root, apply_hl)
+      end)
       return ""
     end)
   end
@@ -396,30 +417,47 @@ local function create_components(winid, bufnr)
   component.directory = function()
     local buf_name = nvim_buf_get_name(bufnr)
     local content, hl_key = content_builders.get_directory_content(buf_name)
-    return hl_key and apply_highlight(content, hl_key) or content
+    return hl_key and highlight_fn(content, hl_key) or content
   end
 
   component.lsp_status = function()
-    return cache_lookup(cache, "lsp_status", function()
+    local cache_key = apply_hl and "lsp_status" or "lsp_status_plain"
+    return cache_lookup(cache, cache_key, function()
       local clients = get_buf_data(bufnr).lsp_clients
       local content, hl_key = content_builders.get_lsp_content(clients)
-      return hl_key and apply_highlight(content, hl_key) or content
+      return hl_key and highlight_fn(content, hl_key) or content
     end)
   end
 
   component.diagnostics = function()
-    local content, hl_key = content_builders.get_diagnostics_content(bufnr)
-    return hl_key and apply_highlight(content, hl_key) or content
+    if apply_hl then
+      local content, hl_key = content_builders.get_diagnostics_content(bufnr)
+      return hl_key and highlight_fn(content, hl_key) or content
+    else
+      -- For inactive, return plain diagnostics without highlighting
+      local counts = vim.diagnostic.count(bufnr)
+      if tbl_isempty(counts) then
+        return icons.ok
+      end
+      local parts = {}
+      for _, diag_info in ipairs(component_data.diagnostics) do
+        local count = counts[diag_info.severity_idx]
+        if count and count > 0 then
+          tbl_insert(parts, diag_info.icon .. ":" .. count)
+        end
+      end
+      return tbl_concat(parts, " ")
+    end
   end
 
   component.position = function()
     local content = "%l:%v"
-    return apply_highlight(content, "position")
+    return highlight_fn(content, "position")
   end
 
   component.percentage = function()
     local _, mode_hl_key = content_builders.get_mode_content()
-    return apply_highlight(" %P ", mode_hl_key)
+    return highlight_fn(" %P ", mode_hl_key)
   end
 
   return component
@@ -442,21 +480,40 @@ local M = {}
 
 M.status_simple = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
-  local c = create_components(winid, nvim_win_get_buf(winid))
+  local c = create_components(winid, nvim_win_get_buf(winid), true)
   return "%=" .. c.simple_title() .. "%="
 end
 
 M.status_inactive = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
-  local c = create_components(winid, nvim_win_get_buf(winid))
+  local c = create_components(winid, nvim_win_get_buf(winid), true)
   return "%=" .. c.inactive_filename() .. "  " .. "%="
+end
+
+M.status_advanced_inactive = function(winid)
+  if not nvim_win_is_valid(winid) then return "" end
+  local bufnr = nvim_win_get_buf(winid)
+  local c = create_components(winid, bufnr, false) -- No highlighting
+  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, config.seps)
+  local center = c.file_info()
+  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, config.seps)
+
+  local w_left, w_right, w_center, w_win =
+    width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
+
+  if (w_win - (w_left + w_right)) >= w_center + 4 then
+    local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
+    return left .. string.rep(" ", gap) .. center .. "%=" .. right
+  end
+
+  return assemble({ left, center, right }, "%=")
 end
 
 M.status_advanced = function(winid)
   local separator = apply_highlight(config.seps, "separator")
   if not nvim_win_is_valid(winid) then return "" end
   local bufnr = nvim_win_get_buf(winid)
-  local c = create_components(winid, bufnr)
+  local c = create_components(winid, bufnr, true) -- With highlighting
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, separator)
   local center = c.file_info()
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, separator)
@@ -472,7 +529,6 @@ M.status_advanced = function(winid)
   return assemble({ left, center, right }, "%=")
 end
 
--- Utility functions for external customization
 M.set_highlight = function(key, hl_group)
   highlight_map[key] = hl_group
 end
@@ -489,7 +545,6 @@ M.get_component_data = function(key)
   return component_data[key]
 end
 
--- Refresh functionality
 local function refresh(win)
   if win then
     refresh_win(win)
@@ -497,6 +552,20 @@ local function refresh(win)
     for _, w in ipairs(nvim_list_wins()) do refresh_win(w) end
   end
 end
+
+M.set_config = function(key, value)
+  config[key] = value
+  -- Refresh all windows when changing inactive statusline type
+  if key == "use_advanced_inactive" then
+    refresh()
+  end
+end
+
+M.get_config = function(key)
+  return config[key]
+end
+
+-- Refresh functionality
 
 -- Event handlers (unchanged logic)
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
