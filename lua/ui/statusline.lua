@@ -514,7 +514,7 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-local function update_win_for_buf(buf, keys)
+local update_win_for_buf = function(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
     cache_invalidate(get_win_data(winid).cache, keys)
     refresh_win(winid)
@@ -530,10 +530,11 @@ autocmd("BufEnter", {
 
 autocmd("FocusGained", {
   group = group,
-  callback = function()
-    local winid = nvim_get_current_win()
-    cache_invalidate(get_win_data(winid).cache, cache_keys.git)
-    refresh_win(winid)
+  callback = function(ev)
+    update_win_for_buf(ev.buf, cache_keys.git)
+    -- local winid = nvim_get_current_win()
+    -- cache_invalidate(get_win_data(winid).cache, cache_keys.git)
+    -- refresh_win(winid)
   end,
 })
 
