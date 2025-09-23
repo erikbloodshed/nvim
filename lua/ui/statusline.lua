@@ -199,11 +199,12 @@ local buf_data = setmetatable({}, { __mode = "k" })
 local cache_keys = {
   all = {
     "file_info", "file_info_plain", "inactive_filename", "directory",
-    "git_branch", "git_branch_plain",
+    "git_branch", "git_branch_plain", "diagnostics",
   },
   git = { "git_branch", "git_branch_plain" },
   file = { "file_info", "file_info_plain", "inactive_filename" },
-  dir = { "git_branch", "git_branch_plain", "directory" }
+  dir = { "git_branch", "git_branch_plain", "directory" },
+  diag = { "diagnostics_hl", "diagnostics_plain" }
 }
 
 local function cache_lookup(cache, key, fnc)
@@ -399,23 +400,27 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   component.diagnostics = function()
-    if apply_hl then
-      local content, hl_key = content_builders.get_diagnostics_content(bufnr)
-      return hl_key and highlight_fn(content, hl_key) or content
-    else
+    local key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
+    return cache_lookup(get_win_data(winid).cache, key, function()
       local counts = vim.diagnostic.count(bufnr)
       if tbl_isempty(counts) then
         return icons.ok
       end
-      local parts = {}
-      for _, diag_info in ipairs(component_data.diagnostics) do
-        local count = counts[diag_info.severity_idx]
-        if count and count > 0 then
-          tbl_insert(parts, diag_info.icon .. ":" .. count)
+
+      if apply_hl then
+        local content, hl_key = content_builders.get_diagnostics_content(bufnr)
+        return hl_key and highlight_fn(content, hl_key) or content
+      else
+        local parts = {}
+        for _, diag_info in ipairs(component_data.diagnostics) do
+          local count = counts[diag_info.severity_idx]
+          if count and count > 0 then
+            tbl_insert(parts, diag_info.icon .. ":" .. count)
+          end
         end
+        return tbl_concat(parts, " ")
       end
-      return tbl_concat(parts, " ")
-    end
+    end)
   end
 
   component.position = function()
@@ -525,9 +530,7 @@ autocmd("DirChanged", {
 autocmd("DiagnosticChanged", {
   group = group,
   callback = function(ev)
-    for _, winid in ipairs(fn.win_findbuf(ev.buf)) do
-      refresh_win(winid)
-    end
+    update_win_for_buf(ev.buf, cache_keys.diag)
   end,
 })
 
