@@ -179,7 +179,7 @@ end
 content_builders.get_diagnostics_content = function(bufnr)
   local counts = vim.diagnostic.count(bufnr)
   if tbl_isempty(counts) then
-    return icons.ok, "diagnostic_ok"
+    return apply_highlight(icons.ok, "diagnostic_ok")
   end
 
   local parts = {}
@@ -187,23 +187,21 @@ content_builders.get_diagnostics_content = function(bufnr)
     local count = counts[diag_info.severity_idx]
     if count and count > 0 then
       local content = diag_info.icon .. ":" .. count
-      local highlighted = apply_highlight(content, diag_info.hl_key)
-      tbl_insert(parts, highlighted)
+      tbl_insert(parts, apply_highlight(content, diag_info.hl_key))
     end
   end
-  return tbl_concat(parts, " "), nil
+  return tbl_concat(parts, " ")
 end
 
 local win_data = setmetatable({}, { __mode = "k" })
-local buf_data = setmetatable({}, { __mode = "k" })
 
 local cache_keys = {
   all = {
-    "file_info", "file_info_plain", "inactive_filename", "directory",
-    "git_branch", "git_branch_plain", "diagnostics_hl", "diagnostics_plain",
+    "file_info", "file_info_plain", "directory", "git_branch",
+    "git_branch_plain", "diagnostics_hl", "diagnostics_plain",
   },
   git = { "git_branch", "git_branch_plain" },
-  file = { "file_info", "file_info_plain", "inactive_filename" },
+  file = { "file_info", "file_info_plain" },
   dir = { "git_branch", "git_branch_plain", "directory" },
   diag = { "diagnostics_hl", "diagnostics_plain" }
 }
@@ -235,7 +233,6 @@ local function get_win_data(winid)
 end
 
 local function cleanup_win(winid) win_data[winid] = nil end
-local function cleanup_buf(bufnr) buf_data[bufnr] = nil end
 
 local function is_excluded_buftype(win)
   if not nvim_win_is_valid(win) then return false end
@@ -335,12 +332,12 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   component.inactive_filename = function()
-    return cache_lookup(cache, "inactive_filename", function()
+    return cache_lookup(cache, "file_info_plain", function()
       local parts = content_builders.get_file_parts(bufnr)
       local icon = get_file_icon(winid, parts.filename, parts.extension)
       local props = content_builders.get_buf_props(bufnr)
       local status_flag = props.readonly and " " .. icons.readonly or
-                          props.modified and " " .. icons.modified or ""
+        props.modified and " " .. icons.modified or ""
       return icon .. parts.filename .. status_flag
     end)
   end
@@ -400,12 +397,11 @@ local function create_components(winid, bufnr, apply_hl)
     return cache_lookup(cache, key, function()
       local counts = vim.diagnostic.count(bufnr)
       if tbl_isempty(counts) then
-        return icons.ok
+        return apply_hl and apply_highlight(icons.ok, "diagnostic_ok") or icons.ok
       end
 
       if apply_hl then
-        local content, hl_key = content_builders.get_diagnostics_content(bufnr)
-        return maybe_hl(content, hl_key) -- only highlights "ok", parts are already highlighted
+        return content_builders.get_diagnostics_content(bufnr)
       else
         local parts = {}
         for _, diag_info in ipairs(component_data.diagnostics) do
@@ -545,11 +541,6 @@ autocmd("WinClosed", {
     local winid = tonumber(ev.match)
     if winid then cleanup_win(winid) end
   end,
-})
-
-autocmd("BufWipeout", {
-  group = group,
-  callback = function(ev) cleanup_buf(ev.buf) end,
 })
 
 return M
