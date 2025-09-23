@@ -505,13 +505,13 @@ M.status_advanced_inactive = function(winid)
 end
 
 M.status_advanced = function(winid)
-  local separator = apply_highlight(config.seps, "separator")
+  local seps = apply_highlight(config.seps, "separator")
   if not nvim_win_is_valid(winid) then return "" end
   local bufnr = nvim_win_get_buf(winid)
   local c = create_components(winid, bufnr, true)
-  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, separator)
+  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, seps)
   local center = c.file_info()
-  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, separator)
+  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, seps)
 
   local w_left, w_right, w_center, w_win =
     width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
@@ -524,39 +524,12 @@ M.status_advanced = function(winid)
   return assemble({ left, center, right }, "%=")
 end
 
-M.set_highlight = function(key, hl_group)
-  highlight_map[key] = hl_group
-end
-
-M.get_highlight = function(key)
-  return highlight_map[key]
-end
-
-M.set_component_data = function(key, data)
-  component_data[key] = data
-end
-
-M.get_component_data = function(key)
-  return component_data[key]
-end
-
 local function refresh(win)
   if win then
     refresh_win(win)
   else
     for _, w in ipairs(nvim_list_wins()) do refresh_win(w) end
   end
-end
-
-M.set_config = function(key, value)
-  config[key] = value
-  if key == "use_advanced_inactive" then
-    refresh()
-  end
-end
-
-M.get_config = function(key)
-  return config[key]
 end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
