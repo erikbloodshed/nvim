@@ -35,8 +35,7 @@ local HL_FORMAT = "%%#%s#%s%%*"
 local function hl(name, text) return format(HL_FORMAT, name, text) end
 
 local POS_FORMAT = tbl_concat({
-  hl("StatusLineLabel", "Ln "), hl("StatusLineValue", "%l"),
-  hl("StatusLineLabel", ", Col "), hl("StatusLineValue", "%v"),
+  hl("StatusLineValue", "%l:%v"),
 })
 
 local SEP = hl("StatusLineSeparator", config.seps)
