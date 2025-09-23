@@ -45,7 +45,7 @@ autocmd({ "VimEnter" }, {
   callback = function()
     require("ui.input")
     require("ui.select")
-    require("ui.statusline")
+    require("ui.statusline_refactored")
 
     keyset({ 'n', 'i' }, "<Right>", function() require("bufswitch").goto_next_buf() end,
       { noremap = true, nowait = true, silent = true })
