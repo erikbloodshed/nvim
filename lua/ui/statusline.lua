@@ -424,26 +424,23 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   component.diagnostics = function()
-    local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
-    return cache_lookup(cache, cache_key, function()
-      if apply_hl then
-        local content, hl_key = content_builders.get_diagnostics_content(bufnr)
-        return hl_key and highlight_fn(content, hl_key) or content
-      else
-        local counts = vim.diagnostic.count(bufnr)
-        if tbl_isempty(counts) then
-          return icons.ok
-        end
-        local parts = {}
-        for _, diag_info in ipairs(component_data.diagnostics) do
-          local count = counts[diag_info.severity_idx]
-          if count and count > 0 then
-            tbl_insert(parts, diag_info.icon .. ":" .. count)
-          end
-        end
-        return tbl_concat(parts, " ")
+    if apply_hl then
+      local content, hl_key = content_builders.get_diagnostics_content(bufnr)
+      return hl_key and highlight_fn(content, hl_key) or content
+    else
+      local counts = vim.diagnostic.count(bufnr)
+      if tbl_isempty(counts) then
+        return icons.ok
       end
-    end)
+      local parts = {}
+      for _, diag_info in ipairs(component_data.diagnostics) do
+        local count = counts[diag_info.severity_idx]
+        if count and count > 0 then
+          tbl_insert(parts, diag_info.icon .. ":" .. count)
+        end
+      end
+      return tbl_concat(parts, " ")
+    end
   end
 
   component.position = function()
@@ -473,56 +470,39 @@ end
 
 local M = {}
 
-M.status_simple = function(winid)
-  if not nvim_win_is_valid(winid) then return "" end
-  local c = create_components(winid, nvim_win_get_buf(winid), true)
-  return "%=" .. c.simple_title() .. "%="
+local function build_status(winid, opts)
+  local bufnr = nvim_win_get_buf(winid)
+  local c = create_components(winid, bufnr, opts.highlight)
+  local sep = opts.highlight and apply_highlight(config.seps, "separator") or config.seps
+
+  if not opts.advanced then
+    return "%=" .. (opts.inactive and c.inactive_filename() or c.simple_title()) .. "%="
+  end
+
+  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
+  local center = c.file_info()
+  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
+
+  local w_left, w_right, w_center, w_win =
+    width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
+
+  if (w_win - (w_left + w_right)) >= w_center + 4 then
+    local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
+    return left .. string.rep(" ", gap) .. center .. "%=" .. right
+  end
+
+  return assemble({ left, center, right }, "%=")
 end
 
-M.status_inactive = function(winid)
-  if not nvim_win_is_valid(winid) then return "" end
-  local c = create_components(winid, nvim_win_get_buf(winid), true)
-  return "%=" .. c.inactive_filename() .. "  " .. "%="
-end
-
+M.status_simple = function(winid) return build_status(winid, { advanced = false, inactive = false, highlight = true }) end
+M.status_inactive = function(winid) return build_status(winid, { advanced = false, inactive = true, highlight = true }) end
+M.status_advanced = function(winid) return build_status(winid, { advanced = true, inactive = false, highlight = true }) end
 M.status_advanced_inactive = function(winid)
-  if not nvim_win_is_valid(winid) then return "" end
-  local bufnr = nvim_win_get_buf(winid)
-  local c = create_components(winid, bufnr, false)
-  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, config.seps)
-  local center = c.file_info()
-  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, config.seps)
-
-  local w_left, w_right, w_center, w_win =
-    width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
-
-  if (w_win - (w_left + w_right)) >= w_center + 4 then
-    local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return left .. string.rep(" ", gap) .. center .. "%=" .. right
-  end
-
-  return assemble({ left, center, right }, "%=")
+  return build_status(winid,
+    { advanced = true, inactive = true, highlight = false })
 end
 
-M.status_advanced = function(winid)
-  local seps = apply_highlight(config.seps, "separator")
-  if not nvim_win_is_valid(winid) then return "" end
-  local bufnr = nvim_win_get_buf(winid)
-  local c = create_components(winid, bufnr, true)
-  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, seps)
-  local center = c.file_info()
-  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, seps)
 
-  local w_left, w_right, w_center, w_win =
-    width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
-
-  if (w_win - (w_left + w_right)) >= w_center + 4 then
-    local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return left .. string.rep(" ", gap) .. center .. "%=" .. right
-  end
-
-  return assemble({ left, center, right }, "%=")
-end
 
 local function refresh(win)
   if win then
@@ -543,10 +523,8 @@ end
 
 autocmd("BufEnter", {
   group = group,
-  callback = function()
-    local winid = nvim_get_current_win()
-    cache_invalidate(get_win_data(winid).cache, cache_keys.all)
-    refresh_win(winid)
+  callback = function(ev)
+    update_win_for_buf(ev.buf, cache_keys.all)
   end,
 })
 
@@ -575,13 +553,8 @@ autocmd({ "BufWritePost", "BufFilePost" }, {
 
 autocmd("DirChanged", {
   group = group,
-  callback = function()
-    for _, winid in ipairs(nvim_list_wins()) do
-      if nvim_buf_get_name(nvim_win_get_buf(winid)) == "" then
-        cache_invalidate(get_win_data(winid).cache, cache_keys.dir)
-        refresh_win(winid)
-      end
-    end
+  callback = function(ev)
+    update_win_for_buf(ev.buf, cache_keys.dir)
   end,
 })
 
@@ -607,9 +580,7 @@ autocmd("LspDetach", {
 autocmd("DiagnosticChanged", {
   group = group,
   callback = function(ev)
-    local diagnostic_cache_keys = { "diagnostics_hl", "diagnostics_plain" }
     for _, winid in ipairs(fn.win_findbuf(ev.buf)) do
-      cache_invalidate(get_win_data(winid).cache, diagnostic_cache_keys)
       refresh_win(winid)
     end
   end,
