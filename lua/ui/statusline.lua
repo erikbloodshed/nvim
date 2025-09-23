@@ -204,16 +204,11 @@ local buf_data = setmetatable({}, { __mode = "k" })
 
 local cache_keys = {
   all = {
-    "file_info", "file_info_plain", "inactive_filename", "lsp_status",
-    "lsp_status_plain", "directory", "git_branch", "git_branch_plain",
-  },
-  git = { "git_branch", "git_branch_plain" },
-  file = { "file_info", "file_info_plain", "inactive_filename" },
-  lsp = { "lsp_status", "lsp_status_plain" },
-  nolsp = {
     "file_info", "file_info_plain", "inactive_filename", "directory",
     "git_branch", "git_branch_plain",
   },
+  git = { "git_branch", "git_branch_plain" },
+  file = { "file_info", "file_info_plain", "inactive_filename" },
   dir = { "git_branch", "git_branch_plain", "directory" }
 }
 
@@ -244,16 +239,6 @@ local function get_win_data(winid)
 end
 
 local function cleanup_win(winid) win_data[winid] = nil end
-
-local function get_buf_data(bufnr)
-  local d = buf_data[bufnr]
-  if not d then
-    d = { lsp_clients = {} }
-    buf_data[bufnr] = d
-  end
-  return d
-end
-
 local function cleanup_buf(bufnr) buf_data[bufnr] = nil end
 
 local function is_excluded_buftype(win)
@@ -415,12 +400,18 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   component.lsp_status = function()
-    local cache_key = apply_hl and "lsp_status" or "lsp_status_plain"
-    return cache_lookup(cache, cache_key, function()
-      local clients = get_buf_data(bufnr).lsp_clients
-      local content, hl_key = content_builders.get_lsp_content(clients)
-      return hl_key and highlight_fn(content, hl_key) or content
-    end)
+    local clients = vim.lsp.get_clients({ bufnr = bufnr })
+    if not clients or vim.tbl_isempty(clients) then
+      return ""
+    end
+
+    local names = {}
+    for _, client in ipairs(clients) do
+      table.insert(names, client.name)
+    end
+
+    local content, hl_key = content_builders.get_lsp_content(names)
+    return hl_key and highlight_fn(content, hl_key) or content
   end
 
   component.diagnostics = function()
@@ -532,9 +523,6 @@ autocmd("FocusGained", {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.git)
-    -- local winid = nvim_get_current_win()
-    -- cache_invalidate(get_win_data(winid).cache, cache_keys.git)
-    -- refresh_win(winid)
   end,
 })
 
@@ -548,7 +536,7 @@ autocmd("BufModifiedSet", {
 autocmd({ "BufWritePost", "BufFilePost" }, {
   group = group,
   callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.nolsp)
+    update_win_for_buf(ev.buf, cache_keys.all)
   end,
 })
 
@@ -556,25 +544,6 @@ autocmd("DirChanged", {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.dir)
-  end,
-})
-
-autocmd("LspAttach", {
-  group = group,
-  callback = function(ev)
-    local clients = get_buf_data(ev.buf).lsp_clients
-    local client = vim.lsp.get_client_by_id(ev.data.client_id)
-    if client then clients[client.id] = client.name end
-    update_win_for_buf(ev.buf, cache_keys.lsp)
-  end,
-})
-
-autocmd("LspDetach", {
-  group = group,
-  callback = function(ev)
-    local clients = get_buf_data(ev.buf).lsp_clients
-    clients[ev.data.client_id] = nil
-    update_win_for_buf(ev.buf, cache_keys.lsp)
   end,
 })
 
