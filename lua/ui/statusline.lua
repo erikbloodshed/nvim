@@ -353,7 +353,7 @@ end
 M.status_inactive = function(winid)
   if not nvim_win_is_valid(winid) then return "" end
   local c = create_components(winid, nvim_win_get_buf(winid))
-  return "%=" .. c.inactive_filename() .. "%="
+  return "%=" .. c.inactive_filename() .. "  " .. "%="
 end
 
 local function assemble(parts, sep)
