@@ -3,7 +3,6 @@ local icons = require("ui.icons")
 
 local config = {
   seps = " • ",
-  use_advanced_inactive = true,
   exclude = {
     buftypes = { terminal = true, prompt = true },
     filetypes = {
@@ -194,11 +193,6 @@ content_builders.get_diagnostics_content = function(bufnr)
   return tbl_concat(parts, " "), nil
 end
 
-local STATUS_EXPR_SIMPLE = "%%!v:lua.require'ui.statusline'.status_simple(%d)"
-local STATUS_EXPR_ADVANCED = "%%!v:lua.require'ui.statusline'.status_advanced(%d)"
-local STATUS_EXPR_INACTIVE = "%%!v:lua.require'ui.statusline'.status_inactive(%d)"
-local STATUS_EXPR_ADVANCED_INACTIVE = "%%!v:lua.require'ui.statusline'.status_advanced_inactive(%d)"
-
 local win_data = setmetatable({}, { __mode = "k" })
 local buf_data = setmetatable({}, { __mode = "k" })
 
@@ -248,24 +242,11 @@ local function is_excluded_buftype(win)
   return exclude.buftypes[props.buftype] or exclude.filetypes[props.filetype]
 end
 
-local function is_active_win(winid) return winid == nvim_get_current_win() end
+local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 
 local function refresh_win(winid)
-  if not nvim_win_is_valid(winid) then
-    cleanup_win(winid)
-    return
-  end
-  local expr
-  if is_excluded_buftype(winid) then
-    expr = format(STATUS_EXPR_SIMPLE, winid)
-  elseif is_active_win(winid) then
-    expr = format(STATUS_EXPR_ADVANCED, winid)
-  elseif config.use_advanced_inactive then
-    expr = format(STATUS_EXPR_ADVANCED_INACTIVE, winid)
-  else
-    expr = format(STATUS_EXPR_INACTIVE, winid)
-  end
-  vim.wo[winid].statusline = expr
+  if not nvim_win_is_valid(winid) then cleanup_win(winid) return end
+  vim.wo[winid].statusline = format(status_expr, winid)
 end
 
 local function get_file_icon(winid, filename, extension)
@@ -461,12 +442,12 @@ end
 
 local M = {}
 
-local function build_status(winid, opts)
+local build_status = function(winid, opts)
   local bufnr = nvim_win_get_buf(winid)
   local c = create_components(winid, bufnr, opts.highlight)
   local sep = opts.highlight and apply_highlight(config.seps, "separator") or config.seps
 
-  if not opts.advanced then
+  if not opts.enhanced then
     return "%=" .. (opts.inactive and c.inactive_filename() or c.simple_title()) .. "%="
   end
 
@@ -485,15 +466,17 @@ local function build_status(winid, opts)
   return assemble({ left, center, right }, "%=")
 end
 
-M.status_simple = function(winid) return build_status(winid, { advanced = false, inactive = false, highlight = true }) end
-M.status_inactive = function(winid) return build_status(winid, { advanced = false, inactive = true, highlight = true }) end
-M.status_advanced = function(winid) return build_status(winid, { advanced = true, inactive = false, highlight = true }) end
-M.status_advanced_inactive = function(winid)
-  return build_status(winid,
-    { advanced = true, inactive = true, highlight = false })
+M.status = function(winid)
+  local opts
+  if is_excluded_buftype(winid) then
+    opts = { highlight = true }
+  elseif winid == nvim_get_current_win() then
+    opts = { enhanced = true, highlight = true }
+  else
+    opts = { enhanced = true, inactive = true }
+  end
+  return build_status(winid, opts)
 end
-
-
 
 local function refresh(win)
   if win then
