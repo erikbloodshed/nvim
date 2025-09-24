@@ -110,7 +110,6 @@ local cache_keys = {
     "file_info", "file_info_plain", "directory", "git_branch",
     "git_branch_plain", "diagnostics_hl", "diagnostics_plain",
   },
-  git = { "git_branch", "git_branch_plain" },
   file = { "file_info", "file_info_plain" },
   dir = { "git_branch", "git_branch_plain", "directory" },
   diag = { "diagnostics_hl", "diagnostics_plain" }
@@ -396,13 +395,6 @@ autocmd({ "BufEnter", "BufWritePost"}, {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.all)
-  end,
-})
-
-autocmd("FocusGained", {
-  group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.git)
   end,
 })
 
