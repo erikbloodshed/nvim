@@ -186,24 +186,6 @@ local function get_file_icon(winid, file)
   return { icon = "", hl = nil }
 end
 
-local function fetch_git_branch(winid, root)
-  local function on_exit(job_output)
-    local git_data = win_data[winid] and win_data[winid].git
-    if not git_data then return end
-    local branch_name = ""
-    if job_output and job_output.code == 0 and job_output.stdout then
-      branch_name = job_output.stdout:gsub("%s*$", "")
-    end
-    git_data[root] = branch_name
-    if nvim_win_is_valid(winid) then
-      cache_clear(get_win_data(winid).cache, cache_keys.git)
-      refresh_win(winid)
-    end
-  end
-  vim.system({ "git", "symbolic-ref", "--short", "HEAD" },
-    { cwd = root, text = true, timeout = 2000 }, vim.schedule_wrap(on_exit))
-end
-
 local function conditional_hl(content, hl_key, apply_hl)
   if not apply_hl or not hl_key then return content or "" end
   local hl_group = hl_map[hl_key] or hl_key
@@ -237,22 +219,29 @@ local function create_components(winid, bufnr, apply_hl)
     local cache_key = apply_hl and "git_branch" or "git_branch_plain"
     return cache_lookup(cache, cache_key, function()
       local buf_name = nvim_buf_get_name(bufnr)
-      local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
-      local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
-      if not gitdir or not gitdir[1] then return "" end
-      local root = vim.fs.dirname(gitdir[1])
+      local cwd = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local git_data = wdata.git
-      local cached_branch_name = git_data[root]
-      if type(cached_branch_name) == "string" then
-        if cached_branch_name == "" then return "" end
-        return conditional_hl(icons.git .. " " .. cached_branch_name, "git", apply_hl)
-      else
-        if cached_branch_name == nil then
-          git_data[root] = false
-          vim.schedule(function() fetch_git_branch(winid, root) end)
-        end
+      if git_data[cwd] == nil then
+        git_data[cwd] = false -- mark as fetching
+        vim.system({ "git", "branch", "--show-current" },
+          { cwd = cwd, text = true, timeout = 2000 },
+          vim.schedule_wrap(function(result)
+            if not nvim_win_is_valid(winid) then return end
+            local branch_name = ""
+            if result.code == 0 and result.stdout then
+              branch_name = result.stdout:gsub("%s*$", "")
+            end
+            git_data[cwd] = branch_name
+            cache_clear(cache, cache_keys.git)
+            refresh_win(winid)
+          end))
         return ""
       end
+      local branch_name = git_data[cwd]
+      if type(branch_name) == "string" and branch_name ~= "" then
+        return conditional_hl(icons.git .. " " .. branch_name, "git", apply_hl)
+      end
+      return ""
     end)
   end
 
