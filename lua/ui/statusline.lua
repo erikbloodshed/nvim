@@ -97,7 +97,6 @@ local nvim_get_mode = api.nvim_get_mode
 local autocmd = api.nvim_create_autocmd
 local format = string.format
 local tbl_concat = table.concat
-local tbl_insert = table.insert
 local tbl_isempty = vim.tbl_isempty
 
 local function apply_highlight(content, key_or_group)
@@ -136,26 +135,6 @@ local get_simple_title_content = function(props)
     return title_data.text, title_data.hl_key
   end
   return "no file", "simple_title"
-end
-
-local get_directory_content = function(buf_name)
-  local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
-  local display_name = fn.fnamemodify(full_path, ":~")
-  if display_name and display_name ~= "" then
-    return icons.folder .. " " .. display_name, "directory"
-  end
-  return "", nil
-end
-
-local get_lsp_content = function(clients)
-  if not clients or tbl_isempty(clients) then
-    return "", nil
-  end
-  local parts = {}
-  for _, name in pairs(clients) do
-    tbl_insert(parts, name)
-  end
-  return icons.lsp .. " " .. tbl_concat(parts, ", "), "lsp"
 end
 
 local win_data = setmetatable({}, { __mode = "k" })
@@ -214,20 +193,32 @@ local function refresh_win(winid)
   vim.wo[winid].statusline = format(status_expr, winid)
 end
 
-local function get_file_icon(winid, filename, extension)
+local get_file_parts = function(bufnr)
+  local name = nvim_buf_get_name(bufnr)
+  if name == "" then
+    return { filename = "[No Name]", extension = "" }
+  end
+  local fname = fn.fnamemodify(name, ":t")
+  local ext = fn.fnamemodify(fname, ":e")
+  return { filename = fname, extension = ext }
+end
+
+local function get_file_icon(winid, file)
   local icons_cache = get_win_data(winid).icons
-  local cache_key = filename .. "." .. (extension or "")
+  local cache_key = file.filename .. "." .. (file.extension or "")
   local cached_value = icons_cache[cache_key]
   if cached_value ~= nil then
     return type(cached_value) == "table" and cached_value or { icon = "", hl = nil }
   end
+
   icons_cache[cache_key] = false
+
   vim.schedule(function()
     if not nvim_win_is_valid(winid) then return end
     local ok, icon_module = pcall(require, "nvim-web-devicons")
     local icon_result = { icon = "", hl = nil }
     if ok and icon_module then
-      local icon, hl_group = icon_module.get_icon(filename, extension)
+      local icon, hl_group = icon_module.get_icon(file.filename, file.extension)
       if icon then
         icon_result = { icon = icon .. " ", hl = hl_group }
       end
@@ -263,33 +254,6 @@ local function fetch_git_branch(winid, root)
   )
 end
 
-local get_diagnostics_content = function(bufnr)
-  local counts = vim.diagnostic.count(bufnr)
-  if tbl_isempty(counts) then
-    return apply_highlight(icons.ok, "diagnostic_ok")
-  end
-
-  local parts = {}
-  for _, diag_info in ipairs(component_data.diagnostics) do
-    local count = counts[diag_info.severity_idx]
-    if count and count > 0 then
-      local content = diag_info.icon .. ":" .. count
-      tbl_insert(parts, apply_highlight(content, diag_info.hl_key))
-    end
-  end
-  return tbl_concat(parts, " ")
-end
-
-local get_file_parts = function(bufnr)
-  local name = nvim_buf_get_name(bufnr)
-  if name == "" then
-    return { filename = "[No Name]", extension = "" }
-  end
-  local fname = fn.fnamemodify(name, ":t")
-  local ext = fn.fnamemodify(fname, ":e")
-  return { filename = fname, extension = ext }
-end
-
 local function maybe_hl(content, hl_key, apply_hl)
   if not apply_hl then return content end
   return apply_highlight(content, hl_key)
@@ -299,9 +263,7 @@ local function create_components(winid, bufnr, apply_hl)
   local wdata = get_win_data(winid)
   local mode = (nvim_get_mode() or {}).mode
   local mode_info = component_data.modes[mode]
-  local file = get_file_parts(bufnr)
   local props = get_buf_props(bufnr)
-  local icon_data = get_file_icon(winid, file.filename, file.extension)
   local cache = wdata.cache
   local component = {}
 
@@ -313,6 +275,8 @@ local function create_components(winid, bufnr, apply_hl)
   component.file_info = function()
     local cache_key = apply_hl and "file_info" or "file_info_plain"
     return cache_lookup(cache, cache_key, function()
+      local file = get_file_parts(bufnr)
+      local icon_data = get_file_icon(winid, file)
       local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
       local status_content, status_hl_key = get_file_status_content(props)
       local status = maybe_hl(status_content, status_hl_key, apply_hl)
@@ -353,8 +317,35 @@ local function create_components(winid, bufnr, apply_hl)
 
   component.directory = function()
     local buf_name = nvim_buf_get_name(bufnr)
-    local content, hl_key = get_directory_content(buf_name)
-    return maybe_hl(content, hl_key, apply_hl)
+    local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
+    local display_name = fn.fnamemodify(full_path, ":~")
+
+    if display_name and display_name ~= "" then
+      local content = icons.folder .. " " .. display_name
+      return maybe_hl(content, "directory", apply_hl)
+    end
+
+    return ""
+  end
+
+  component.diagnostics = function()
+    local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
+    return cache_lookup(cache, cache_key, function()
+      local counts = vim.diagnostic.count(bufnr)
+      if tbl_isempty(counts) then
+        return maybe_hl(icons.ok, "diagnostic_ok", apply_hl)
+      end
+
+      local parts = {}
+      for _, diag_info in ipairs(component_data.diagnostics) do
+        local count = counts[diag_info.severity_idx]
+        if count and count > 0 then
+          local content = diag_info.icon .. ":" .. count
+          parts[#parts + 1] = maybe_hl(content, diag_info.hl_key, apply_hl)
+        end
+      end
+      return tbl_concat(parts, " ")
+    end)
   end
 
   component.lsp_status = function()
@@ -362,35 +353,14 @@ local function create_components(winid, bufnr, apply_hl)
     if not clients or vim.tbl_isempty(clients) then
       return ""
     end
+
     local names = {}
     for _, client in ipairs(clients) do
-      tbl_insert(names, client.name)
+      names[#names + 1] = client.name
     end
-    local content, hl_key = get_lsp_content(names)
-    return maybe_hl(content, hl_key, apply_hl)
-  end
 
-  component.diagnostics = function()
-    local key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
-    return cache_lookup(cache, key, function()
-      local counts = vim.diagnostic.count(bufnr)
-      if tbl_isempty(counts) then
-        return apply_hl and apply_highlight(icons.ok, "diagnostic_ok") or icons.ok
-      end
-
-      if apply_hl then
-        return get_diagnostics_content(bufnr)
-      else
-        local parts = {}
-        for _, diag_info in ipairs(component_data.diagnostics) do
-          local count = counts[diag_info.severity_idx]
-          if count and count > 0 then
-            tbl_insert(parts, diag_info.icon .. ":" .. count)
-          end
-        end
-        return tbl_concat(parts, " ")
-      end
-    end)
+    local content = icons.lsp .. " " .. table.concat(names, ", ")
+    return maybe_hl(content, "lsp", apply_hl)
   end
 
   component.position = function()
@@ -411,7 +381,7 @@ end
 local function assemble(parts, sep)
   local tbl = {}
   for _, part in ipairs(parts) do
-    if part ~= "" then tbl_insert(tbl, part) end
+    if part ~= "" then tbl[#tbl + 1] = part end
   end
   return tbl_concat(tbl, sep)
 end
@@ -451,14 +421,14 @@ local function refresh(win)
   end
 end
 
-local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
-
 local update_win_for_buf = function(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
     cache_invalidate(get_win_data(winid).cache, keys)
     refresh_win(winid)
   end
 end
+
+local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 autocmd({ "BufEnter", "BufWritePost", "BufFilePost" }, {
   group = group,
