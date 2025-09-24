@@ -147,8 +147,9 @@ end
 local function is_excluded_buftype(win)
   if not nvim_win_is_valid(win) then return false end
   local bufnr = nvim_win_get_buf(win)
+  local bo = vim.bo[bufnr]
   local exclude = config.exclude
-  return exclude.buftypes[vim.bo[bufnr].buftype] or exclude.filetypes[vim.bo[bufnr].filetype]
+  return exclude.buftypes[bo.buftype] or exclude.filetypes[bo.filetype]
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
@@ -221,36 +222,14 @@ local function maybe_hl(content, hl_key, apply_hl)
 end
 
 local function create_components(winid, bufnr, apply_hl)
+  local mode_info = component_data.modes[(nvim_get_mode() or {}).mode]
   local wdata = get_win_data(winid)
-  local mode = (nvim_get_mode() or {}).mode
-  local mode_info = component_data.modes[mode]
   local cache = wdata.cache
   local component = {}
-
-  component.simple_title = function()
-    local title_data = component_data.simple_titles.buftype[vim.bo[bufnr].buftype] or
-      component_data.simple_titles.filetype[vim.bo[bufnr].filetype]
-    local content, hl_key = title_data and title_data.text or "no file",
-      title_data and title_data.hl_key or "simple_title"
-    return maybe_hl(content, hl_key, apply_hl)
-  end
 
   component.mode = function()
     local content, hl_key = mode_info.text, mode_info.hl_key
     return maybe_hl(content, hl_key, apply_hl)
-  end
-
-  component.file_info = function()
-    local cache_key = apply_hl and "file_info" or "file_info_plain"
-    return cache_lookup(cache, cache_key, function()
-      local file = get_file_parts(bufnr)
-      local icon_data = get_file_icon(winid, file)
-      local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local file_content = maybe_hl(file.filename, "file", apply_hl)
-      local status = vim.bo[bufnr].readonly and maybe_hl(" " .. icons.readonly, "readonly", apply_hl) or
-        vim.bo[bufnr].modified and maybe_hl(" " .. icons.modified, "modified", apply_hl) or " "
-      return icon_str .. file_content .. status
-    end)
   end
 
   component.directory = function()
@@ -285,6 +264,29 @@ local function create_components(winid, bufnr, apply_hl)
         return ""
       end
     end)
+  end
+
+  component.file_info = function()
+    local cache_key = apply_hl and "file_info" or "file_info_plain"
+    return cache_lookup(cache, cache_key, function()
+      local file = get_file_parts(bufnr)
+      local icon_data = get_file_icon(winid, file)
+      local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
+      local file_content = maybe_hl(file.filename, "file", apply_hl)
+      local bo = vim.bo[bufnr]
+      local status = bo.readonly and maybe_hl(" " .. icons.readonly, "readonly", apply_hl) or
+        bo.modified and maybe_hl(" " .. icons.modified, "modified", apply_hl) or " "
+      return icon_str .. file_content .. status
+    end)
+  end
+
+  component.simple_title = function()
+    local bo = vim.bo[bufnr]
+    local title_data = component_data.simple_titles.buftype[bo.buftype] or
+      component_data.simple_titles.filetype[bo.filetype]
+    local content, hl_key = title_data and title_data.text or "no file",
+      title_data and title_data.hl_key or "simple_title"
+    return maybe_hl(content, hl_key, apply_hl)
   end
 
   component.diagnostics = function()
@@ -390,7 +392,7 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-autocmd({ "BufEnter", "BufWritePost", "BufFilePost" }, {
+autocmd({ "BufEnter", "BufWritePost"}, {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.all)
