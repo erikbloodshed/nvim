@@ -18,7 +18,7 @@ local config = {
   },
 }
 
-local hl_map = {
+local hl_tbl = {
   mode_normal = "StatusLineNormal",
   mode_insert = "StatusLineInsert",
   mode_visual = "StatusLineVisual",
@@ -41,50 +41,50 @@ local hl_map = {
   diagnostic_ok = "DiagnosticOk",
 }
 
-local component_data = {
-  modes = {
-    n = { text = " NOR ", hl_key = "mode_normal" },
-    i = { text = " INS ", hl_key = "mode_insert" },
-    v = { text = " VIS ", hl_key = "mode_visual" },
-    V = { text = " V-L ", hl_key = "mode_visual" },
-    ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
-    s = { text = " SEL ", hl_key = "mode_select" },
-    S = { text = " S-L ", hl_key = "mode_select" },
-    ["\19"] = { text = " S-B ", hl_key = "mode_select" },
-    r = { text = " REP ", hl_key = "mode_replace" },
-    R = { text = " REP ", hl_key = "mode_replace" },
-    Rv = { text = " R-V ", hl_key = "mode_replace" },
-    c = { text = " CMD ", hl_key = "mode_command" },
+local modes_tbl = {
+  n = { text = " NOR ", hl_key = "mode_normal" },
+  i = { text = " INS ", hl_key = "mode_insert" },
+  v = { text = " VIS ", hl_key = "mode_visual" },
+  V = { text = " V-L ", hl_key = "mode_visual" },
+  ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
+  s = { text = " SEL ", hl_key = "mode_select" },
+  S = { text = " S-L ", hl_key = "mode_select" },
+  ["\19"] = { text = " S-B ", hl_key = "mode_select" },
+  r = { text = " REP ", hl_key = "mode_replace" },
+  R = { text = " REP ", hl_key = "mode_replace" },
+  Rv = { text = " R-V ", hl_key = "mode_replace" },
+  c = { text = " CMD ", hl_key = "mode_command" },
+}
+
+setmetatable(modes_tbl, {
+  __index = function()
+    return { text = " ??? ", hl_key = "mode_normal" }
+  end
+})
+
+local titles_tbl = {
+  buftype = {
+    terminal = { text = icons.terminal .. " terminal", hl_key = "simple_title" },
+    popup = { text = icons.dock .. " Popup", hl_key = "simple_title" }
   },
-  simple_titles = {
-    buftype = {
-      terminal = { text = icons.terminal .. " terminal", hl_key = "simple_title" },
-      popup = { text = icons.dock .. " Popup", hl_key = "simple_title" }
-    },
-    filetype = {
-      lazy = { text = icons.sleep .. " Lazy", hl_key = "simple_title" },
-      ["neo-tree"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
-      ["neo-tree-popup"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
-      lspinfo = { text = icons.info .. " LSP Info", hl_key = "simple_title" },
-      checkhealth = { text = icons.status .. " Health", hl_key = "simple_title" },
-      man = { text = icons.book .. " Manual", hl_key = "simple_title" },
-      qf = { text = icons.fix .. " Quickfix", hl_key = "simple_title" },
-      help = { text = icons.help .. " Help", hl_key = "simple_title" },
-    },
+  filetype = {
+    lazy = { text = icons.sleep .. " Lazy", hl_key = "simple_title" },
+    ["neo-tree"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
+    ["neo-tree-popup"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
+    lspinfo = { text = icons.info .. " LSP Info", hl_key = "simple_title" },
+    checkhealth = { text = icons.status .. " Health", hl_key = "simple_title" },
+    man = { text = icons.book .. " Manual", hl_key = "simple_title" },
+    qf = { text = icons.fix .. " Quickfix", hl_key = "simple_title" },
+    help = { text = icons.help .. " Help", hl_key = "simple_title" },
   },
-  diagnostics = {
+}
+
+local diagnostics_tbl = {
     { icon = icons.error, hl_key = "diagnostic_error", severity_idx = 1 },
     { icon = icons.warn, hl_key = "diagnostic_warn", severity_idx = 2 },
     { icon = icons.info, hl_key = "diagnostic_info", severity_idx = 3 },
     { icon = icons.hint, hl_key = "diagnostic_hint", severity_idx = 4 },
   }
-}
-
-setmetatable(component_data.modes, {
-  __index = function()
-    return { text = " ??? ", hl_key = "mode_normal" }
-  end
-})
 
 local cache_keys = {
   all = {
@@ -170,13 +170,13 @@ end
 
 local function conditional_hl(content, hl_key, apply_hl)
   if not apply_hl or not hl_key then return content or "" end
-  local hl_group = hl_map[hl_key] or hl_key
+  local hl_group = hl_tbl[hl_key] or hl_key
   if not hl_group or not content or content == "" then return content or "" end
   return string.format("%%#%s#%s%%*", hl_group, content)
 end
 
 local function create_components(winid, bufnr, apply_hl)
-  local mode_info = component_data.modes[(api.nvim_get_mode() or {}).mode]
+  local mode_info = modes_tbl[(api.nvim_get_mode() or {}).mode]
   local wdata = get_win_data(winid)
   local cache = wdata.cache
   local c = {}
@@ -248,8 +248,8 @@ local function create_components(winid, bufnr, apply_hl)
 
   c.simple_title = function()
     local bo = vim.bo[bufnr]
-    local title_data = component_data.simple_titles.buftype[bo.buftype] or
-      component_data.simple_titles.filetype[bo.filetype]
+    local title_data = titles_tbl.buftype[bo.buftype] or
+      titles_tbl.filetype[bo.filetype]
     local content, hl_key = title_data and title_data.text or "no file",
       title_data and title_data.hl_key or "simple_title"
     return conditional_hl(content, hl_key, apply_hl)
@@ -261,7 +261,7 @@ local function create_components(winid, bufnr, apply_hl)
       local counts = vim.diagnostic.count(bufnr)
       if vim.tbl_isempty(counts) then return conditional_hl(icons.ok, "diagnostic_ok", apply_hl) end
       local parts = {}
-      for _, diag_info in ipairs(component_data.diagnostics) do
+      for _, diag_info in ipairs(diagnostics_tbl) do
         local count = counts[diag_info.severity_idx]
         if count and count > 0 then
           local content = diag_info.icon .. ":" .. count
