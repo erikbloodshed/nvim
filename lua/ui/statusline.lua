@@ -93,8 +93,7 @@ end
 
 local function is_excluded_buftype(win)
   if not api.nvim_win_is_valid(win) then return false end
-  local bufnr = api.nvim_win_get_buf(win)
-  local bo = vim.bo[bufnr]
+  local bo = vim.bo[api.nvim_win_get_buf(win)]
   local exclude = config.exclude
   return exclude.buftypes[bo.buftype] or exclude.filetypes[bo.filetype]
 end
@@ -125,18 +124,23 @@ local function get_file_info(bufnr)
   return { name = fname, ext = ext, full_path = name }
 end
 
+local function refresh_keys(winid, keys)
+  cache_clear(get_win_data(winid).cache, keys)
+  refresh_win(winid)
+end
+
 local function create_components(winid, bufnr, apply_hl)
   local mode_info = modes_tbl[(api.nvim_get_mode() or {}).mode]
   local wdata = get_win_data(winid)
   local cache = wdata.cache
-  local c = {}
+  local C = {}
 
-  c.mode = function()
+  C.mode = function()
     local content, hl_key = mode_info.text, mode_info.hl_key
     return conditional_hl(content, hl_key, apply_hl)
   end
 
-  c.directory = function()
+  C.directory = function()
     local cache_key = apply_hl and "directory" or "directory_plain"
     return cache_lookup(cache, cache_key, function()
       local buf_name = api.nvim_buf_get_name(bufnr)
@@ -150,7 +154,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  c.git_branch = function()
+  C.git_branch = function()
     local cache_key = apply_hl and "git_branch" or "git_branch_plain"
     return cache_lookup(cache, cache_key, function()
       local buf_name = api.nvim_buf_get_name(bufnr)
@@ -167,8 +171,7 @@ local function create_components(winid, bufnr, apply_hl)
               branch_name = result.stdout:gsub("%s*$", "")
             end
             git_data[cwd] = branch_name
-            cache_clear(cache, { "git_branch", "git_branch_plain" })
-            refresh_win(winid)
+            refresh_keys(winid, { "git_branch", "git_branch_plain" })
           end))
         return ""
       end
@@ -180,7 +183,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  c.file_icon = function()
+  C.file_icon = function()
     local cache_key = apply_hl and "file_icon" or "file_icon_plain"
     return cache_lookup(cache, cache_key, function()
       local file_info = get_file_info(bufnr)
@@ -205,15 +208,14 @@ local function create_components(winid, bufnr, apply_hl)
           end
         end
         icons_cache[key] = icon_result
-        cache_clear(get_win_data(winid).cache, { "file_icon", "file_icon_plain" })
-        refresh_win(winid)
+        refresh_keys(winid, { "file_icon", "file_icon_plain" })
       end)
 
       return conditional_hl("", nil, apply_hl)
     end)
   end
 
-  c.file_name = function()
+  C.file_name = function()
     local cache_key = apply_hl and "file_name" or "file_name_plain"
     return cache_lookup(cache, cache_key, function()
       local file_info = get_file_info(bufnr)
@@ -221,7 +223,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  c.file_status = function()
+  C.file_status = function()
     local cache_key = apply_hl and "file_status" or "file_status_plain"
     return cache_lookup(cache, cache_key, function()
       local bo = vim.bo[bufnr]
@@ -234,14 +236,14 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  c.simple_title = function()
+  C.simple_title = function()
     local bo = vim.bo[bufnr]
     local title = titles_tbl.buftype[bo.buftype] or titles_tbl.filetype[bo.filetype]
     local content = title or "no file"
     return conditional_hl(content, "String", apply_hl)
   end
 
-  c.diagnostics = function()
+  C.diagnostics = function()
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
@@ -260,7 +262,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  c.lsp_status = function()
+  C.lsp_status = function()
     local clients = vim.lsp.get_clients({ bufnr = bufnr })
     if not clients or vim.tbl_isempty(clients) then return "" end
     local names = {}
@@ -271,15 +273,15 @@ local function create_components(winid, bufnr, apply_hl)
     return conditional_hl(content, "StatusLineLsp", apply_hl)
   end
 
-  c.position = function()
+  C.position = function()
     return conditional_hl("%l:%v", "StatusLineValue", apply_hl)
   end
 
-  c.percentage = function()
+  C.percentage = function()
     return conditional_hl(" %P ", mode_info.hl_key, apply_hl)
   end
 
-  return c
+  return C
 end
 
 local width_cache = setmetatable({}, { __mode = "k" })
@@ -309,18 +311,14 @@ M.status = function(winid)
   if is_excluded_buftype(winid) then
     return "%=" .. create_components(winid, bufnr, true).simple_title() .. "%="
   end
-
   local apply_hl = winid == api.nvim_get_current_win()
   local c = create_components(winid, bufnr, apply_hl)
   local sep = conditional_hl(config.seps, "StatusLineSeparator", apply_hl)
-
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
   local center = assemble({ c.file_icon(), c.file_name(), c.file_status() }, " ")
-
   local w_left, w_right, w_center, w_win =
     get_width(left), get_width(right), get_width(center), api.nvim_win_get_width(winid)
-
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return table.concat({ left, string.rep(" ", gap), center, "%=", right })
@@ -338,62 +336,58 @@ end
 
 local update_win = function(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    cache_clear(get_win_data(winid).cache, keys)
-    refresh_win(winid)
+    refresh_keys(winid, keys)
   end
 end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
+local cache_keys = {
+  all = {
+    "file_icon", "file_icon_plain",
+    "file_name", "file_name_plain",
+    "file_status", "file_status_plain",
+    "directory", "directory_plain",
+    "git_branch", "git_branch_plain",
+    "diagnostics_hl", "diagnostics_plain",
+  },
+  file_status = {
+    "file_status", "file_status_plain",
+  },
+  directory = {
+    "directory", "directory_plain",
+    "git_branch", "git_branch_plain",
+  },
+  diagnostics = {
+    "diagnostics_hl", "diagnostics_plain",
+  }
+}
+
 autocmd({ "BufWinEnter", "BufWritePost" }, {
   group = group,
   callback = function(ev)
-    update_win(ev.buf, {
-      "file_icon", "file_icon_plain",
-      "file_name", "file_name_plain",
-      "file_status", "file_status_plain",
-      "directory", "directory_plain",
-      "git_branch", "git_branch_plain",
-      "diagnostics_hl", "diagnostics_plain",
-    })
+    update_win(ev.buf, cache_keys.all)
   end,
 })
 
 autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
-    update_win(ev.buf, {
-      "file_status", "file_status_plain",
-    })
-  end,
-})
-
-autocmd({ "BufFilePost", "BufNewFile" }, {
-  group = group,
-  callback = function(ev)
-    update_win(ev.buf, {
-      "file_icon", "file_icon_plain",
-      "file_name", "file_name_plain",
-    })
+    update_win(ev.buf, cache_keys.file_status)
   end,
 })
 
 autocmd("DirChanged", {
   group = group,
   callback = function(ev)
-    update_win(ev.buf, {
-      "directory", "directory_plain",
-      "git_branch", "git_branch_plain",
-    })
+    update_win(ev.buf, cache_keys.directory)
   end,
 })
 
 autocmd("DiagnosticChanged", {
   group = group,
   callback = function(ev)
-    update_win(ev.buf, {
-      "diagnostics_hl", "diagnostics_plain",
-    })
+    update_win(ev.buf, cache_keys.diagnostics)
   end,
 })
 
