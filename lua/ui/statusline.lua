@@ -1,4 +1,5 @@
 local api, fn = vim.api, vim.fn
+local autocmd = api.nvim_create_autocmd
 local icons = require("ui.icons")
 
 local config = {
@@ -85,17 +86,6 @@ setmetatable(component_data.modes, {
   end
 })
 
-local nvim_win_is_valid = api.nvim_win_is_valid
-local nvim_win_get_buf = api.nvim_win_get_buf
-local nvim_buf_get_name = api.nvim_buf_get_name
-local nvim_get_current_win = api.nvim_get_current_win
-local nvim_list_wins = api.nvim_list_wins
-local nvim_win_get_width = api.nvim_win_get_width
-local nvim_get_mode = api.nvim_get_mode
-local autocmd = api.nvim_create_autocmd
-local tbl_concat = table.concat
-local tbl_isempty = vim.tbl_isempty
-
 local cache_keys = {
   all = {
     "file_info", "file_info_plain", "directory", "git_branch",
@@ -136,8 +126,8 @@ local function get_win_data(winid)
 end
 
 local function is_excluded_buftype(win)
-  if not nvim_win_is_valid(win) then return false end
-  local bufnr = nvim_win_get_buf(win)
+  if not api.nvim_win_is_valid(win) then return false end
+  local bufnr = api.nvim_win_get_buf(win)
   local bo = vim.bo[bufnr]
   local exclude = config.exclude
   return exclude.buftypes[bo.buftype] or exclude.filetypes[bo.filetype]
@@ -146,19 +136,11 @@ end
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 
 local function refresh_win(winid)
-  if not nvim_win_is_valid(winid) then
+  if not api.nvim_win_is_valid(winid) then
     win_data[winid] = nil
     return
   end
   vim.wo[winid].statusline = string.format(status_expr, winid)
-end
-
-local get_file_parts = function(bufnr)
-  local name = nvim_buf_get_name(bufnr)
-  if name == "" then return { name = "[No Name]", ext = "" } end
-  local fname = fn.fnamemodify(name, ":t")
-  local ext = fn.fnamemodify(fname, ":e")
-  return { name = fname, ext = ext }
 end
 
 local function get_file_icon(winid, file)
@@ -170,7 +152,7 @@ local function get_file_icon(winid, file)
   end
   icons_cache[cache_key] = false
   vim.schedule(function()
-    if not nvim_win_is_valid(winid) then return end
+    if not api.nvim_win_is_valid(winid) then return end
     local ok, icon_module = pcall(require, "nvim-web-devicons")
     local icon_result = { icon = "", hl = nil }
     if ok and icon_module then
@@ -194,7 +176,7 @@ local function conditional_hl(content, hl_key, apply_hl)
 end
 
 local function create_components(winid, bufnr, apply_hl)
-  local mode_info = component_data.modes[(nvim_get_mode() or {}).mode]
+  local mode_info = component_data.modes[(api.nvim_get_mode() or {}).mode]
   local wdata = get_win_data(winid)
   local cache = wdata.cache
   local c = {}
@@ -205,7 +187,7 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   c.directory = function()
-    local buf_name = nvim_buf_get_name(bufnr)
+    local buf_name = api.nvim_buf_get_name(bufnr)
     local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
     local display_name = fn.fnamemodify(full_path, ":~")
     if display_name and display_name ~= "" then
@@ -218,7 +200,7 @@ local function create_components(winid, bufnr, apply_hl)
   c.git_branch = function()
     local cache_key = apply_hl and "git_branch" or "git_branch_plain"
     return cache_lookup(cache, cache_key, function()
-      local buf_name = nvim_buf_get_name(bufnr)
+      local buf_name = api.nvim_buf_get_name(bufnr)
       local cwd = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local git_data = wdata.git
       if git_data[cwd] == nil then
@@ -226,7 +208,7 @@ local function create_components(winid, bufnr, apply_hl)
         vim.system({ "git", "branch", "--show-current" },
           { cwd = cwd, text = true, timeout = 2000 },
           vim.schedule_wrap(function(result)
-            if not nvim_win_is_valid(winid) then return end
+            if not api.nvim_win_is_valid(winid) then return end
             local branch_name = ""
             if result.code == 0 and result.stdout then
               branch_name = result.stdout:gsub("%s*$", "")
@@ -245,13 +227,18 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
+
   c.file_info = function()
     local cache_key = apply_hl and "file_info" or "file_info_plain"
     return cache_lookup(cache, cache_key, function()
-      local file = get_file_parts(bufnr)
-      local icon_data = get_file_icon(winid, file)
+      local name = api.nvim_buf_get_name(bufnr)
+      local fname, ext = "[No Name]", ""
+      if name ~= "" then
+        fname, ext = fn.fnamemodify(name, ":t"), fn.fnamemodify(name, ":e")
+      end
+      local icon_data = get_file_icon(winid, { name = fname, ext = ext })
       local icon_str = conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local file_content = conditional_hl(file.name, "file", apply_hl)
+      local file_content = conditional_hl(fname, "file", apply_hl)
       local bo = vim.bo[bufnr]
       local status = bo.readonly and conditional_hl(" " .. icons.readonly, "readonly", apply_hl) or
         bo.modified and conditional_hl(" " .. icons.modified, "modified", apply_hl) or " "
@@ -272,7 +259,7 @@ local function create_components(winid, bufnr, apply_hl)
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
-      if tbl_isempty(counts) then return conditional_hl(icons.ok, "diagnostic_ok", apply_hl) end
+      if vim.tbl_isempty(counts) then return conditional_hl(icons.ok, "diagnostic_ok", apply_hl) end
       local parts = {}
       for _, diag_info in ipairs(component_data.diagnostics) do
         local count = counts[diag_info.severity_idx]
@@ -281,7 +268,7 @@ local function create_components(winid, bufnr, apply_hl)
           parts[#parts + 1] = conditional_hl(content, diag_info.hl_key, apply_hl)
         end
       end
-      return tbl_concat(parts, " ")
+      return table.concat(parts, " ")
     end)
   end
 
@@ -324,37 +311,37 @@ local function assemble(parts, sep)
   for _, part in ipairs(parts) do
     if part ~= "" then tbl[#tbl + 1] = part end
   end
-  return tbl_concat(tbl, sep)
+  return table.concat(tbl, sep)
 end
 
 local M = {}
 
 M.status = function(winid)
-  local bufnr = nvim_win_get_buf(winid)
+  local bufnr = api.nvim_win_get_buf(winid)
   if is_excluded_buftype(winid) then
     local c = create_components(winid, bufnr, true)
     return "%=" .. c.simple_title() .. "%="
   end
-  local apply_hl = winid == nvim_get_current_win()
+  local apply_hl = winid == api.nvim_get_current_win()
   local c = create_components(winid, bufnr, apply_hl)
   local sep = conditional_hl(config.seps, "separator", apply_hl)
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
   local center = c.file_info()
   local w_left, w_right, w_center, w_win =
-    get_width(left), get_width(right), get_width(center), nvim_win_get_width(winid)
+    get_width(left), get_width(right), get_width(center), api.nvim_win_get_width(winid)
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return tbl_concat({ left, string.rep(" ", gap), center, "%=", right })
+    return table.concat({ left, string.rep(" ", gap), center, "%=", right })
   end
-  return tbl_concat({ left, center, right }, "%=")
+  return table.concat({ left, center, right }, "%=")
 end
 
 local function refresh(win)
   if win then
     refresh_win(win)
   else
-    for _, w in ipairs(nvim_list_wins()) do refresh_win(w) end
+    for _, w in ipairs(api.nvim_list_wins()) do refresh_win(w) end
   end
 end
 
