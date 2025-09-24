@@ -95,7 +95,6 @@ local nvim_list_wins = api.nvim_list_wins
 local nvim_win_get_width = api.nvim_win_get_width
 local nvim_get_mode = api.nvim_get_mode
 local autocmd = api.nvim_create_autocmd
-local format = string.format
 local tbl_concat = table.concat
 local tbl_isempty = vim.tbl_isempty
 
@@ -178,9 +177,9 @@ end
 
 local function is_excluded_buftype(win)
   if not nvim_win_is_valid(win) then return false end
-  local props = get_buf_props(nvim_win_get_buf(win))
+  local bufnr = nvim_win_get_buf(win)
   local exclude = config.exclude
-  return exclude.buftypes[props.buftype] or exclude.filetypes[props.filetype]
+  return exclude.buftypes[vim.bo[bufnr].buftype] or exclude.filetypes[vim.bo[bufnr].filetype]
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
@@ -190,7 +189,7 @@ local function refresh_win(winid)
     win_data[winid] = nil
     return
   end
-  vim.wo[winid].statusline = format(status_expr, winid)
+  vim.wo[winid].statusline = string.format(status_expr, winid)
 end
 
 local get_file_parts = function(bufnr)
@@ -267,6 +266,11 @@ local function create_components(winid, bufnr, apply_hl)
   local cache = wdata.cache
   local component = {}
 
+  component.simple_title = function()
+    local content, hl_key = get_simple_title_content(props)
+    return maybe_hl(content, hl_key, apply_hl)
+  end
+
   component.mode = function()
     local content, hl_key = mode_info.text, mode_info.hl_key
     return maybe_hl(content, hl_key, apply_hl)
@@ -285,9 +289,15 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  component.simple_title = function()
-    local content, hl_key = get_simple_title_content(props)
-    return maybe_hl(content, hl_key, apply_hl)
+  component.directory = function()
+    local buf_name = nvim_buf_get_name(bufnr)
+    local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
+    local display_name = fn.fnamemodify(full_path, ":~")
+    if display_name and display_name ~= "" then
+      local content = icons.folder .. " " .. display_name
+      return maybe_hl(content, "directory", apply_hl)
+    end
+    return ""
   end
 
   component.git_branch = function()
@@ -297,11 +307,9 @@ local function create_components(winid, bufnr, apply_hl)
       local buf_dir = buf_name ~= "" and fn.fnamemodify(buf_name, ":h") or fn.getcwd()
       local gitdir = vim.fs.find({ ".git" }, { upward = true, path = buf_dir })
       if not gitdir or not gitdir[1] then return "" end
-
       local root = vim.fs.dirname(gitdir[1])
       local git_data = wdata.git
       local cached_branch_name = git_data[root]
-
       if type(cached_branch_name) == "string" then
         if cached_branch_name == "" then return "" end
         return maybe_hl(icons.git .. " " .. cached_branch_name, "git", apply_hl)
@@ -315,27 +323,11 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  component.directory = function()
-    local buf_name = nvim_buf_get_name(bufnr)
-    local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
-    local display_name = fn.fnamemodify(full_path, ":~")
-
-    if display_name and display_name ~= "" then
-      local content = icons.folder .. " " .. display_name
-      return maybe_hl(content, "directory", apply_hl)
-    end
-
-    return ""
-  end
-
   component.diagnostics = function()
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
-      if tbl_isempty(counts) then
-        return maybe_hl(icons.ok, "diagnostic_ok", apply_hl)
-      end
-
+      if tbl_isempty(counts) then return maybe_hl(icons.ok, "diagnostic_ok", apply_hl) end
       local parts = {}
       for _, diag_info in ipairs(component_data.diagnostics) do
         local count = counts[diag_info.severity_idx]
@@ -350,15 +342,11 @@ local function create_components(winid, bufnr, apply_hl)
 
   component.lsp_status = function()
     local clients = vim.lsp.get_clients({ bufnr = bufnr })
-    if not clients or vim.tbl_isempty(clients) then
-      return ""
-    end
-
+    if not clients or vim.tbl_isempty(clients) then return "" end
     local names = {}
     for _, client in ipairs(clients) do
       names[#names + 1] = client.name
     end
-
     local content = icons.lsp .. " " .. table.concat(names, ", ")
     return maybe_hl(content, "lsp", apply_hl)
   end
@@ -374,8 +362,16 @@ local function create_components(winid, bufnr, apply_hl)
   return component
 end
 
+local width_cache = setmetatable({}, { __mode = "k" })
+
 local function width_for(str)
-  return fn.strdisplaywidth(str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", ""))
+  if not str or str == "" then return 0 end
+  local cached = width_cache[str]
+  if cached then return cached end
+  local cleaned = str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
+  local width = fn.strdisplaywidth(cleaned)
+  width_cache[str] = width
+  return width
 end
 
 local function assemble(parts, sep)
@@ -407,7 +403,7 @@ M.status = function(winid)
 
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
-    return left .. string.rep(" ", gap) .. center .. "%=" .. right
+    return tbl_concat({ left, string.rep(" ", gap), center, "%=", right })
   end
 
   return assemble({ left, center, right }, "%=")
