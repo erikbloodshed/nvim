@@ -18,71 +18,48 @@ local config = {
   },
 }
 
-local hl_tbl = {
-  mode_normal = "StatusLineNormal",
-  mode_insert = "StatusLineInsert",
-  mode_visual = "StatusLineVisual",
-  mode_select = "StatusLineSelect",
-  mode_replace = "StatusLineReplace",
-  mode_command = "StatusLineCommand",
-  separator = "StatusLineSeparator",
-  file = "StatusLineFile",
-  readonly = "StatusLineReadonly",
-  modified = "StatusLineModified",
-  git = "StatusLineGit",
-  lsp = "StatusLineLsp",
-  directory = "Directory",
-  position = "StatusLineValue",
-  simple_title = "String",
-  diagnostic_error = "DiagnosticError",
-  diagnostic_warn = "DiagnosticWarn",
-  diagnostic_info = "DiagnosticInfo",
-  diagnostic_hint = "DiagnosticHint",
-  diagnostic_ok = "DiagnosticOk",
-}
-
 local titles_tbl = {
   buftype = {
-    terminal = { text = icons.terminal .. " terminal", hl_key = "simple_title" },
-    popup = { text = icons.dock .. " Popup", hl_key = "simple_title" }
+    terminal = icons.terminal .. " terminal",
+    popup = icons.dock .. " Popup",
   },
   filetype = {
-    lazy = { text = icons.sleep .. " Lazy", hl_key = "simple_title" },
-    ["neo-tree"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
-    ["neo-tree-popup"] = { text = icons.file_tree .. " File Explorer", hl_key = "simple_title" },
-    lspinfo = { text = icons.info .. " LSP Info", hl_key = "simple_title" },
-    checkhealth = { text = icons.status .. " Health", hl_key = "simple_title" },
-    man = { text = icons.book .. " Manual", hl_key = "simple_title" },
-    qf = { text = icons.fix .. " Quickfix", hl_key = "simple_title" },
-    help = { text = icons.help .. " Help", hl_key = "simple_title" },
+    lazy = icons.sleep .. " Lazy",
+    ["neo-tree"] = icons.file_tree .. " File Explorer",
+    ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
+    lspinfo = icons.info .. " LSP Info",
+    checkhealth = icons.status .. " Health",
+    man = icons.book .. " Manual",
+    qf = icons.fix .. " Quickfix",
+    help = icons.help .. " Help",
   },
 }
 
 local diagnostics_tbl = {
-  { icon = icons.error, hl_key = "diagnostic_error", severity_idx = 1 },
-  { icon = icons.warn, hl_key = "diagnostic_warn", severity_idx = 2 },
-  { icon = icons.info, hl_key = "diagnostic_info", severity_idx = 3 },
-  { icon = icons.hint, hl_key = "diagnostic_hint", severity_idx = 4 },
+  { icon = icons.error, hl_key = "DiagnosticError", severity_idx = 1 },
+  { icon = icons.warn, hl_key = "DiagnosticWarn", severity_idx = 2 },
+  { icon = icons.info, hl_key = "DiagnosticInfo", severity_idx = 3 },
+  { icon = icons.hint, hl_key = "DiagnosticHint", severity_idx = 4 },
 }
 
 local modes_tbl = {
-  n = { text = " NOR ", hl_key = "mode_normal" },
-  i = { text = " INS ", hl_key = "mode_insert" },
-  v = { text = " VIS ", hl_key = "mode_visual" },
-  V = { text = " V-L ", hl_key = "mode_visual" },
-  ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
-  s = { text = " SEL ", hl_key = "mode_select" },
-  S = { text = " S-L ", hl_key = "mode_select" },
-  ["\19"] = { text = " S-B ", hl_key = "mode_select" },
-  r = { text = " REP ", hl_key = "mode_replace" },
-  R = { text = " REP ", hl_key = "mode_replace" },
-  Rv = { text = " R-V ", hl_key = "mode_replace" },
-  c = { text = " CMD ", hl_key = "mode_command" },
+  n = { text = " NOR ", hl_key = "StatusLineNormal" },
+  i = { text = " INS ", hl_key = "StatusLineInsert" },
+  v = { text = " VIS ", hl_key = "StatusLineVisual" },
+  V = { text = " V-L ", hl_key = "StatusLineVisual" },
+  ["\22"] = { text = " V-B ", hl_key = "StatusLineVisual" },
+  s = { text = " SEL ", hl_key = "StatusLineSelect" },
+  S = { text = " S-L ", hl_key = "StatusLineSelect" },
+  ["\19"] = { text = " S-B ", hl_key = "StatusLineSelect" },
+  r = { text = " REP ", hl_key = "StatusLineReplace" },
+  R = { text = " REP ", hl_key = "StatusLineReplace" },
+  Rv = { text = " R-V ", hl_key = "StatusLineReplace" },
+  c = { text = " CMD ", hl_key = "StatusLineCommand" },
 }
 
 setmetatable(modes_tbl, {
   __index = function()
-    return { text = " ??? ", hl_key = "mode_normal" }
+    return { text = " ??? ", hl_key = "StatusLineNormal" }
   end
 })
 
@@ -132,36 +109,11 @@ local function refresh_win(winid)
   vim.wo[winid].statusline = string.format(status_expr, winid)
 end
 
-local function get_file_icon(winid, file)
-  local icons_cache = get_win_data(winid).icons
-  local cache_key = file.name .. "." .. (file.ext or "")
-  local cached_value = icons_cache[cache_key]
-  if cached_value ~= nil then
-    return type(cached_value) == "table" and cached_value or { icon = "", hl = nil }
-  end
-  icons_cache[cache_key] = false
-  vim.schedule(function()
-    if not api.nvim_win_is_valid(winid) then return end
-    local ok, icon_module = pcall(require, "nvim-web-devicons")
-    local icon_result = { icon = "", hl = nil }
-    if ok and icon_module then
-      local icon, hl_group = icon_module.get_icon(file.name, file.ext)
-      if icon then
-        icon_result = { icon = icon, hl = hl_group }
-      end
-    end
-    icons_cache[cache_key] = icon_result
-    cache_clear(get_win_data(winid).cache, { "file_icon", "file_icon_plain" })
-    refresh_win(winid)
-  end)
-  return { icon = "", hl = nil }
-end
-
 local function conditional_hl(content, hl_key, apply_hl)
-  if not apply_hl or not hl_key then return content or "" end
-  local hl_group = hl_tbl[hl_key] or hl_key
-  if not hl_group or not content or content == "" then return content or "" end
-  return string.format("%%#%s#%s%%*", hl_group, content)
+  if not apply_hl or not hl_key or not content or content == "" then
+    return content or ""
+  end
+  return string.format("%%#%s#%s%%*", hl_key, content)
 end
 
 local function get_file_info(bufnr)
@@ -192,7 +144,7 @@ local function create_components(winid, bufnr, apply_hl)
       local display_name = fn.fnamemodify(full_path, ":~")
       if display_name and display_name ~= "" then
         local content = icons.folder .. " " .. display_name
-        return conditional_hl(content, "directory", apply_hl)
+        return conditional_hl(content, "Directory", apply_hl)
       end
       return ""
     end)
@@ -222,7 +174,7 @@ local function create_components(winid, bufnr, apply_hl)
       end
       local branch_name = git_data[cwd]
       if type(branch_name) == "string" and branch_name ~= "" then
-        return conditional_hl(icons.git .. " " .. branch_name, "git", apply_hl)
+        return conditional_hl(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
       end
       return ""
     end)
@@ -232,8 +184,32 @@ local function create_components(winid, bufnr, apply_hl)
     local cache_key = apply_hl and "file_icon" or "file_icon_plain"
     return cache_lookup(cache, cache_key, function()
       local file_info = get_file_info(bufnr)
-      local icon_data = get_file_icon(winid, file_info)
-      return conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
+      local icons_cache = get_win_data(winid).icons
+      local key = file_info.name .. "." .. (file_info.ext or "")
+      local cached_value = icons_cache[key]
+
+      if cached_value ~= nil then
+        local icon_data = type(cached_value) == "table" and cached_value or { icon = "", hl = nil }
+        return conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
+      end
+
+      icons_cache[key] = false
+      vim.schedule(function()
+        if not api.nvim_win_is_valid(winid) then return end
+        local ok, icon_module = pcall(require, "nvim-web-devicons")
+        local icon_result = { icon = "", hl = nil }
+        if ok and icon_module then
+          local icon, hl_group = icon_module.get_icon(file_info.name, file_info.ext)
+          if icon then
+            icon_result = { icon = icon, hl = hl_group }
+          end
+        end
+        icons_cache[key] = icon_result
+        cache_clear(get_win_data(winid).cache, { "file_icon", "file_icon_plain" })
+        refresh_win(winid)
+      end)
+
+      return conditional_hl("", nil, apply_hl)
     end)
   end
 
@@ -241,7 +217,7 @@ local function create_components(winid, bufnr, apply_hl)
     local cache_key = apply_hl and "file_name" or "file_name_plain"
     return cache_lookup(cache, cache_key, function()
       local file_info = get_file_info(bufnr)
-      return conditional_hl(file_info.name, "file", apply_hl)
+      return conditional_hl(file_info.name, "StatusLineFile", apply_hl)
     end)
   end
 
@@ -250,21 +226,19 @@ local function create_components(winid, bufnr, apply_hl)
     return cache_lookup(cache, cache_key, function()
       local bo = vim.bo[bufnr]
       if bo.readonly then
-        return conditional_hl(icons.readonly, "readonly", apply_hl)
+        return conditional_hl(icons.readonly, "StatusLineReadonly", apply_hl)
       elseif bo.modified then
-        return conditional_hl(icons.modified, "modified", apply_hl)
+        return conditional_hl(icons.modified, "StatusLineModified", apply_hl)
       end
-      return ""
+      return " "
     end)
   end
 
   c.simple_title = function()
     local bo = vim.bo[bufnr]
-    local title_data = titles_tbl.buftype[bo.buftype] or
-      titles_tbl.filetype[bo.filetype]
-    local content, hl_key = title_data and title_data.text or "no file",
-      title_data and title_data.hl_key or "simple_title"
-    return conditional_hl(content, hl_key, apply_hl)
+    local title = titles_tbl.buftype[bo.buftype] or titles_tbl.filetype[bo.filetype]
+    local content = title or "no file"
+    return conditional_hl(content, "String", apply_hl)
   end
 
   c.diagnostics = function()
@@ -272,7 +246,7 @@ local function create_components(winid, bufnr, apply_hl)
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
       if vim.tbl_isempty(counts) then
-        return conditional_hl(icons.ok, "diagnostic_ok", apply_hl)
+        return conditional_hl(icons.ok, "DiagnosticOk", apply_hl)
       end
       local parts = {}
       for _, diag_info in ipairs(diagnostics_tbl) do
@@ -294,11 +268,11 @@ local function create_components(winid, bufnr, apply_hl)
       names[#names + 1] = client.name
     end
     local content = icons.lsp .. " " .. table.concat(names, ", ")
-    return conditional_hl(content, "lsp", apply_hl)
+    return conditional_hl(content, "StatusLineLsp", apply_hl)
   end
 
   c.position = function()
-    return conditional_hl("%l:%v", "position", apply_hl)
+    return conditional_hl("%l:%v", "StatusLineValue", apply_hl)
   end
 
   c.percentage = function()
@@ -338,7 +312,7 @@ M.status = function(winid)
 
   local apply_hl = winid == api.nvim_get_current_win()
   local c = create_components(winid, bufnr, apply_hl)
-  local sep = conditional_hl(config.seps, "separator", apply_hl)
+  local sep = conditional_hl(config.seps, "StatusLineSeparator", apply_hl)
 
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
