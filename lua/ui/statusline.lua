@@ -65,17 +65,6 @@ local diagnostics_tbl = {
   { icon = icons.hint, hl_key = "diagnostic_hint", severity_idx = 4 },
 }
 
-local cache_keys = {
-  all = {
-    "file_info", "file_info_plain", "directory", "git_branch",
-    "git_branch_plain", "diagnostics_hl", "diagnostics_plain",
-  },
-  file = { "file_info", "file_info_plain" },
-  dir = { "git_branch", "git_branch_plain", "directory" },
-  git = { "git_branch", "git_branch_plain" },
-  diag = { "diagnostics_hl", "diagnostics_plain" }
-}
-
 local modes_tbl = {
   n = { text = " NOR ", hl_key = "mode_normal" },
   i = { text = " INS ", hl_key = "mode_insert" },
@@ -162,7 +151,7 @@ local function get_file_icon(winid, file)
       end
     end
     icons_cache[cache_key] = icon_result
-    cache_clear(get_win_data(winid).cache, cache_keys.file)
+    cache_clear(get_win_data(winid).cache, { "file_icon", "file_icon_plain" })
     refresh_win(winid)
   end)
   return { icon = "", hl = nil }
@@ -173,6 +162,15 @@ local function conditional_hl(content, hl_key, apply_hl)
   local hl_group = hl_tbl[hl_key] or hl_key
   if not hl_group or not content or content == "" then return content or "" end
   return string.format("%%#%s#%s%%*", hl_group, content)
+end
+
+local function get_file_info(bufnr)
+  local name = api.nvim_buf_get_name(bufnr)
+  local fname, ext = "[No Name]", ""
+  if name ~= "" then
+    fname, ext = fn.fnamemodify(name, ":t"), fn.fnamemodify(name, ":e")
+  end
+  return { name = fname, ext = ext, full_path = name }
 end
 
 local function create_components(winid, bufnr, apply_hl)
@@ -187,14 +185,17 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   c.directory = function()
-    local buf_name = api.nvim_buf_get_name(bufnr)
-    local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
-    local display_name = fn.fnamemodify(full_path, ":~")
-    if display_name and display_name ~= "" then
-      local content = icons.folder .. " " .. display_name
-      return conditional_hl(content, "directory", apply_hl)
-    end
-    return ""
+    local cache_key = apply_hl and "directory" or "directory_plain"
+    return cache_lookup(cache, cache_key, function()
+      local buf_name = api.nvim_buf_get_name(bufnr)
+      local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
+      local display_name = fn.fnamemodify(full_path, ":~")
+      if display_name and display_name ~= "" then
+        local content = icons.folder .. " " .. display_name
+        return conditional_hl(content, "directory", apply_hl)
+      end
+      return ""
+    end)
   end
 
   c.git_branch = function()
@@ -214,7 +215,7 @@ local function create_components(winid, bufnr, apply_hl)
               branch_name = result.stdout:gsub("%s*$", "")
             end
             git_data[cwd] = branch_name
-            cache_clear(cache, cache_keys.git)
+            cache_clear(cache, { "git_branch", "git_branch_plain" })
             refresh_win(winid)
           end))
         return ""
@@ -227,22 +228,33 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-
-  c.file_info = function()
-    local cache_key = apply_hl and "file_info" or "file_info_plain"
+  c.file_icon = function()
+    local cache_key = apply_hl and "file_icon" or "file_icon_plain"
     return cache_lookup(cache, cache_key, function()
-      local name = api.nvim_buf_get_name(bufnr)
-      local fname, ext = "[No Name]", ""
-      if name ~= "" then
-        fname, ext = fn.fnamemodify(name, ":t"), fn.fnamemodify(name, ":e")
-      end
-      local icon_data = get_file_icon(winid, { name = fname, ext = ext })
-      local icon_str = conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local file_content = conditional_hl(fname, "file", apply_hl)
+      local file_info = get_file_info(bufnr)
+      local icon_data = get_file_icon(winid, file_info)
+      return conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
+    end)
+  end
+
+  c.file_name = function()
+    local cache_key = apply_hl and "file_name" or "file_name_plain"
+    return cache_lookup(cache, cache_key, function()
+      local file_info = get_file_info(bufnr)
+      return conditional_hl(file_info.name, "file", apply_hl)
+    end)
+  end
+
+  c.file_status = function()
+    local cache_key = apply_hl and "file_status" or "file_status_plain"
+    return cache_lookup(cache, cache_key, function()
       local bo = vim.bo[bufnr]
-      local status = bo.readonly and conditional_hl(icons.readonly, "readonly", apply_hl) or
-        bo.modified and conditional_hl(icons.modified, "modified", apply_hl) or " "
-      return table.concat({ icon_str, file_content, status }, " ")
+      if bo.readonly then
+        return conditional_hl(icons.readonly, "readonly", apply_hl)
+      elseif bo.modified then
+        return conditional_hl(icons.modified, "modified", apply_hl)
+      end
+      return ""
     end)
   end
 
@@ -259,7 +271,9 @@ local function create_components(winid, bufnr, apply_hl)
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
-      if vim.tbl_isempty(counts) then return conditional_hl(icons.ok, "diagnostic_ok", apply_hl) end
+      if vim.tbl_isempty(counts) then
+        return conditional_hl(icons.ok, "diagnostic_ok", apply_hl)
+      end
       local parts = {}
       for _, diag_info in ipairs(diagnostics_tbl) do
         local count = counts[diag_info.severity_idx]
@@ -309,7 +323,7 @@ end
 local function assemble(parts, sep)
   local tbl = {}
   for _, part in ipairs(parts) do
-    if part ~= "" then tbl[#tbl + 1] = part end
+    if part and part ~= "" then tbl[#tbl + 1] = part end
   end
   return table.concat(tbl, sep)
 end
@@ -321,14 +335,18 @@ M.status = function(winid)
   if is_excluded_buftype(winid) then
     return "%=" .. create_components(winid, bufnr, true).simple_title() .. "%="
   end
+
   local apply_hl = winid == api.nvim_get_current_win()
   local c = create_components(winid, bufnr, apply_hl)
   local sep = conditional_hl(config.seps, "separator", apply_hl)
+
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
-  local center = c.file_info()
+  local center = assemble({ c.file_icon(), c.file_name(), c.file_status() }, " ")
+
   local w_left, w_right, w_center, w_win =
     get_width(left), get_width(right), get_width(center), api.nvim_win_get_width(winid)
+
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return table.concat({ left, string.rep(" ", gap), center, "%=", right })
@@ -355,22 +373,54 @@ local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 autocmd({ "BufWinEnter", "BufWritePost" }, {
   group = group,
-  callback = function(ev) update_win(ev.buf, cache_keys.all) end,
+  callback = function(ev)
+    update_win(ev.buf, {
+      "file_icon", "file_icon_plain",
+      "file_name", "file_name_plain",
+      "file_status", "file_status_plain",
+      "directory", "directory_plain",
+      "git_branch", "git_branch_plain",
+      "diagnostics_hl", "diagnostics_plain",
+    })
+  end,
 })
 
 autocmd("BufModifiedSet", {
   group = group,
-  callback = function(ev) update_win(ev.buf, cache_keys.file) end,
+  callback = function(ev)
+    update_win(ev.buf, {
+      "file_status", "file_status_plain",
+    })
+  end,
+})
+
+autocmd({ "BufFilePost", "BufNewFile" }, {
+  group = group,
+  callback = function(ev)
+    update_win(ev.buf, {
+      "file_icon", "file_icon_plain",
+      "file_name", "file_name_plain",
+    })
+  end,
 })
 
 autocmd("DirChanged", {
   group = group,
-  callback = function(ev) update_win(ev.buf, cache_keys.dir) end,
+  callback = function(ev)
+    update_win(ev.buf, {
+      "directory", "directory_plain",
+      "git_branch", "git_branch_plain",
+    })
+  end,
 })
 
 autocmd("DiagnosticChanged", {
   group = group,
-  callback = function(ev) update_win(ev.buf, cache_keys.diag) end,
+  callback = function(ev)
+    update_win(ev.buf, {
+      "diagnostics_hl", "diagnostics_plain",
+    })
+  end,
 })
 
 autocmd({ "VimResized", "WinResized" }, {
