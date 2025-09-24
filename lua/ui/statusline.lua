@@ -112,6 +112,7 @@ local cache_keys = {
   },
   file = { "file_info", "file_info_plain" },
   dir = { "git_branch", "git_branch_plain", "directory" },
+  git = { "git_branch", "git_branch_plain" },
   diag = { "diagnostics_hl", "diagnostics_plain" }
 }
 
@@ -391,7 +392,7 @@ end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
-autocmd({ "BufEnter", "BufWritePost"}, {
+autocmd({ "BufWinEnter", "BufWritePost" }, {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.all)
@@ -424,7 +425,7 @@ autocmd({ "VimResized", "WinResized" }, {
   callback = function() api.nvim_cmd({ cmd = "redrawstatus" }, {}) end,
 })
 
-autocmd({ "BufWinEnter", "WinEnter" }, {
+autocmd({ "WinEnter" }, {
   group = group,
   callback = function() refresh() end,
 })
