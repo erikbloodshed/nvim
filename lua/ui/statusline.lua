@@ -91,11 +91,11 @@ local modes_tbl = {
   c = { text = " CMD ", hl_key = "mode_command" },
 }
 
-setmetatable(modes_tbl, { __index = function()
+setmetatable(modes_tbl, {
+  __index = function()
     return { text = " ??? ", hl_key = "mode_normal" }
   end
 })
-
 
 local function cache_lookup(cache, key, fnc)
   local value = cache[key]
@@ -158,7 +158,7 @@ local function get_file_icon(winid, file)
     if ok and icon_module then
       local icon, hl_group = icon_module.get_icon(file.name, file.ext)
       if icon then
-        icon_result = { icon = icon .. " ", hl = hl_group }
+        icon_result = { icon = icon, hl = hl_group }
       end
     end
     icons_cache[cache_key] = icon_result
@@ -240,9 +240,9 @@ local function create_components(winid, bufnr, apply_hl)
       local icon_str = conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
       local file_content = conditional_hl(fname, "file", apply_hl)
       local bo = vim.bo[bufnr]
-      local status = bo.readonly and conditional_hl(" " .. icons.readonly, "readonly", apply_hl) or
-        bo.modified and conditional_hl(" " .. icons.modified, "modified", apply_hl) or " "
-      return icon_str .. file_content .. status
+      local status = bo.readonly and conditional_hl(icons.readonly, "readonly", apply_hl) or
+        bo.modified and conditional_hl(icons.modified, "modified", apply_hl) or " "
+      return table.concat({ icon_str, file_content, status }, " ")
     end)
   end
 
@@ -264,7 +264,7 @@ local function create_components(winid, bufnr, apply_hl)
       for _, diag_info in ipairs(diagnostics_tbl) do
         local count = counts[diag_info.severity_idx]
         if count and count > 0 then
-          local content = diag_info.icon .. ":" .. count
+          local content = string.format("%s:%d", diag_info.icon, count)
           parts[#parts + 1] = conditional_hl(content, diag_info.hl_key, apply_hl)
         end
       end
@@ -319,8 +319,7 @@ local M = {}
 M.status = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
   if is_excluded_buftype(winid) then
-    local c = create_components(winid, bufnr, true)
-    return "%=" .. c.simple_title() .. "%="
+    return "%=" .. create_components(winid, bufnr, true).simple_title() .. "%="
   end
   local apply_hl = winid == api.nvim_get_current_win()
   local c = create_components(winid, bufnr, apply_hl)
