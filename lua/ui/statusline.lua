@@ -41,27 +41,6 @@ local hl_tbl = {
   diagnostic_ok = "DiagnosticOk",
 }
 
-local modes_tbl = {
-  n = { text = " NOR ", hl_key = "mode_normal" },
-  i = { text = " INS ", hl_key = "mode_insert" },
-  v = { text = " VIS ", hl_key = "mode_visual" },
-  V = { text = " V-L ", hl_key = "mode_visual" },
-  ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
-  s = { text = " SEL ", hl_key = "mode_select" },
-  S = { text = " S-L ", hl_key = "mode_select" },
-  ["\19"] = { text = " S-B ", hl_key = "mode_select" },
-  r = { text = " REP ", hl_key = "mode_replace" },
-  R = { text = " REP ", hl_key = "mode_replace" },
-  Rv = { text = " R-V ", hl_key = "mode_replace" },
-  c = { text = " CMD ", hl_key = "mode_command" },
-}
-
-setmetatable(modes_tbl, {
-  __index = function()
-    return { text = " ??? ", hl_key = "mode_normal" }
-  end
-})
-
 local titles_tbl = {
   buftype = {
     terminal = { text = icons.terminal .. " terminal", hl_key = "simple_title" },
@@ -80,11 +59,11 @@ local titles_tbl = {
 }
 
 local diagnostics_tbl = {
-    { icon = icons.error, hl_key = "diagnostic_error", severity_idx = 1 },
-    { icon = icons.warn, hl_key = "diagnostic_warn", severity_idx = 2 },
-    { icon = icons.info, hl_key = "diagnostic_info", severity_idx = 3 },
-    { icon = icons.hint, hl_key = "diagnostic_hint", severity_idx = 4 },
-  }
+  { icon = icons.error, hl_key = "diagnostic_error", severity_idx = 1 },
+  { icon = icons.warn, hl_key = "diagnostic_warn", severity_idx = 2 },
+  { icon = icons.info, hl_key = "diagnostic_info", severity_idx = 3 },
+  { icon = icons.hint, hl_key = "diagnostic_hint", severity_idx = 4 },
+}
 
 local cache_keys = {
   all = {
@@ -96,6 +75,27 @@ local cache_keys = {
   git = { "git_branch", "git_branch_plain" },
   diag = { "diagnostics_hl", "diagnostics_plain" }
 }
+
+local modes_tbl = {
+  n = { text = " NOR ", hl_key = "mode_normal" },
+  i = { text = " INS ", hl_key = "mode_insert" },
+  v = { text = " VIS ", hl_key = "mode_visual" },
+  V = { text = " V-L ", hl_key = "mode_visual" },
+  ["\22"] = { text = " V-B ", hl_key = "mode_visual" },
+  s = { text = " SEL ", hl_key = "mode_select" },
+  S = { text = " S-L ", hl_key = "mode_select" },
+  ["\19"] = { text = " S-B ", hl_key = "mode_select" },
+  r = { text = " REP ", hl_key = "mode_replace" },
+  R = { text = " REP ", hl_key = "mode_replace" },
+  Rv = { text = " R-V ", hl_key = "mode_replace" },
+  c = { text = " CMD ", hl_key = "mode_command" },
+}
+
+setmetatable(modes_tbl, { __index = function()
+    return { text = " ??? ", hl_key = "mode_normal" }
+  end
+})
+
 
 local function cache_lookup(cache, key, fnc)
   local value = cache[key]
@@ -206,7 +206,7 @@ local function create_components(winid, bufnr, apply_hl)
       if git_data[cwd] == nil then
         git_data[cwd] = false -- mark as fetching
         vim.system({ "git", "branch", "--show-current" },
-          { cwd = cwd, text = true, timeout = 2000 },
+          { cwd = cwd, text = true, timeout = 1000 },
           vim.schedule_wrap(function(result)
             if not api.nvim_win_is_valid(winid) then return end
             local branch_name = ""
