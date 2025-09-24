@@ -17,7 +17,7 @@ local config = {
   },
 }
 
-local highlight_map = {
+local hl_map = {
   mode_normal = "StatusLineNormal",
   mode_insert = "StatusLineInsert",
   mode_visual = "StatusLineVisual",
@@ -98,7 +98,7 @@ local tbl_isempty = vim.tbl_isempty
 
 local function apply_highlight(content, key_or_group)
   if not key_or_group then return content end
-  local hl_group = highlight_map[key_or_group] or key_or_group
+  local hl_group = hl_map[key_or_group] or key_or_group
   if not hl_group or not content or content == "" then
     return content or ""
   end
@@ -124,7 +124,7 @@ local function cache_lookup(cache, key, fnc)
   return cache[key]
 end
 
-local function cache_invalidate(cache, keys)
+local function cache_clear(cache, keys)
   if not keys then return end
   if type(keys) == "string" then
     cache[keys] = nil
@@ -164,15 +164,15 @@ end
 
 local get_file_parts = function(bufnr)
   local name = nvim_buf_get_name(bufnr)
-  if name == "" then return { filename = "[No Name]", extension = "" } end
+  if name == "" then return { name = "[No Name]", ext = "" } end
   local fname = fn.fnamemodify(name, ":t")
   local ext = fn.fnamemodify(fname, ":e")
-  return { filename = fname, extension = ext }
+  return { name = fname, ext = ext }
 end
 
 local function get_file_icon(winid, file)
   local icons_cache = get_win_data(winid).icons
-  local cache_key = file.filename .. "." .. (file.extension or "")
+  local cache_key = file.name .. "." .. (file.ext or "")
   local cached_value = icons_cache[cache_key]
   if cached_value ~= nil then
     return type(cached_value) == "table" and cached_value or { icon = "", hl = nil }
@@ -183,13 +183,13 @@ local function get_file_icon(winid, file)
     local ok, icon_module = pcall(require, "nvim-web-devicons")
     local icon_result = { icon = "", hl = nil }
     if ok and icon_module then
-      local icon, hl_group = icon_module.get_icon(file.filename, file.extension)
+      local icon, hl_group = icon_module.get_icon(file.name, file.ext)
       if icon then
         icon_result = { icon = icon .. " ", hl = hl_group }
       end
     end
     icons_cache[cache_key] = icon_result
-    cache_invalidate(get_win_data(winid).cache, cache_keys.file)
+    cache_clear(get_win_data(winid).cache, cache_keys.file)
     refresh_win(winid)
   end)
   return { icon = "", hl = nil }
@@ -205,15 +205,12 @@ local function fetch_git_branch(winid, root)
     end
     git_data[root] = branch_name
     if nvim_win_is_valid(winid) then
-      cache_invalidate(get_win_data(winid).cache, cache_keys.git)
+      cache_clear(get_win_data(winid).cache, cache_keys.git)
       refresh_win(winid)
     end
   end
-  vim.system(
-    { "git", "symbolic-ref", "--short", "HEAD" },
-    { cwd = root, text = true, timeout = 2000 },
-    vim.schedule_wrap(on_exit)
-  )
+  vim.system({ "git", "symbolic-ref", "--short", "HEAD" },
+    { cwd = root, text = true, timeout = 2000 }, vim.schedule_wrap(on_exit))
 end
 
 local function maybe_hl(content, hl_key, apply_hl)
@@ -225,14 +222,14 @@ local function create_components(winid, bufnr, apply_hl)
   local mode_info = component_data.modes[(nvim_get_mode() or {}).mode]
   local wdata = get_win_data(winid)
   local cache = wdata.cache
-  local component = {}
+  local c = {}
 
-  component.mode = function()
+  c.mode = function()
     local content, hl_key = mode_info.text, mode_info.hl_key
     return maybe_hl(content, hl_key, apply_hl)
   end
 
-  component.directory = function()
+  c.directory = function()
     local buf_name = nvim_buf_get_name(bufnr)
     local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
     local display_name = fn.fnamemodify(full_path, ":~")
@@ -243,7 +240,7 @@ local function create_components(winid, bufnr, apply_hl)
     return ""
   end
 
-  component.git_branch = function()
+  c.git_branch = function()
     local cache_key = apply_hl and "git_branch" or "git_branch_plain"
     return cache_lookup(cache, cache_key, function()
       local buf_name = nvim_buf_get_name(bufnr)
@@ -266,13 +263,13 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  component.file_info = function()
+  c.file_info = function()
     local cache_key = apply_hl and "file_info" or "file_info_plain"
     return cache_lookup(cache, cache_key, function()
       local file = get_file_parts(bufnr)
       local icon_data = get_file_icon(winid, file)
       local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local file_content = maybe_hl(file.filename, "file", apply_hl)
+      local file_content = maybe_hl(file.name, "file", apply_hl)
       local bo = vim.bo[bufnr]
       local status = bo.readonly and maybe_hl(" " .. icons.readonly, "readonly", apply_hl) or
         bo.modified and maybe_hl(" " .. icons.modified, "modified", apply_hl) or " "
@@ -280,7 +277,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  component.simple_title = function()
+  c.simple_title = function()
     local bo = vim.bo[bufnr]
     local title_data = component_data.simple_titles.buftype[bo.buftype] or
       component_data.simple_titles.filetype[bo.filetype]
@@ -289,7 +286,7 @@ local function create_components(winid, bufnr, apply_hl)
     return maybe_hl(content, hl_key, apply_hl)
   end
 
-  component.diagnostics = function()
+  c.diagnostics = function()
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
@@ -306,7 +303,7 @@ local function create_components(winid, bufnr, apply_hl)
     end)
   end
 
-  component.lsp_status = function()
+  c.lsp_status = function()
     local clients = vim.lsp.get_clients({ bufnr = bufnr })
     if not clients or vim.tbl_isempty(clients) then return "" end
     local names = {}
@@ -317,15 +314,15 @@ local function create_components(winid, bufnr, apply_hl)
     return maybe_hl(content, "lsp", apply_hl)
   end
 
-  component.position = function()
+  c.position = function()
     return maybe_hl("%l:%v", "position", apply_hl)
   end
 
-  component.percentage = function()
+  c.percentage = function()
     return maybe_hl(" %P ", mode_info.hl_key, apply_hl)
   end
 
-  return component
+  return c
 end
 
 local width_cache = setmetatable({}, { __mode = "k" })
@@ -352,12 +349,10 @@ local M = {}
 
 M.status = function(winid)
   local bufnr = nvim_win_get_buf(winid)
-
   if is_excluded_buftype(winid) then
     local c = create_components(winid, bufnr, true)
     return "%=" .. c.simple_title() .. "%="
   end
-
   local highlight = winid == nvim_get_current_win()
   local c = create_components(winid, bufnr, highlight)
   local sep = highlight and apply_highlight(config.seps, "separator") or config.seps
@@ -366,12 +361,10 @@ M.status = function(winid)
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
   local w_left, w_right, w_center, w_win =
     width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
-
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return tbl_concat({ left, string.rep(" ", gap), center, "%=", right })
   end
-
   return assemble({ left, center, right }, "%=")
 end
 
@@ -383,9 +376,9 @@ local function refresh(win)
   end
 end
 
-local update_win_for_buf = function(buf, keys)
+local update_win = function(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    cache_invalidate(get_win_data(winid).cache, keys)
+    cache_clear(get_win_data(winid).cache, keys)
     refresh_win(winid)
   end
 end
@@ -394,30 +387,22 @@ local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
 
 autocmd({ "BufWinEnter", "BufWritePost" }, {
   group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.all)
-  end,
+  callback = function(ev) update_win(ev.buf, cache_keys.all) end,
 })
 
 autocmd("BufModifiedSet", {
   group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.file)
-  end,
+  callback = function(ev) update_win(ev.buf, cache_keys.file) end,
 })
 
 autocmd("DirChanged", {
   group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.dir)
-  end,
+  callback = function(ev) update_win(ev.buf, cache_keys.dir) end,
 })
 
 autocmd("DiagnosticChanged", {
   group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.diag)
-  end,
+  callback = function(ev) update_win(ev.buf, cache_keys.diag) end,
 })
 
 autocmd({ "VimResized", "WinResized" }, {
