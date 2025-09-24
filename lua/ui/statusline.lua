@@ -96,15 +96,6 @@ local autocmd = api.nvim_create_autocmd
 local tbl_concat = table.concat
 local tbl_isempty = vim.tbl_isempty
 
-local function apply_highlight(content, key_or_group)
-  if not key_or_group then return content end
-  local hl_group = hl_map[key_or_group] or key_or_group
-  if not hl_group or not content or content == "" then
-    return content or ""
-  end
-  return string.format("%%#%s#%s%%*", hl_group, content)
-end
-
 local cache_keys = {
   all = {
     "file_info", "file_info_plain", "directory", "git_branch",
@@ -213,9 +204,11 @@ local function fetch_git_branch(winid, root)
     { cwd = root, text = true, timeout = 2000 }, vim.schedule_wrap(on_exit))
 end
 
-local function maybe_hl(content, hl_key, apply_hl)
-  if not apply_hl then return content end
-  return apply_highlight(content, hl_key)
+local function conditional_hl(content, hl_key, apply_hl)
+  if not apply_hl or not hl_key then return content or "" end
+  local hl_group = hl_map[hl_key] or hl_key
+  if not hl_group or not content or content == "" then return content or "" end
+  return string.format("%%#%s#%s%%*", hl_group, content)
 end
 
 local function create_components(winid, bufnr, apply_hl)
@@ -226,7 +219,7 @@ local function create_components(winid, bufnr, apply_hl)
 
   c.mode = function()
     local content, hl_key = mode_info.text, mode_info.hl_key
-    return maybe_hl(content, hl_key, apply_hl)
+    return conditional_hl(content, hl_key, apply_hl)
   end
 
   c.directory = function()
@@ -235,7 +228,7 @@ local function create_components(winid, bufnr, apply_hl)
     local display_name = fn.fnamemodify(full_path, ":~")
     if display_name and display_name ~= "" then
       local content = icons.folder .. " " .. display_name
-      return maybe_hl(content, "directory", apply_hl)
+      return conditional_hl(content, "directory", apply_hl)
     end
     return ""
   end
@@ -252,7 +245,7 @@ local function create_components(winid, bufnr, apply_hl)
       local cached_branch_name = git_data[root]
       if type(cached_branch_name) == "string" then
         if cached_branch_name == "" then return "" end
-        return maybe_hl(icons.git .. " " .. cached_branch_name, "git", apply_hl)
+        return conditional_hl(icons.git .. " " .. cached_branch_name, "git", apply_hl)
       else
         if cached_branch_name == nil then
           git_data[root] = false
@@ -268,11 +261,11 @@ local function create_components(winid, bufnr, apply_hl)
     return cache_lookup(cache, cache_key, function()
       local file = get_file_parts(bufnr)
       local icon_data = get_file_icon(winid, file)
-      local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local file_content = maybe_hl(file.name, "file", apply_hl)
+      local icon_str = conditional_hl(icon_data.icon, icon_data.hl, apply_hl)
+      local file_content = conditional_hl(file.name, "file", apply_hl)
       local bo = vim.bo[bufnr]
-      local status = bo.readonly and maybe_hl(" " .. icons.readonly, "readonly", apply_hl) or
-        bo.modified and maybe_hl(" " .. icons.modified, "modified", apply_hl) or " "
+      local status = bo.readonly and conditional_hl(" " .. icons.readonly, "readonly", apply_hl) or
+        bo.modified and conditional_hl(" " .. icons.modified, "modified", apply_hl) or " "
       return icon_str .. file_content .. status
     end)
   end
@@ -283,20 +276,20 @@ local function create_components(winid, bufnr, apply_hl)
       component_data.simple_titles.filetype[bo.filetype]
     local content, hl_key = title_data and title_data.text or "no file",
       title_data and title_data.hl_key or "simple_title"
-    return maybe_hl(content, hl_key, apply_hl)
+    return conditional_hl(content, hl_key, apply_hl)
   end
 
   c.diagnostics = function()
     local cache_key = apply_hl and "diagnostics_hl" or "diagnostics_plain"
     return cache_lookup(cache, cache_key, function()
       local counts = vim.diagnostic.count(bufnr)
-      if tbl_isempty(counts) then return maybe_hl(icons.ok, "diagnostic_ok", apply_hl) end
+      if tbl_isempty(counts) then return conditional_hl(icons.ok, "diagnostic_ok", apply_hl) end
       local parts = {}
       for _, diag_info in ipairs(component_data.diagnostics) do
         local count = counts[diag_info.severity_idx]
         if count and count > 0 then
           local content = diag_info.icon .. ":" .. count
-          parts[#parts + 1] = maybe_hl(content, diag_info.hl_key, apply_hl)
+          parts[#parts + 1] = conditional_hl(content, diag_info.hl_key, apply_hl)
         end
       end
       return tbl_concat(parts, " ")
@@ -311,15 +304,15 @@ local function create_components(winid, bufnr, apply_hl)
       names[#names + 1] = client.name
     end
     local content = icons.lsp .. " " .. table.concat(names, ", ")
-    return maybe_hl(content, "lsp", apply_hl)
+    return conditional_hl(content, "lsp", apply_hl)
   end
 
   c.position = function()
-    return maybe_hl("%l:%v", "position", apply_hl)
+    return conditional_hl("%l:%v", "position", apply_hl)
   end
 
   c.percentage = function()
-    return maybe_hl(" %P ", mode_info.hl_key, apply_hl)
+    return conditional_hl(" %P ", mode_info.hl_key, apply_hl)
   end
 
   return c
@@ -327,7 +320,7 @@ end
 
 local width_cache = setmetatable({}, { __mode = "k" })
 
-local function width_for(str)
+local function get_width(str)
   if not str or str == "" then return 0 end
   local cached = width_cache[str]
   if cached then return cached end
@@ -353,19 +346,19 @@ M.status = function(winid)
     local c = create_components(winid, bufnr, true)
     return "%=" .. c.simple_title() .. "%="
   end
-  local highlight = winid == nvim_get_current_win()
-  local c = create_components(winid, bufnr, highlight)
-  local sep = highlight and apply_highlight(config.seps, "separator") or config.seps
+  local apply_hl = winid == nvim_get_current_win()
+  local c = create_components(winid, bufnr, apply_hl)
+  local sep = conditional_hl(config.seps, "separator", apply_hl)
   local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
-  local center = c.file_info()
   local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
+  local center = c.file_info()
   local w_left, w_right, w_center, w_win =
-    width_for(left), width_for(right), width_for(center), nvim_win_get_width(winid)
+    get_width(left), get_width(right), get_width(center), nvim_win_get_width(winid)
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return tbl_concat({ left, string.rep(" ", gap), center, "%=", right })
   end
-  return assemble({ left, center, right }, "%=")
+  return tbl_concat({ left, center, right }, "%=")
 end
 
 local function refresh(win)
