@@ -109,25 +109,7 @@ local function apply_highlight(content, key_or_group)
   return string.format("%%#%s#%s%%*", hl_group, content)
 end
 
-local content_builders = {}
-
-content_builders.get_mode_content = function()
-  local mode = (nvim_get_mode() or {}).mode
-  local mode_info = component_data.modes[mode]
-  return mode_info.text, mode_info.hl_key
-end
-
-content_builders.get_file_parts = function(bufnr)
-  local name = nvim_buf_get_name(bufnr)
-  if name == "" then
-    return { filename = "[No Name]", extension = "" }
-  end
-  local fname = fn.fnamemodify(name, ":t")
-  local ext = fn.fnamemodify(fname, ":e")
-  return { filename = fname, extension = ext }
-end
-
-content_builders.get_buf_props = function(buf)
+local get_buf_props = function(buf)
   return {
     buftype = vim.bo[buf].buftype,
     filetype = vim.bo[buf].filetype,
@@ -136,7 +118,7 @@ content_builders.get_buf_props = function(buf)
   }
 end
 
-content_builders.get_file_status_content = function(props)
+local get_file_status_content = function(props)
   if props.readonly then
     return " " .. icons.readonly, "readonly"
   elseif props.modified then
@@ -146,7 +128,7 @@ content_builders.get_file_status_content = function(props)
   end
 end
 
-content_builders.get_simple_title_content = function(props)
+local get_simple_title_content = function(props)
   local title_data = component_data.simple_titles.buftype[props.buftype] or
     component_data.simple_titles.filetype[props.filetype]
 
@@ -156,7 +138,7 @@ content_builders.get_simple_title_content = function(props)
   return "no file", "simple_title"
 end
 
-content_builders.get_directory_content = function(buf_name)
+local get_directory_content = function(buf_name)
   local full_path = (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
   local display_name = fn.fnamemodify(full_path, ":~")
   if display_name and display_name ~= "" then
@@ -165,7 +147,7 @@ content_builders.get_directory_content = function(buf_name)
   return "", nil
 end
 
-content_builders.get_lsp_content = function(clients)
+local get_lsp_content = function(clients)
   if not clients or tbl_isempty(clients) then
     return "", nil
   end
@@ -174,23 +156,6 @@ content_builders.get_lsp_content = function(clients)
     tbl_insert(parts, name)
   end
   return icons.lsp .. " " .. tbl_concat(parts, ", "), "lsp"
-end
-
-content_builders.get_diagnostics_content = function(bufnr)
-  local counts = vim.diagnostic.count(bufnr)
-  if tbl_isempty(counts) then
-    return apply_highlight(icons.ok, "diagnostic_ok")
-  end
-
-  local parts = {}
-  for _, diag_info in ipairs(component_data.diagnostics) do
-    local count = counts[diag_info.severity_idx]
-    if count and count > 0 then
-      local content = diag_info.icon .. ":" .. count
-      tbl_insert(parts, apply_highlight(content, diag_info.hl_key))
-    end
-  end
-  return tbl_concat(parts, " ")
 end
 
 local win_data = setmetatable({}, { __mode = "k" })
@@ -232,11 +197,9 @@ local function get_win_data(winid)
   return d
 end
 
-local function cleanup_win(winid) win_data[winid] = nil end
-
 local function is_excluded_buftype(win)
   if not nvim_win_is_valid(win) then return false end
-  local props = content_builders.get_buf_props(nvim_win_get_buf(win))
+  local props = get_buf_props(nvim_win_get_buf(win))
   local exclude = config.exclude
   return exclude.buftypes[props.buftype] or exclude.filetypes[props.filetype]
 end
@@ -245,7 +208,7 @@ local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 
 local function refresh_win(winid)
   if not nvim_win_is_valid(winid) then
-    cleanup_win(winid)
+    win_data[winid] = nil
     return
   end
   vim.wo[winid].statusline = format(status_expr, winid)
@@ -300,52 +263,67 @@ local function fetch_git_branch(winid, root)
   )
 end
 
+local get_diagnostics_content = function(bufnr)
+  local counts = vim.diagnostic.count(bufnr)
+  if tbl_isempty(counts) then
+    return apply_highlight(icons.ok, "diagnostic_ok")
+  end
+
+  local parts = {}
+  for _, diag_info in ipairs(component_data.diagnostics) do
+    local count = counts[diag_info.severity_idx]
+    if count and count > 0 then
+      local content = diag_info.icon .. ":" .. count
+      tbl_insert(parts, apply_highlight(content, diag_info.hl_key))
+    end
+  end
+  return tbl_concat(parts, " ")
+end
+
+local get_file_parts = function(bufnr)
+  local name = nvim_buf_get_name(bufnr)
+  if name == "" then
+    return { filename = "[No Name]", extension = "" }
+  end
+  local fname = fn.fnamemodify(name, ":t")
+  local ext = fn.fnamemodify(fname, ":e")
+  return { filename = fname, extension = ext }
+end
+
+local function maybe_hl(content, hl_key, apply_hl)
+  if not apply_hl then return content end
+  return apply_highlight(content, hl_key)
+end
+
 local function create_components(winid, bufnr, apply_hl)
   local wdata = get_win_data(winid)
+  local mode = (nvim_get_mode() or {}).mode
+  local mode_info = component_data.modes[mode]
+  local file = get_file_parts(bufnr)
+  local props = get_buf_props(bufnr)
+  local icon_data = get_file_icon(winid, file.filename, file.extension)
   local cache = wdata.cache
   local component = {}
 
-  local function maybe_hl(content, hl_key)
-    if not apply_hl then return content end
-    return apply_highlight(content, hl_key)
-  end
-
   component.mode = function()
-    local content, hl_key = content_builders.get_mode_content()
-    return maybe_hl(content, hl_key)
+    local content, hl_key = mode_info.text, mode_info.hl_key
+    return maybe_hl(content, hl_key, apply_hl)
   end
 
   component.file_info = function()
     local cache_key = apply_hl and "file_info" or "file_info_plain"
     return cache_lookup(cache, cache_key, function()
-      local parts = content_builders.get_file_parts(bufnr)
-      local icon_data = get_file_icon(winid, parts.filename, parts.extension)
-      local icon_str = apply_hl and apply_highlight(icon_data.icon, icon_data.hl) or icon_data.icon
-
-      local props = content_builders.get_buf_props(bufnr)
-      local status_content, status_hl_key = content_builders.get_file_status_content(props)
-      local status = maybe_hl(status_content, status_hl_key)
-
-      local file_content = maybe_hl(parts.filename, "file")
+      local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
+      local status_content, status_hl_key = get_file_status_content(props)
+      local status = maybe_hl(status_content, status_hl_key, apply_hl)
+      local file_content = maybe_hl(file.filename, "file", apply_hl)
       return icon_str .. file_content .. status
     end)
   end
 
-  component.inactive_filename = function()
-    return cache_lookup(cache, "file_info_plain", function()
-      local parts = content_builders.get_file_parts(bufnr)
-      local icon = get_file_icon(winid, parts.filename, parts.extension)
-      local props = content_builders.get_buf_props(bufnr)
-      local status_flag = props.readonly and " " .. icons.readonly or
-        props.modified and " " .. icons.modified or ""
-      return icon .. parts.filename .. status_flag
-    end)
-  end
-
   component.simple_title = function()
-    local props = content_builders.get_buf_props(bufnr)
-    local content, hl_key = content_builders.get_simple_title_content(props)
-    return maybe_hl(content, hl_key)
+    local content, hl_key = get_simple_title_content(props)
+    return maybe_hl(content, hl_key, apply_hl)
   end
 
   component.git_branch = function()
@@ -362,7 +340,7 @@ local function create_components(winid, bufnr, apply_hl)
 
       if type(cached_branch_name) == "string" then
         if cached_branch_name == "" then return "" end
-        return maybe_hl(icons.git .. " " .. cached_branch_name, "git")
+        return maybe_hl(icons.git .. " " .. cached_branch_name, "git", apply_hl)
       else
         if cached_branch_name == nil then
           git_data[root] = false
@@ -375,8 +353,8 @@ local function create_components(winid, bufnr, apply_hl)
 
   component.directory = function()
     local buf_name = nvim_buf_get_name(bufnr)
-    local content, hl_key = content_builders.get_directory_content(buf_name)
-    return maybe_hl(content, hl_key)
+    local content, hl_key = get_directory_content(buf_name)
+    return maybe_hl(content, hl_key, apply_hl)
   end
 
   component.lsp_status = function()
@@ -388,8 +366,8 @@ local function create_components(winid, bufnr, apply_hl)
     for _, client in ipairs(clients) do
       tbl_insert(names, client.name)
     end
-    local content, hl_key = content_builders.get_lsp_content(names)
-    return maybe_hl(content, hl_key)
+    local content, hl_key = get_lsp_content(names)
+    return maybe_hl(content, hl_key, apply_hl)
   end
 
   component.diagnostics = function()
@@ -401,7 +379,7 @@ local function create_components(winid, bufnr, apply_hl)
       end
 
       if apply_hl then
-        return content_builders.get_diagnostics_content(bufnr)
+        return get_diagnostics_content(bufnr)
       else
         local parts = {}
         for _, diag_info in ipairs(component_data.diagnostics) do
@@ -416,12 +394,11 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   component.position = function()
-    return maybe_hl("%l:%v", "position")
+    return maybe_hl("%l:%v", "position", apply_hl)
   end
 
   component.percentage = function()
-    local _, mode_hl_key = content_builders.get_mode_content()
-    return maybe_hl(" %P ", mode_hl_key)
+    return maybe_hl(" %P ", mode_info.hl_key, apply_hl)
   end
 
   return component
@@ -483,7 +460,7 @@ local update_win_for_buf = function(buf, keys)
   end
 end
 
-autocmd("BufEnter", {
+autocmd({ "BufEnter", "BufWritePost", "BufFilePost" }, {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.all)
@@ -501,13 +478,6 @@ autocmd("BufModifiedSet", {
   group = group,
   callback = function(ev)
     update_win_for_buf(ev.buf, cache_keys.file)
-  end,
-})
-
-autocmd({ "BufWritePost", "BufFilePost" }, {
-  group = group,
-  callback = function(ev)
-    update_win_for_buf(ev.buf, cache_keys.all)
   end,
 })
 
@@ -539,7 +509,7 @@ autocmd("WinClosed", {
   group = group,
   callback = function(ev)
     local winid = tonumber(ev.match)
-    if winid then cleanup_win(winid) end
+    if winid then win_data[winid] = nil end
   end,
 })
 
