@@ -9,8 +9,8 @@ local config = {
       ["neo-tree"] = true,
       lazy = true,
       lspinfo = true,
-      checkhealth = true,
-      help = true,
+      checkhealth = false,
+      help = false,
       man = true,
       qf = true,
     },
@@ -55,7 +55,6 @@ local component_data = {
     Rv = { text = " R-V ", hl_key = "mode_replace" },
     c = { text = " CMD ", hl_key = "mode_command" },
   },
-
   simple_titles = {
     buftype = {
       terminal = { text = icons.terminal .. " terminal", hl_key = "simple_title" },
@@ -72,7 +71,6 @@ local component_data = {
       help = { text = icons.help .. " Help", hl_key = "simple_title" },
     },
   },
-
   diagnostics = {
     { icon = icons.error, hl_key = "diagnostic_error", severity_idx = 1 },
     { icon = icons.warn, hl_key = "diagnostic_warn", severity_idx = 2 },
@@ -107,37 +105,6 @@ local function apply_highlight(content, key_or_group)
   return string.format("%%#%s#%s%%*", hl_group, content)
 end
 
-local get_buf_props = function(buf)
-  return {
-    buftype = vim.bo[buf].buftype,
-    filetype = vim.bo[buf].filetype,
-    readonly = vim.bo[buf].readonly,
-    modified = vim.bo[buf].modified,
-  }
-end
-
-local get_file_status_content = function(props)
-  if props.readonly then
-    return " " .. icons.readonly, "readonly"
-  elseif props.modified then
-    return " " .. icons.modified, "modified"
-  else
-    return " ", nil
-  end
-end
-
-local get_simple_title_content = function(props)
-  local title_data = component_data.simple_titles.buftype[props.buftype] or
-    component_data.simple_titles.filetype[props.filetype]
-
-  if title_data then
-    return title_data.text, title_data.hl_key
-  end
-  return "no file", "simple_title"
-end
-
-local win_data = setmetatable({}, { __mode = "k" })
-
 local cache_keys = {
   all = {
     "file_info", "file_info_plain", "directory", "git_branch",
@@ -165,6 +132,8 @@ local function cache_invalidate(cache, keys)
     for i = 1, #keys do cache[keys[i]] = nil end
   end
 end
+
+local win_data = setmetatable({}, { __mode = "k" })
 
 local function get_win_data(winid)
   local d = win_data[winid]
@@ -194,9 +163,7 @@ end
 
 local get_file_parts = function(bufnr)
   local name = nvim_buf_get_name(bufnr)
-  if name == "" then
-    return { filename = "[No Name]", extension = "" }
-  end
+  if name == "" then return { filename = "[No Name]", extension = "" } end
   local fname = fn.fnamemodify(name, ":t")
   local ext = fn.fnamemodify(fname, ":e")
   return { filename = fname, extension = ext }
@@ -209,9 +176,7 @@ local function get_file_icon(winid, file)
   if cached_value ~= nil then
     return type(cached_value) == "table" and cached_value or { icon = "", hl = nil }
   end
-
   icons_cache[cache_key] = false
-
   vim.schedule(function()
     if not nvim_win_is_valid(winid) then return end
     local ok, icon_module = pcall(require, "nvim-web-devicons")
@@ -226,7 +191,6 @@ local function get_file_icon(winid, file)
     cache_invalidate(get_win_data(winid).cache, cache_keys.file)
     refresh_win(winid)
   end)
-
   return { icon = "", hl = nil }
 end
 
@@ -239,13 +203,11 @@ local function fetch_git_branch(winid, root)
       branch_name = job_output.stdout:gsub("%s*$", "")
     end
     git_data[root] = branch_name
-
     if nvim_win_is_valid(winid) then
       cache_invalidate(get_win_data(winid).cache, cache_keys.git)
       refresh_win(winid)
     end
   end
-
   vim.system(
     { "git", "symbolic-ref", "--short", "HEAD" },
     { cwd = root, text = true, timeout = 2000 },
@@ -262,12 +224,14 @@ local function create_components(winid, bufnr, apply_hl)
   local wdata = get_win_data(winid)
   local mode = (nvim_get_mode() or {}).mode
   local mode_info = component_data.modes[mode]
-  local props = get_buf_props(bufnr)
   local cache = wdata.cache
   local component = {}
 
   component.simple_title = function()
-    local content, hl_key = get_simple_title_content(props)
+    local title_data = component_data.simple_titles.buftype[vim.bo[bufnr].buftype] or
+      component_data.simple_titles.filetype[vim.bo[bufnr].filetype]
+    local content, hl_key = title_data and title_data.text or "no file",
+      title_data and title_data.hl_key or "simple_title"
     return maybe_hl(content, hl_key, apply_hl)
   end
 
@@ -282,9 +246,9 @@ local function create_components(winid, bufnr, apply_hl)
       local file = get_file_parts(bufnr)
       local icon_data = get_file_icon(winid, file)
       local icon_str = maybe_hl(icon_data.icon, icon_data.hl, apply_hl)
-      local status_content, status_hl_key = get_file_status_content(props)
-      local status = maybe_hl(status_content, status_hl_key, apply_hl)
       local file_content = maybe_hl(file.filename, "file", apply_hl)
+      local status = vim.bo[bufnr].readonly and maybe_hl(" " .. icons.readonly, "readonly", apply_hl) or
+        vim.bo[bufnr].modified and maybe_hl(" " .. icons.modified, "modified", apply_hl) or " "
       return icon_str .. file_content .. status
     end)
   end
