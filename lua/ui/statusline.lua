@@ -44,21 +44,21 @@ local modes_tbl = {
 }
 setmetatable(modes_tbl, modes_tbl)
 
-local CacheManager = {}
-CacheManager.__index = CacheManager
+local CacheMan = {}
+CacheMan.__index = CacheMan
 
-function CacheManager.new()
-  return setmetatable({ cache = {} }, CacheManager)
+function CacheMan.new()
+  return setmetatable({ cache = {} }, CacheMan)
 end
 
-function CacheManager:get(key, fnc)
+function CacheMan:get(key, fnc)
   if self.cache[key] ~= nil then return self.cache[key] end
   local ok, res = pcall(fnc)
   self.cache[key] = ok and res or nil
   return self.cache[key]
 end
 
-function CacheManager:reset(keys)
+function CacheMan:reset(keys)
   if type(keys) == "string" then
     self.cache[keys] = nil
   else
@@ -71,7 +71,7 @@ local win_data = setmetatable({}, { __mode = "k" })
 local function get_win_cache(winid)
   local d = win_data[winid]
   if not d then
-    d = { cache = CacheManager.new(), git = {}, icons = {} }
+    d = { cache = CacheMan.new(), git = {}, icons = {} }
     win_data[winid] = d
   end
   return d.cache
@@ -84,7 +84,6 @@ local function is_excluded_buftype(win)
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
-
 local function refresh_win(winid)
   if not api.nvim_win_is_valid(winid) then
     win_data[winid] = nil
@@ -93,9 +92,10 @@ local function refresh_win(winid)
   vim.wo[winid].statusline = string.format(status_expr, winid)
 end
 
+local format_expr = "%%#%s#%s%%*"
 local function hl_rule(content, hl, apply_hl)
   if not apply_hl or not hl or not content or content == "" then return content or "" end
-  return string.format("%%#%s#%s%%*", hl, content)
+  return string.format(format_expr, hl, content)
 end
 
 local cmp = {}
@@ -113,7 +113,7 @@ local function create_ctx(winid, bufnr)
     winid = winid,
     bufnr = bufnr,
     cache = get_win_cache(winid),
-    wdata = win_data[winid],
+    windat = win_data[winid],
     bo = vim.bo[bufnr],
   }
 end
@@ -149,18 +149,18 @@ end, { cache_keys = { "directory" } })
 register_cmp("git_branch", function(ctx, apply_hl)
   local branch_name = ctx.cache:get("git_branch", function()
     local cwd = fn.fnamemodify(api.nvim_buf_get_name(ctx.bufnr), ":h") or fn.getcwd()
-    if ctx.wdata.git[cwd] == nil then
-      ctx.wdata.git[cwd] = false
+    if ctx.windat.git[cwd] == nil then
+      ctx.windat.git[cwd] = false
       vim.system({ "git", "branch", "--show-current" }, { cwd = cwd, text = true, timeout = 1000 },
         vim.schedule_wrap(function(result)
           if not api.nvim_win_is_valid(ctx.winid) then return end
           local branch = (result.code == 0 and result.stdout) and result.stdout:gsub("%s*$", "") or ""
-          ctx.wdata.git[cwd] = branch
+          ctx.windat.git[cwd] = branch
           ctx.cache:reset("git_branch")
           refresh_win(ctx.winid)
         end))
     end
-    return ctx.wdata.git[cwd] or ""
+    return ctx.windat.git[cwd] or ""
   end)
   if branch_name and branch_name ~= "" then
     return hl_rule(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
@@ -174,14 +174,14 @@ register_cmp("file_display", function(ctx, apply_hl)
     local fname = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
     local ext = (name == "") and "" or fn.fnamemodify(name, ":e")
     local key = fname .. "." .. ext
-    if ctx.wdata.icons[key] == nil then
-      ctx.wdata.icons[key] = { icon = "", hl = "Normal" }
+    if ctx.windat.icons[key] == nil then
+      ctx.windat.icons[key] = { icon = "", hl = "Normal" }
       vim.schedule(function()
         if not api.nvim_win_is_valid(ctx.winid) then return end
         local ok, devicons = pcall(require, "nvim-web-devicons")
         if ok then
           local icon, hl = devicons.get_icon(fname, ext)
-          ctx.wdata.icons[key] = {
+          ctx.windat.icons[key] = {
             icon = icon or "",
             hl = hl or "Normal"
           }
@@ -190,7 +190,7 @@ register_cmp("file_display", function(ctx, apply_hl)
         end
       end)
     end
-    local icon_info = ctx.wdata.icons[key]
+    local icon_info = ctx.windat.icons[key]
     return {
       name = fname,
       icon = icon_info.icon,
@@ -260,15 +260,15 @@ register_cmp("percentage", function(_, apply_hl)
   return hl_rule(" %P ", mode_info.hl, apply_hl)
 end)
 
-local width_cache = setmetatable({}, { __mode = "k" })
+local w_cache = setmetatable({}, { __mode = "k" })
 
 local function get_width(str)
   if not str or str == "" then return 0 end
-  if width_cache[str] then return width_cache[str] end
+  if w_cache[str] then return w_cache[str] end
   local cleaned = str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
-  local width = fn.strdisplaywidth(cleaned)
-  width_cache[str] = width
-  return width
+  local w = fn.strdisplaywidth(cleaned)
+  w_cache[str] = w
+  return w
 end
 
 local function build(parts, sep)
