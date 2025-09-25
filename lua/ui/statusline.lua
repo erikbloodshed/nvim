@@ -73,7 +73,7 @@ local function get_win_cache(winid)
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
-local function refresh_win(winid)
+local refresh_win = function(winid)
   if not api.nvim_win_is_valid(winid) then
     win_data[winid] = nil
     return
@@ -83,7 +83,7 @@ end
 
 local format_expr = "%%#%s#%s%%*"
 local function hl_rule(content, hl, apply_hl)
-  if not apply_hl or not hl or not content or content == "" then return content or "" end
+  if not apply_hl or not hl or not content then return content or "" end
   return string.format(format_expr, hl, content)
 end
 
@@ -97,11 +97,12 @@ local function register_cmp(name, render_fn, opts)
   }
 end
 
-local function create_ctx(winid, bufnr)
-  local bo = vim.bo[bufnr]
+local function create_ctx(winid)
+  local buf = api.nvim_win_get_buf(winid)
+  local bo = vim.bo[buf]
   return {
     winid = winid,
-    bufnr = bufnr,
+    bufnr = buf,
     cache = get_win_cache(winid),
     windat = win_data[winid],
     filetype = bo.filetype,
@@ -239,13 +240,12 @@ end)
 
 local w_cache = setmetatable({}, { __mode = "k" })
 
-local function get_width(str)
-  if not str or str == "" then return 0 end
-  if w_cache[str] then return w_cache[str] end
-  local cleaned = str:gsub("%%#[^#]-#", ""):gsub("%%[*=<]", "")
-  local w = fn.strdisplaywidth(cleaned)
-  w_cache[str] = w
-  return w
+local function get_width(s)
+  if not s or s == "" then return 0 end
+  if not w_cache[s] then
+    w_cache[s] = fn.strdisplaywidth(s:gsub("%%#[^#]-#", ""):gsub("%%[*=<]", ""))
+  end
+  return w_cache[s]
 end
 
 local function build(parts, sep)
@@ -259,8 +259,7 @@ end
 local M = {}
 
 M.status = function(winid)
-  local bufnr = api.nvim_win_get_buf(winid)
-  local ctx = create_ctx(winid, bufnr)
+  local ctx = create_ctx(winid)
   if excluded.buftype[ctx.buftype] or excluded.filetype[ctx.filetype] then
     return "%=" .. render_cmp("simple_title", ctx, true) .. "%="
   end
@@ -292,13 +291,10 @@ end
 
 local function reload(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    local d = win_data[winid]
-    if d then
+    if win_data[winid] then
       get_win_cache(winid):reset(keys)
-      refresh_win(winid)
-    else
-      refresh_win(winid)
     end
+    refresh_win(winid)
   end
 end
 
@@ -344,8 +340,9 @@ autocmd({ "WinEnter", "WinLeave" }, {
 
 autocmd("WinClosed", {
   group = group,
-  callback = function()
-    win_data[api.nvim_get_current_win()] = nil
+  callback = function(ev)
+    local winid = tonumber(ev.match)
+    if winid then win_data[winid] = nil end
   end,
 })
 
