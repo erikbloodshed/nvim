@@ -10,13 +10,25 @@ local config = {
       ["neo-tree"] = true,
       lazy = true,
       lspinfo = true,
-      checkhealth = false,
-      help = false,
       man = true,
       qf = true,
     },
   },
+  sections = {
+    left = { "mode", "directory", "git_branch" },
+    center = { "file_display", "file_status" },
+    right = { "diagnostics", "lsp_status", "position", "percentage" },
+  },
+  separators = {
+    left = " • ",
+    center = " ",
+    right = " • ",
+  },
 }
+
+local function setup(user_config)
+  config = vim.tbl_deep_extend("force", config, user_config or {})
+end
 
 local titles_tbl = {
   buftype = { terminal = icons.terminal .. " terminal", popup = icons.dock .. " Popup" },
@@ -294,7 +306,24 @@ local function assemble(parts, sep)
   return table.concat(tbl, sep)
 end
 
+-- Helper function to render a section based on configuration
+local function render_section(section_name, ctx, apply_hl)
+  local components_list = config.sections[section_name]
+  if not components_list or vim.tbl_isempty(components_list) then return "" end
+
+  local parts = {}
+  for _, component_name in ipairs(components_list) do
+    parts[#parts + 1] = render_component(component_name, ctx, apply_hl)
+  end
+
+  local separator = config.separators[section_name] or config.seps
+  return assemble(parts, separator)
+end
+
 local M = {}
+
+-- Expose setup function
+M.setup = setup
 
 M.status = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
@@ -302,26 +331,17 @@ M.status = function(winid)
     local ctx = create_context(winid, bufnr)
     return "%=" .. render_component("simple_title", ctx, true) .. "%="
   end
+
   local apply_hl = winid == api.nvim_get_current_win()
   local ctx = create_context(winid, bufnr)
-  local sep = conditional_hl(config.seps, "StatusLineSeparator", apply_hl)
-  local left = assemble({
-    render_component("mode", ctx, apply_hl),
-    render_component("directory", ctx, apply_hl),
-    render_component("git_branch", ctx, apply_hl),
-  }, sep)
-  local right = assemble({
-    render_component("diagnostics", ctx, apply_hl),
-    render_component("lsp_status", ctx, apply_hl),
-    render_component("position", ctx, apply_hl),
-    render_component("percentage", ctx, apply_hl),
-  }, sep)
-  local center = assemble({
-    render_component("file_display", ctx, apply_hl),
-    render_component("file_status", ctx, apply_hl),
-  }, " ")
+
+  local left = render_section("left", ctx, apply_hl)
+  local center = render_section("center", ctx, apply_hl)
+  local right = render_section("right", ctx, apply_hl)
+
   local w_left, w_right, w_center, w_win = get_width(left), get_width(right), get_width(center),
     api.nvim_win_get_width(winid)
+
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return table.concat({ left, string.rep(" ", gap), center, "%=", right })
