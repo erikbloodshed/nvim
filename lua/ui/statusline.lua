@@ -110,156 +110,181 @@ local function conditional_hl(content, hl, apply_hl)
   return string.format("%%#%s#%s%%*", hl, content)
 end
 
-local function create_components(winid, bufnr, apply_hl)
-  local cache = get_win_cache(winid)
-  local wdata = win_data[winid] -- Direct access for async data
-  local C = {}
+local components = {}
 
-  C.mode = function()
-    local mode_info = modes_tbl[api.nvim_get_mode().mode]
-    return conditional_hl(mode_info.text, mode_info.hl, apply_hl)
+local function register_component(name, render_fn, opts)
+  opts = opts or {}
+  components[name] = {
+    render = render_fn,
+    cache_keys = opts.cache_keys or {},
+    enabled = opts.enabled ~= false,
+    priority = opts.priority or 0,
+  }
+end
+
+local function create_context(winid, bufnr)
+  return {
+    winid = winid,
+    bufnr = bufnr,
+    cache = get_win_cache(winid),
+    wdata = win_data[winid],
+    bo = vim.bo[bufnr],
+  }
+end
+
+local function render_component(name, ctx, apply_hl)
+  local component = components[name]
+  if not component or not component.enabled then
+    return ""
   end
 
-  C.directory = function()
-    local path = cache:get("directory", function()
-      local buf_name = api.nvim_buf_get_name(bufnr)
-      return (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
-    end)
-    if not path or path == "" then return "" end
-    local display_name = fn.fnamemodify(path, ":~")
-    local content = icons.folder .. " " .. display_name
-    return conditional_hl(content, "Directory", apply_hl)
-  end
-
-  C.git_branch = function()
-    local branch_name = cache:get("git_branch", function()
-      local cwd = fn.fnamemodify(api.nvim_buf_get_name(bufnr), ":h") or fn.getcwd()
-      if wdata.git[cwd] == nil then
-        wdata.git[cwd] = false -- mark as fetching
-        vim.system({ "git", "branch", "--show-current" }, { cwd = cwd, text = true, timeout = 1000 },
-          vim.schedule_wrap(function(result)
-            if not api.nvim_win_is_valid(winid) then return end
-            local branch = (result.code == 0 and result.stdout) and result.stdout:gsub("%s*$", "") or ""
-            wdata.git[cwd] = branch
-            cache:invalidate("git_branch")
-            refresh_win(winid)
-          end))
-      end
-      return wdata.git[cwd] or ""
-    end)
-    if branch_name and branch_name ~= "" then
-      return conditional_hl(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
+  local ok, result = pcall(component.render, ctx, apply_hl)
+  if not ok then
+    if vim.env.NVIM_DEBUG then
+      vim.notify(string.format("Error in component '%s': %s", name, result), vim.log.levels.ERROR)
     end
     return ""
   end
 
-  C.file_display = function()
-    local file_data = cache:get("file_data", function()
-      local name = api.nvim_buf_get_name(bufnr)
-      local fname = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
-      local ext = (name == "") and "" or fn.fnamemodify(name, ":e")
-      local key = fname .. "." .. ext
-
-      -- Initialize with defaults
-      if wdata.icons[key] == nil then
-        wdata.icons[key] = { icon = "", hl = "Normal" } -- Default fallback
-
-        -- Try to get devicons asynchronously
-        vim.schedule(function()
-          if not api.nvim_win_is_valid(winid) then return end
-          local ok, devicons = pcall(require, "nvim-web-devicons")
-          if ok then
-            local icon, hl = devicons.get_icon(fname, ext)
-            wdata.icons[key] = {
-              icon = icon or "",
-              hl = hl or "Normal"
-            }
-            cache:invalidate("file_data")
-            refresh_win(winid)
-          end
-        end)
-      end
-
-      local icon_info = wdata.icons[key]
-      return {
-        name = fname,
-        icon = icon_info.icon,
-        hl = icon_info.hl
-      }
-    end)
-
-    local parts = {}
-
-    -- Add icon with its own highlight if available
-    if file_data.icon and file_data.icon ~= "" then
-      parts[#parts + 1] = conditional_hl(file_data.icon, file_data.hl, apply_hl)
-      parts[#parts + 1] = " "
-    end
-
-    -- Add filename with appropriate highlight
-    parts[#parts + 1] = conditional_hl(file_data.name, "StatusLine", apply_hl)
-
-    return table.concat(parts, "")
-  end
-
-  C.file_status = function()
-    local status = cache:get("file_status", function()
-      local bo = vim.bo[bufnr]
-      return { readonly = bo.readonly, modified = bo.modified }
-    end)
-    if status.readonly then
-      return conditional_hl(icons.readonly, "StatusLineReadonly", apply_hl)
-    elseif status.modified then
-      return conditional_hl(icons.modified, "StatusLineModified", apply_hl)
-    end
-    return " "
-  end
-
-  C.simple_title = function()
-    local bo = vim.bo[bufnr]
-    local title = titles_tbl.buftype[bo.buftype] or titles_tbl.filetype[bo.filetype]
-    return conditional_hl(title or "no file", "String", apply_hl)
-  end
-
-  C.diagnostics = function()
-    local counts = cache:get("diagnostics", function()
-      return vim.diagnostic.count(bufnr)
-    end)
-    if not counts or vim.tbl_isempty(counts) then
-      return conditional_hl(icons.ok, "DiagnosticOk", apply_hl)
-    end
-    local parts = {}
-    for _, diag in ipairs(diagnostics_tbl) do
-      local count = counts[diag.severity_idx]
-      if count and count > 0 then
-        parts[#parts + 1] = conditional_hl(string.format("%s:%d", diag.icon, count), diag.hl, apply_hl)
-      end
-    end
-    return table.concat(parts, " ")
-  end
-
-  C.lsp_status = function()
-    local clients = cache:get("lsp_clients", function()
-      return vim.lsp.get_clients({ bufnr = bufnr })
-    end)
-    if not clients or vim.tbl_isempty(clients) then return "" end
-    local names = {}
-    for _, client in ipairs(clients) do names[#names + 1] = client.name end
-    local content = icons.lsp .. " " .. table.concat(names, ", ")
-    return conditional_hl(content, "StatusLineLsp", apply_hl)
-  end
-
-  C.position = function()
-    return conditional_hl("%l:%v", "StatusLineValue", apply_hl)
-  end
-
-  C.percentage = function()
-    local mode_info = modes_tbl[api.nvim_get_mode().mode]
-    return conditional_hl(" %P ", mode_info.hl, apply_hl)
-  end
-
-  return C
+  return result or ""
 end
+
+register_component("mode", function(_, apply_hl)
+  local mode_info = modes_tbl[api.nvim_get_mode().mode]
+  return conditional_hl(mode_info.text, mode_info.hl, apply_hl)
+end)
+
+register_component("directory", function(ctx, apply_hl)
+  local path = ctx.cache:get("directory", function()
+    local buf_name = api.nvim_buf_get_name(ctx.bufnr)
+    return (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")
+  end)
+  if not path or path == "" then return "" end
+  local display_name = fn.fnamemodify(path, ":~")
+  local content = icons.folder .. " " .. display_name
+  return conditional_hl(content, "Directory", apply_hl)
+end, { cache_keys = { "directory" } })
+
+register_component("git_branch", function(ctx, apply_hl)
+  local branch_name = ctx.cache:get("git_branch", function()
+    local cwd = fn.fnamemodify(api.nvim_buf_get_name(ctx.bufnr), ":h") or fn.getcwd()
+    if ctx.wdata.git[cwd] == nil then
+      ctx.wdata.git[cwd] = false
+      vim.system({ "git", "branch", "--show-current" }, { cwd = cwd, text = true, timeout = 1000 },
+        vim.schedule_wrap(function(result)
+          if not api.nvim_win_is_valid(ctx.winid) then return end
+          local branch = (result.code == 0 and result.stdout) and result.stdout:gsub("%s*$", "") or ""
+          ctx.wdata.git[cwd] = branch
+          ctx.cache:invalidate("git_branch")
+          refresh_win(ctx.winid)
+        end))
+    end
+    return ctx.wdata.git[cwd] or ""
+  end)
+  if branch_name and branch_name ~= "" then
+    return conditional_hl(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
+  end
+  return ""
+end, { cache_keys = { "git_branch" } })
+
+register_component("file_display", function(ctx, apply_hl)
+  local file_data = ctx.cache:get("file_data", function()
+    local name = api.nvim_buf_get_name(ctx.bufnr)
+    local fname = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
+    local ext = (name == "") and "" or fn.fnamemodify(name, ":e")
+    local key = fname .. "." .. ext
+
+    if ctx.wdata.icons[key] == nil then
+      ctx.wdata.icons[key] = { icon = "", hl = "Normal" }
+
+      vim.schedule(function()
+        if not api.nvim_win_is_valid(ctx.winid) then return end
+        local ok, devicons = pcall(require, "nvim-web-devicons")
+        if ok then
+          local icon, hl = devicons.get_icon(fname, ext)
+          ctx.wdata.icons[key] = {
+            icon = icon or "",
+            hl = hl or "Normal"
+          }
+          ctx.cache:invalidate("file_data")
+          refresh_win(ctx.winid)
+        end
+      end)
+    end
+
+    local icon_info = ctx.wdata.icons[key]
+    return {
+      name = fname,
+      icon = icon_info.icon,
+      hl = icon_info.hl
+    }
+  end)
+
+  local parts = {}
+
+  if file_data.icon and file_data.icon ~= "" then
+    parts[#parts + 1] = conditional_hl(file_data.icon, file_data.hl, apply_hl)
+    parts[#parts + 1] = " "
+  end
+
+  parts[#parts + 1] = conditional_hl(file_data.name, "StatusLine", apply_hl)
+
+  return table.concat(parts, "")
+end, { cache_keys = { "file_data" } })
+
+register_component("file_status", function(ctx, apply_hl)
+  local status = ctx.cache:get("file_status", function()
+    return { readonly = ctx.bo.readonly, modified = ctx.bo.modified }
+  end)
+  if status.readonly then
+    return conditional_hl(icons.readonly, "StatusLineReadonly", apply_hl)
+  elseif status.modified then
+    return conditional_hl(icons.modified, "StatusLineModified", apply_hl)
+  end
+  return " "
+end, { cache_keys = { "file_status" } })
+
+register_component("simple_title", function(ctx, apply_hl)
+  local title = titles_tbl.buftype[ctx.bo.buftype] or titles_tbl.filetype[ctx.bo.filetype]
+  return conditional_hl(title or "no file", "String", apply_hl)
+end)
+
+register_component("diagnostics", function(ctx, apply_hl)
+  local counts = ctx.cache:get("diagnostics", function()
+    return vim.diagnostic.count(ctx.bufnr)
+  end)
+  if not counts or vim.tbl_isempty(counts) then
+    return conditional_hl(icons.ok, "DiagnosticOk", apply_hl)
+  end
+  local parts = {}
+  for _, diag in ipairs(diagnostics_tbl) do
+    local count = counts[diag.severity_idx]
+    if count and count > 0 then
+      parts[#parts + 1] = conditional_hl(string.format("%s:%d", diag.icon, count), diag.hl, apply_hl)
+    end
+  end
+  return table.concat(parts, " ")
+end, { cache_keys = { "diagnostics" } })
+
+register_component("lsp_status", function(ctx, apply_hl)
+  local clients = ctx.cache:get("lsp_clients", function()
+    return vim.lsp.get_clients({ bufnr = ctx.bufnr })
+  end)
+  if not clients or vim.tbl_isempty(clients) then return "" end
+  local names = {}
+  for _, client in ipairs(clients) do names[#names + 1] = client.name end
+  local content = icons.lsp .. " " .. table.concat(names, ", ")
+  return conditional_hl(content, "StatusLineLsp", apply_hl)
+end, { cache_keys = { "lsp_clients" } })
+
+register_component("position", function(_, apply_hl)
+  return conditional_hl("%l:%v", "StatusLineValue", apply_hl)
+end)
+
+register_component("percentage", function(_, apply_hl)
+  local mode_info = modes_tbl[api.nvim_get_mode().mode]
+  return conditional_hl(" %P ", mode_info.hl, apply_hl)
+end)
 
 local width_cache = setmetatable({}, { __mode = "k" })
 
@@ -285,15 +310,31 @@ local M = {}
 M.status = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
   if is_excluded_buftype(winid) then
-    return "%=" .. create_components(winid, bufnr, true).simple_title() .. "%="
+    local ctx = create_context(winid, bufnr)
+    return "%=" .. render_component("simple_title", ctx, true) .. "%="
   end
+
   local apply_hl = winid == api.nvim_get_current_win()
-  local c = create_components(winid, bufnr, apply_hl)
+  local ctx = create_context(winid, bufnr)
   local sep = conditional_hl(config.seps, "StatusLineSeparator", apply_hl)
 
-  local left = assemble({ c.mode(), c.directory(), c.git_branch() }, sep)
-  local right = assemble({ c.diagnostics(), c.lsp_status(), c.position(), c.percentage() }, sep)
-  local center = assemble({ c.file_display(), c.file_status() }, " ")
+  local left = assemble({
+    render_component("mode", ctx, apply_hl),
+    render_component("directory", ctx, apply_hl),
+    render_component("git_branch", ctx, apply_hl),
+  }, sep)
+
+  local right = assemble({
+    render_component("diagnostics", ctx, apply_hl),
+    render_component("lsp_status", ctx, apply_hl),
+    render_component("position", ctx, apply_hl),
+    render_component("percentage", ctx, apply_hl),
+  }, sep)
+
+  local center = assemble({
+    render_component("file_display", ctx, apply_hl),
+    render_component("file_status", ctx, apply_hl),
+  }, " ")
 
   local w_left, w_right, w_center, w_win = get_width(left), get_width(right), get_width(center),
     api.nvim_win_get_width(winid)
