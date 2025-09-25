@@ -74,12 +74,7 @@ local function is_empty_unnamed(bufnr)
   if fn.bufname(bufnr) ~= "" then return false end
   if fn.getbufvar(bufnr, '&modified') ~= 0 then return false end
   local line_count = api.nvim_buf_line_count(bufnr)
-  if line_count > 1 then return true end
-  if line_count == 1 then
-    local line = api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or ""
-    return #line > 0
-  end
-  return false
+  return line_count > 1 or line_count == 1 and #(api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or "") == 0
 end
 
 local function reset_tabline_cache(tbl)
@@ -124,31 +119,25 @@ local function get_bufinfo(bufnr)
   local cached = cache.bufinfo[bufnr]
   if is_cache_valid(cached) then return cached.result end
   if not api.nvim_buf_is_valid(bufnr) then return nil end
-
   if is_empty_unnamed(bufnr) == false and fn.bufname(bufnr) == "" and fn.getbufvar(bufnr, '&modified') == 0 then
     return nil
   end
-
   local name = fn.bufname(bufnr) or ""
   local display_name = vim.fs.basename(name) or "[No Name]"
   local buftype = vim.bo[bufnr].buftype
-
   if buftype == "help" then
     display_name = "[Help] " .. (display_name ~= "[No Name]" and display_name or "help")
   elseif buftype == "terminal" then
     display_name = "[Term] " .. (display_name ~= "[No Name]" and display_name:gsub("^term://.*//", "") or "terminal")
   end
-
   if #display_name > max_name_length then
     display_name = display_name:sub(1, max_name_length - 3) .. "..."
   end
-
   local info = { display_name = display_name, devicon = nil, icon_color = nil }
   if has_devicons then
     local ext = fn.fnamemodify(name, ":e") or ""
     info.devicon, info.icon_color = devicons.get_icon_color(display_name, ext)
   end
-
   cache.bufinfo[bufnr] = create_cache_entry(info)
   return info
 end
@@ -330,9 +319,11 @@ local function core_navigate(move)
     end
     state.cycle.active = true; state.cycle.index = 0
     local current_buf = api.nvim_get_current_buf()
-    for i, b in ipairs(state.tabline_order) do if b == current_buf then
+    for i, b in ipairs(state.tabline_order) do
+      if b == current_buf then
         state.cycle.index = i; break
-      end end
+      end
+    end
     if state.cycle.index == 0 then state.cycle.index = 1 end
   end
 
@@ -340,11 +331,13 @@ local function core_navigate(move)
     local mru_size = #state.buf_order
     if mru_size < 2 then return end
     local target = (api.nvim_get_current_buf() == state.buf_order[mru_size]) and state.buf_order[mru_size - 1] or
-    state.buf_order[mru_size]
+      state.buf_order[mru_size]
     state.cycle.index = 0
-    for i, b in ipairs(state.tabline_order) do if b == target then
+    for i, b in ipairs(state.tabline_order) do
+      if b == target then
         state.cycle.index = i; break
-      end end
+      end
+    end
     if state.cycle.index == 0 then return end
   else
     local step = (move == "prev") and -1 or 1
@@ -403,16 +396,18 @@ end
 
 state.buf_order = {}
 state.tabline_order = {}
-for _, bufnr in ipairs(api.nvim_list_bufs()) do if include_buf(bufnr) then
+for _, bufnr in ipairs(api.nvim_list_bufs()) do
+  if include_buf(bufnr) then
     tbl_insert(state.buf_order, bufnr); tbl_insert(state.tabline_order, bufnr)
-  end end
+  end
+end
 update_buffer_mru(api.nvim_get_current_buf())
 setup_autocmds()
 
-local keyset = vim.keymap.set
-keyset({ 'n', 'i' }, "<Right>", function() core_navigate("next") end, { noremap = true, nowait = true, silent = true })
-keyset({ 'n', 'i' }, "<Left>", function() core_navigate("prev") end, { noremap = true, nowait = true, silent = true })
-keyset({ 'n', 'i' }, "<Up>", function() core_navigate("recent") end, { noremap = true, silent = true })
-keyset({ 'n', 'i' }, "<Down>", function() tabline_show_static_tabline() end, { noremap = true, silent = true })
+local keyset, default = vim.keymap.set, { noremap = true, nowait = true, silent = true }
+keyset({ 'n', 'i' }, "<Right>", function() core_navigate("next") end, default)
+keyset({ 'n', 'i' }, "<Left>", function() core_navigate("prev") end, default)
+keyset({ 'n', 'i' }, "<Up>", function() core_navigate("recent") end, default)
+keyset({ 'n', 'i' }, "<Down>", function() tabline_show_static_tabline() end, default)
 
 return M
