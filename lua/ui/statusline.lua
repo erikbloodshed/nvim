@@ -2,21 +2,16 @@ local api, fn = vim.api, vim.fn
 local autocmd = api.nvim_create_autocmd
 local icons = require("ui.icons")
 
-local config = {
-  seps = " • ",
-  exclude = {
-    buftypes = { terminal = true },
-    filetypes = {
-      ["neo-tree"] = true,
-    },
+local separator = " • "
+local excluded = {
+  buftype = {
+    terminal = icons.terminal .. " terminal",
   },
-}
-
-local titles_tbl = {
-  buftype = { terminal = icons.terminal .. " terminal" },
   filetype = {
-    ["neo-tree"] = icons.file_tree .. " File Explorer",
-    ["neo-tree-popup"] = icons.file_tree .. " File Explorer",
+    ["neo-tree"] = icons.file_tree .. " neo-tree",
+    ["neo-tree-popup"] = icons.file_tree .. " neo-tree",
+    qf = icons.fix .. " quickfix",
+    checkhealth = icons.status .. " checkhealth",
   },
 }
 
@@ -77,12 +72,6 @@ local function get_win_cache(winid)
   return d.cache
 end
 
-local function is_excluded_buftype(win)
-  if not api.nvim_win_is_valid(win) then return false end
-  local bo = vim.bo[api.nvim_win_get_buf(win)]
-  return config.exclude.buftypes[bo.buftype] or config.exclude.filetypes[bo.filetype]
-end
-
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 local function refresh_win(winid)
   if not api.nvim_win_is_valid(winid) then
@@ -109,30 +98,28 @@ local function register_cmp(name, render_fn, opts)
 end
 
 local function create_ctx(winid, bufnr)
+  local bo = vim.bo[bufnr]
   return {
     winid = winid,
     bufnr = bufnr,
     cache = get_win_cache(winid),
     windat = win_data[winid],
-    bo = vim.bo[bufnr],
+    filetype = bo.filetype,
+    buftype = bo.buftype,
+    readonly = bo.readonly,
+    modified = bo.modified,
+    mode_info = modes_tbl[api.nvim_get_mode().mode],
   }
 end
 
 local function render_cmp(name, ctx, apply_hl)
   local c = cmp[name]
   local ok, result = pcall(c.render, ctx, apply_hl)
-  if not ok then
-    if vim.env.NVIM_DEBUG then
-      vim.notify(string.format("Error in component '%s': %s", name, result), vim.log.levels.ERROR)
-    end
-    return ""
-  end
-  return result or ""
+  return ok and result or ""
 end
 
-register_cmp("mode", function(_, apply_hl)
-  local mode_info = modes_tbl[api.nvim_get_mode().mode]
-  return hl_rule(mode_info.text, mode_info.hl, apply_hl)
+register_cmp("mode", function(ctx, apply_hl)
+  return hl_rule(ctx.mode_info.text, ctx.mode_info.hl, apply_hl)
 end)
 
 register_cmp("directory", function(ctx, apply_hl)
@@ -171,16 +158,15 @@ end, { cache_keys = { "git_branch" } })
 register_cmp("file_display", function(ctx, apply_hl)
   local file_data = ctx.cache:get("file_data", function()
     local name = api.nvim_buf_get_name(ctx.bufnr)
-    local fname = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
+    local key = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
     local ext = (name == "") and "" or fn.fnamemodify(name, ":e")
-    local key = fname .. "." .. ext
     if ctx.windat.icons[key] == nil then
       ctx.windat.icons[key] = { icon = "", hl = "Normal" }
       vim.schedule(function()
         if not api.nvim_win_is_valid(ctx.winid) then return end
         local ok, devicons = pcall(require, "nvim-web-devicons")
         if ok then
-          local icon, hl = devicons.get_icon(fname, ext)
+          local icon, hl = devicons.get_icon(key, ext)
           ctx.windat.icons[key] = {
             icon = icon or "",
             hl = hl or "Normal"
@@ -191,11 +177,7 @@ register_cmp("file_display", function(ctx, apply_hl)
       end)
     end
     local icon_info = ctx.windat.icons[key]
-    return {
-      name = fname,
-      icon = icon_info.icon,
-      hl = icon_info.hl
-    }
+    return { name = key, icon = icon_info.icon, hl = icon_info.hl }
   end)
   local parts = {}
   if file_data.icon and file_data.icon ~= "" then
@@ -207,19 +189,15 @@ register_cmp("file_display", function(ctx, apply_hl)
 end, { cache_keys = { "file_data" } })
 
 register_cmp("file_status", function(ctx, apply_hl)
-  local status = ctx.cache:get("file_status", function()
-    return { readonly = ctx.bo.readonly, modified = ctx.bo.modified }
+  local s = ctx.cache:get("file_status", function()
+    return { readonly = ctx.readonly, modified = ctx.modified }
   end)
-  if status.readonly then
-    return hl_rule(icons.readonly, "StatusLineReadonly", apply_hl)
-  elseif status.modified then
-    return hl_rule(icons.modified, "StatusLineModified", apply_hl)
-  end
-  return " "
+  return s.readonly and hl_rule(icons.readonly, "StatusLineReadonly", apply_hl) or
+    s.modified and hl_rule(icons.modified, "StatusLineModified", apply_hl) or " "
 end, { cache_keys = { "file_status" } })
 
 register_cmp("simple_title", function(ctx, apply_hl)
-  local title = titles_tbl.buftype[ctx.bo.buftype] or titles_tbl.filetype[ctx.bo.filetype]
+  local title = excluded.buftype[ctx.buftype] or excluded.filetype[ctx.filetype]
   return hl_rule(title or "no file", "String", apply_hl)
 end)
 
@@ -255,9 +233,8 @@ register_cmp("position", function(_, apply_hl)
   return hl_rule("%l:%v", "StatusLineValue", apply_hl)
 end)
 
-register_cmp("percentage", function(_, apply_hl)
-  local mode_info = modes_tbl[api.nvim_get_mode().mode]
-  return hl_rule(" %P ", mode_info.hl, apply_hl)
+register_cmp("percentage", function(ctx, apply_hl)
+  return hl_rule(" %P ", ctx.mode_info.hl, apply_hl)
 end)
 
 local w_cache = setmetatable({}, { __mode = "k" })
@@ -265,7 +242,7 @@ local w_cache = setmetatable({}, { __mode = "k" })
 local function get_width(str)
   if not str or str == "" then return 0 end
   if w_cache[str] then return w_cache[str] end
-  local cleaned = str:gsub("%%#[^#]*#", ""):gsub("%%[*=<]", "")
+  local cleaned = str:gsub("%%#[^#]-#", ""):gsub("%%[*=<]", "")
   local w = fn.strdisplaywidth(cleaned)
   w_cache[str] = w
   return w
@@ -283,13 +260,12 @@ local M = {}
 
 M.status = function(winid)
   local bufnr = api.nvim_win_get_buf(winid)
-  if is_excluded_buftype(winid) then
-    local ctx = create_ctx(winid, bufnr)
+  local ctx = create_ctx(winid, bufnr)
+  if excluded.buftype[ctx.buftype] or excluded.filetype[ctx.filetype] then
     return "%=" .. render_cmp("simple_title", ctx, true) .. "%="
   end
   local apply_hl = winid == api.nvim_get_current_win()
-  local ctx = create_ctx(winid, bufnr)
-  local sep = hl_rule(config.seps, "StatusLineSeparator", apply_hl)
+  local sep = hl_rule(separator, "StatusLineSeparator", apply_hl)
   local left = build({
     render_cmp("mode", ctx, apply_hl),
     render_cmp("directory", ctx, apply_hl),
@@ -316,10 +292,13 @@ end
 
 local function reload(buf, keys)
   for _, winid in ipairs(fn.win_findbuf(buf)) do
-    if win_data[winid] then
+    local d = win_data[winid]
+    if d then
       get_win_cache(winid):reset(keys)
+      refresh_win(winid)
+    else
+      refresh_win(winid)
     end
-    refresh_win(winid)
   end
 end
 
@@ -359,15 +338,14 @@ autocmd({ "VimResized", "WinResized" }, {
 autocmd({ "WinEnter", "WinLeave" }, {
   group = group,
   callback = function()
-    for _, w in ipairs(api.nvim_list_wins()) do refresh_win(w) end
+    refresh_win(api.nvim_get_current_win())
   end,
 })
 
 autocmd("WinClosed", {
   group = group,
-  callback = function(ev)
-    local winid = tonumber(ev.match)
-    if winid then win_data[winid] = nil end
+  callback = function()
+    win_data[api.nvim_get_current_win()] = nil
   end,
 })
 
