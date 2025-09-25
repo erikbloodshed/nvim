@@ -134,10 +134,7 @@ end
 
 local function render_component(name, ctx, apply_hl)
   local component = components[name]
-  if not component or not component.enabled then
-    return ""
-  end
-
+  if not component or not component.enabled then return "" end
   local ok, result = pcall(component.render, ctx, apply_hl)
   if not ok then
     if vim.env.NVIM_DEBUG then
@@ -145,7 +142,6 @@ local function render_component(name, ctx, apply_hl)
     end
     return ""
   end
-
   return result or ""
 end
 
@@ -193,10 +189,8 @@ register_component("file_display", function(ctx, apply_hl)
     local fname = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")
     local ext = (name == "") and "" or fn.fnamemodify(name, ":e")
     local key = fname .. "." .. ext
-
     if ctx.wdata.icons[key] == nil then
       ctx.wdata.icons[key] = { icon = "", hl = "Normal" }
-
       vim.schedule(function()
         if not api.nvim_win_is_valid(ctx.winid) then return end
         local ok, devicons = pcall(require, "nvim-web-devicons")
@@ -211,7 +205,6 @@ register_component("file_display", function(ctx, apply_hl)
         end
       end)
     end
-
     local icon_info = ctx.wdata.icons[key]
     return {
       name = fname,
@@ -219,16 +212,12 @@ register_component("file_display", function(ctx, apply_hl)
       hl = icon_info.hl
     }
   end)
-
   local parts = {}
-
   if file_data.icon and file_data.icon ~= "" then
     parts[#parts + 1] = conditional_hl(file_data.icon, file_data.hl, apply_hl)
     parts[#parts + 1] = " "
   end
-
   parts[#parts + 1] = conditional_hl(file_data.name, "StatusLine", apply_hl)
-
   return table.concat(parts, "")
 end, { cache_keys = { "file_data" } })
 
@@ -313,32 +302,26 @@ M.status = function(winid)
     local ctx = create_context(winid, bufnr)
     return "%=" .. render_component("simple_title", ctx, true) .. "%="
   end
-
   local apply_hl = winid == api.nvim_get_current_win()
   local ctx = create_context(winid, bufnr)
   local sep = conditional_hl(config.seps, "StatusLineSeparator", apply_hl)
-
   local left = assemble({
     render_component("mode", ctx, apply_hl),
     render_component("directory", ctx, apply_hl),
     render_component("git_branch", ctx, apply_hl),
   }, sep)
-
   local right = assemble({
     render_component("diagnostics", ctx, apply_hl),
     render_component("lsp_status", ctx, apply_hl),
     render_component("position", ctx, apply_hl),
     render_component("percentage", ctx, apply_hl),
   }, sep)
-
   local center = assemble({
     render_component("file_display", ctx, apply_hl),
     render_component("file_status", ctx, apply_hl),
   }, " ")
-
   local w_left, w_right, w_center, w_win = get_width(left), get_width(right), get_width(center),
     api.nvim_win_get_width(winid)
-
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
     return table.concat({ left, string.rep(" ", gap), center, "%=", right })
