@@ -64,21 +64,21 @@ end
 local win_data = setmetatable({}, { __mode = "k" })
 
 local function get_win_cache(winid)
-  local d = win_data[winid]
-  if not d then
-    d = { cache = CacheMan.new(), git = {}, icons = {} }
-    win_data[winid] = d
+  local data = win_data[winid]
+  if not data then
+    data = { cache = CacheMan.new(), git = {}, icons = {} }
+    win_data[winid] = data
   end
-  return d.cache
+  return data.cache
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 local refresh_win = function(winid)
-  if not api.nvim_win_is_valid(winid) then
-    win_data[winid] = nil
+  if api.nvim_win_is_valid(winid) then
+    vim.wo[winid].statusline = string.format(status_expr, winid)
     return
   end
-  vim.wo[winid].statusline = string.format(status_expr, winid)
+  win_data[winid] = nil
 end
 
 local format_expr = "%%#%s#%s%%*"
@@ -91,10 +91,7 @@ local cmp = {}
 
 local function register_cmp(name, render_fn, opts)
   opts = opts or {}
-  cmp[name] = {
-    render = render_fn,
-    cache_keys = opts.cache_keys or {},
-  }
+  cmp[name] = { render = render_fn, cache_keys = opts.cache_keys or {}, }
 end
 
 local function create_ctx(winid)
@@ -114,8 +111,7 @@ local function create_ctx(winid)
 end
 
 local function render_cmp(name, ctx, apply_hl)
-  local c = cmp[name]
-  local ok, result = pcall(c.render, ctx, apply_hl)
+  local ok, result = pcall(cmp[name].render, ctx, apply_hl)
   return ok and result or ""
 end
 
@@ -251,7 +247,7 @@ end
 local function build(parts, sep)
   local tbl = {}
   for _, part in ipairs(parts) do
-    if part and part ~= "" then tbl[#tbl + 1] = part end
+    if part and part ~= "" then tbl[#tbl + 1] =  part end
   end
   return table.concat(tbl, sep)
 end
@@ -335,7 +331,7 @@ autocmd({ "WinEnter", "WinLeave" }, {
   group = group,
   callback = function()
     refresh_win(api.nvim_get_current_win())
-  end,
+  end
 })
 
 autocmd("WinClosed", {
