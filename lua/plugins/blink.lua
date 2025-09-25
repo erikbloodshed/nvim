@@ -1,6 +1,6 @@
 return {
   "saghen/blink.cmp",
-  event = { "VeryLazy" },
+  event = "InsertEnter",
   build = "cargo build --release",
 
   opts = {

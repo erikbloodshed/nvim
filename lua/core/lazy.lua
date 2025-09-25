@@ -34,6 +34,7 @@ require("lazy").setup({
         "tutor",
         "zipPlugin",
         "osc52",
+        "net",
       },
     },
   },

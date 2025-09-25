@@ -6,27 +6,18 @@ autocmd({ "Filetype" }, {
   pattern = { "c", "cpp", "asm", "python", "lua" },
   callback = function(args)
     local ft = api.nvim_get_option_value("filetype", { buf = args.buf })
-
     if ft == "cpp" or ft == "c" then
       vim.opt_local.cinkeys:remove(":")
       vim.opt_local.cindent = true
     end
-
     if ft == "python" then
       vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
     end
-
     require("xrun").setup({
       filetype = {
-        c = {
-          response_file = ".compile_flags",
-        },
-        cpp = {
-          response_file = ".compile_flags",
-        },
-        python = {
-          compiler = "python3.14"
-        }
+        c = { response_file = ".compile_flags", },
+        cpp = { response_file = ".compile_flags", },
+        python = { compiler = "python3.14" }
       }
     })
   end,
@@ -36,7 +27,7 @@ autocmd({ "Filetype" }, {
 autocmd({ "Filetype" }, {
   pattern = { "help", "qf" },
   callback = function(args)
-    keyset("n", "q", function() vim.cmd.bdelete() end, { buffer = args.buf, silent = true, noremap = true })
+    keyset("n", "q", function() vim.cmd.bdelete() end, { buffer = args.buf, nowait = true })
   end,
 })
 
