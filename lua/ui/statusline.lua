@@ -36,30 +36,30 @@ local titles_tbl = {
 }
 
 local diagnostics_tbl = {
-  { icon = icons.error, hl_key = "DiagnosticError", severity_idx = 1 },
-  { icon = icons.warn, hl_key = "DiagnosticWarn", severity_idx = 2 },
-  { icon = icons.info, hl_key = "DiagnosticInfo", severity_idx = 3 },
-  { icon = icons.hint, hl_key = "DiagnosticHint", severity_idx = 4 },
+  { icon = icons.error, hl = "DiagnosticError", severity_idx = 1 },
+  { icon = icons.warn, hl = "DiagnosticWarn", severity_idx = 2 },
+  { icon = icons.info, hl = "DiagnosticInfo", severity_idx = 3 },
+  { icon = icons.hint, hl = "DiagnosticHint", severity_idx = 4 },
 }
 
 local modes_tbl = {
-  n = { text = " NOR ", hl_key = "StatusLineNormal" },
-  i = { text = " INS ", hl_key = "StatusLineInsert" },
-  v = { text = " VIS ", hl_key = "StatusLineVisual" },
-  V = { text = " V-L ", hl_key = "StatusLineVisual" },
-  ["\22"] = { text = " V-B ", hl_key = "StatusLineVisual" },
-  s = { text = " SEL ", hl_key = "StatusLineSelect" },
-  S = { text = " S-L ", hl_key = "StatusLineSelect" },
-  ["\19"] = { text = " S-B ", hl_key = "StatusLineSelect" },
-  r = { text = " REP ", hl_key = "StatusLineReplace" },
-  R = { text = " REP ", hl_key = "StatusLineReplace" },
-  Rv = { text = " R-V ", hl_key = "StatusLineReplace" },
-  c = { text = " CMD ", hl_key = "StatusLineCommand" },
+  n = { text = " NOR ", hl = "StatusLineNormal" },
+  i = { text = " INS ", hl = "StatusLineInsert" },
+  v = { text = " VIS ", hl = "StatusLineVisual" },
+  V = { text = " V-L ", hl = "StatusLineVisual" },
+  ["\22"] = { text = " V-B ", hl = "StatusLineVisual" },
+  s = { text = " SEL ", hl = "StatusLineSelect" },
+  S = { text = " S-L ", hl = "StatusLineSelect" },
+  ["\19"] = { text = " S-B ", hl = "StatusLineSelect" },
+  r = { text = " REP ", hl = "StatusLineReplace" },
+  R = { text = " REP ", hl = "StatusLineReplace" },
+  Rv = { text = " R-V ", hl = "StatusLineReplace" },
+  c = { text = " CMD ", hl = "StatusLineCommand" },
 }
 
 setmetatable(modes_tbl, {
   __index = function()
-    return { text = " ??? ", hl_key = "StatusLineNormal" }
+    return { text = " ??? ", hl = "StatusLineNormal" }
   end
 })
 
@@ -108,11 +108,11 @@ local function refresh_win(winid)
   vim.wo[winid].statusline = string.format(status_expr, winid)
 end
 
-local function conditional_hl(content, hl_key, apply_hl)
-  if not apply_hl or not hl_key or not content or content == "" then
+local function conditional_hl(content, hl, apply_hl)
+  if not apply_hl or not hl or not content or content == "" then
     return content or ""
   end
-  return string.format("%%#%s#%s%%*", hl_key, content)
+  return string.format("%%#%s#%s%%*", hl, content)
 end
 
 local function get_file_info(bufnr)
@@ -136,8 +136,8 @@ local function create_components(winid, bufnr, apply_hl)
   local C = {}
 
   C.mode = function()
-    local content, hl_key = mode_info.text, mode_info.hl_key
-    return conditional_hl(content, hl_key, apply_hl)
+    local content, hl = mode_info.text, mode_info.hl
+    return conditional_hl(content, hl, apply_hl)
   end
 
   C.directory = function()
@@ -255,7 +255,7 @@ local function create_components(winid, bufnr, apply_hl)
         local count = counts[diag_info.severity_idx]
         if count and count > 0 then
           local content = string.format("%s:%d", diag_info.icon, count)
-          parts[#parts + 1] = conditional_hl(content, diag_info.hl_key, apply_hl)
+          parts[#parts + 1] = conditional_hl(content, diag_info.hl, apply_hl)
         end
       end
       return table.concat(parts, " ")
@@ -278,7 +278,7 @@ local function create_components(winid, bufnr, apply_hl)
   end
 
   C.percentage = function()
-    return conditional_hl(" %P ", mode_info.hl_key, apply_hl)
+    return conditional_hl(" %P ", mode_info.hl, apply_hl)
   end
 
   return C
