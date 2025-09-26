@@ -37,12 +37,6 @@ function M.is_special(buf)
   return fn.win_gettype() ~= ""
 end
 
-function M.should_apply_hl()
-  local current_win = api.nvim_get_current_win()
-  return not (config.disable_in_special and M.is_special()) and
-    api.nvim_win_is_valid(current_win)
-end
-
 function M.should_include_buffer(buf)
   return api.nvim_buf_is_valid(buf) and fn.buflisted(buf) == 1
     and not M.is_special(buf) and not M.skip_unnamed(buf)
