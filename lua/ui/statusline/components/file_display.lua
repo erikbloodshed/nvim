@@ -38,4 +38,3 @@ return {
     return table.concat(parts, "")
   end,
 }
-
