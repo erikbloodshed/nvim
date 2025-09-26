@@ -20,7 +20,10 @@ api.nvim_create_autocmd('BufEnter', {
   callback = scheduled(function()
     if not state.cycle.active then
       core.update_mru(api.nvim_get_current_buf())
-      if config.show_tabline then ui.update(state.tabline_order) end
+      if config.show_tabline then
+        local apply_hl = api.nvim_win_is_valid(api.nvim_get_current_win())
+        ui.update(state.tabline_order, nil, apply_hl)
+      end
     end
   end)
 })
@@ -38,16 +41,13 @@ api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' },
 api.nvim_create_autocmd({ 'BufWritePost', 'BufModifiedSet' },
   { group = ag, callback = function(ev) ui.invalidate(ev.buf) end })
 
--- Initial population of buffer lists
 for _, b in ipairs(api.nvim_list_bufs()) do
   if core.include(b) then insert(state.tabline_order, b) end
 end
 core.update_mru(api.nvim_get_current_buf())
 
--- Initialize UI module
 ui.init()
 
--- Public navigation functions
 function M.next()
   core.navigate("next")
 end
