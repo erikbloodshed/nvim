@@ -37,7 +37,15 @@ autocmd({ "VimEnter" }, {
     require("ui.input")
     require("ui.select")
     require("ui.statusline")
-    require("ui.bufswitch")
+
+    keyset({ 'n', 'i' }, "<Right>", function() require("bufswitch").goto_next_buf() end,
+      { noremap = true, nowait = true, silent = true })
+    keyset({ 'n', 'i' }, "<Left>", function() require("bufswitch").goto_prev_buf() end,
+      { noremap = true, nowait = true, silent = true })
+    keyset({ 'n', 'i' }, "<Up>", function() require("bufswitch").recent_buf() end,
+      { noremap = true, silent = true })
+    keyset({ 'n', 'i' }, "<Down>", function() require("bufswitch").show_tabline() end,
+      { noremap = true, silent = true })
 
     require('term').setup({
       defaults = {
@@ -47,6 +55,7 @@ autocmd({ "VimEnter" }, {
         open_in_file_dir = true,
         open = true,
       },
+
       terminals = {
         shell = {},
         python = {
@@ -55,10 +64,12 @@ autocmd({ "VimEnter" }, {
           auto_delete_on_close = true,
         },
       },
+
       commands = {
         { name = 'ToggleTerm', terminal = 'shell' },
         { name = 'TogglePython', terminal = 'python', desc = "Toggle IPython REPL" },
       },
+
       keymaps = {
         { mode = { 'n', 't' }, lhs = '<leader>tt', terminal = 'shell', action = 'toggle', desc = 'Toggle shell' },
         { mode = { 'n', 't' }, lhs = '<leader>tp', terminal = 'python', action = 'toggle', desc = 'Toggle Python' },
