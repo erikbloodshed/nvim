@@ -97,7 +97,8 @@ function M.navigate(move)
   if move == "recent" then
     local n = #M.state.buf_order
     if n < 2 then return end
-    local target = (api.nvim_get_current_buf() == M.state.buf_order[1]) and M.state.buf_order[2] or M.state.buf_order[1]
+    local target = (api.nvim_get_current_buf() == M.state.buf_order[1])
+      and M.state.buf_order[2] or M.state.buf_order[1]
     for i, b in ipairs(M.state.tabline_order) do
       if b == target then
         M.state.cycle.index = i; break

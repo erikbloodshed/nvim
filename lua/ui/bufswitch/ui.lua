@@ -18,10 +18,18 @@ local hide_timer, update_timer
 local function now() return fn.reltimefloat(fn.reltime()) * 1000 end
 local function is_fresh(entry, ttl) return entry and (now() - (entry.timestamp or 0) < (ttl or cache_ttl)) end
 local function cache_entry(result) return { result = result, timestamp = now() } end
-local function reset_cache(tbl) tbl.content, tbl.timestamp, tbl.hash, tbl.window_start = "", 0, "", 1 end
+
+local function reset_cache(tbl)
+  tbl.content, tbl.timestamp, tbl.hash, tbl.window_start = "", 0, "", 1
+end
+
 local function cleanup_cache()
   local count = 0; for _ in pairs(cache.bufinfo) do count = count + 1 end
-  if count > max_cache_size then for k, e in pairs(cache.bufinfo) do if not is_fresh(e) then cache.bufinfo[k] = nil end end end
+  if count > max_cache_size then
+    for k, e in pairs(cache.bufinfo) do
+      if not is_fresh(e) then cache.bufinfo[k] = nil end
+    end
+  end
 end
 
 function M.invalidate(buf)
@@ -29,7 +37,6 @@ function M.invalidate(buf)
   reset_cache(cache.tabline); reset_cache(cache.static_tabline)
 end
 
--- Buffer Info & Formatting -----------------------------------------------
 local function get_info(buf)
   local c = cache.bufinfo[buf]; if is_fresh(c) then return c.result end
   local name, bt = fn.bufname(buf) or "", vim.bo[buf].buftype
@@ -42,7 +49,9 @@ local function get_info(buf)
   if #disp > max_name_length then disp = disp:sub(1, max_name_length - 3) .. "..." end
 
   local info = { display_name = disp }
-  if has_devicons then info.devicon, info.icon_color = devicons.get_icon_color(disp, fn.fnamemodify(name, ":e") or "") end
+  if has_devicons then
+    info.devicon, info.icon_color = devicons.get_icon_color(disp, fn.fnamemodify(name, ":e") or "")
+  end
   cache.bufinfo[buf] = cache_entry(info)
   return info
 end
@@ -51,14 +60,16 @@ local function fmt(info, is_current)
   if not info then return "[Invalid]" end
   local parts = {}
   if info.devicon then
-    api.nvim_set_hl(0, "BufSwitchDevicon", { fg = info.icon_color, bg = api.nvim_get_hl(0, { name = "BufSwitchSelected", link = false }).bg })
-    insert(parts, string.format("%%#%s#%s%%#%s# ", is_current and "BufSwitchDevicon" or "BufSwitchInactive", info.devicon, is_current and "BufSwitchSelected" or "BufSwitchInactive"))
+    api.nvim_set_hl(0, "BufSwitchDevicon",
+      { fg = info.icon_color, bg = api.nvim_get_hl(0, { name = "BufSwitchSelected", link = false }).bg })
+    insert(parts,
+      string.format("%%#%s#%s%%#%s# ", is_current and "BufSwitchDevicon" or "BufSwitchInactive", info.devicon,
+        is_current and "BufSwitchSelected" or "BufSwitchInactive"))
   end
   insert(parts, info.display_name)
   return concat(parts)
 end
 
--- Tabline Rendering -------------------------------------------------------
 local function hash(list, idx)
   if not next(list) then return "" end
   return string.format("%d:%s:%d", api.nvim_get_current_buf(), concat(list, "-"), idx or 0)
@@ -95,7 +106,8 @@ local function render(order, cyc_idx, ref, ttl)
       local info, curflag = get_info(b), (cyc_idx and i == cyc_idx) or b == cur_buf
       if info then
         if i > s then insert(parts, "%#BufSwitchSeparator#|") end
-        insert(parts, (curflag and "%#BufSwitchSelected#" or "%#BufSwitchInactive#") .. "  " .. fmt(info, curflag) .. "  ")
+        insert(parts,
+          (curflag and "%#BufSwitchSelected#" or "%#BufSwitchInactive#") .. "  " .. fmt(info, curflag) .. "  ")
       end
     end
   end
@@ -108,7 +120,9 @@ local function render(order, cyc_idx, ref, ttl)
 end
 
 local function stop_timer(t)
-  if t and not t:is_closing() then t:stop(); t:close() end
+  if t and not t:is_closing() then
+    t:stop(); t:close()
+  end
   return nil
 end
 
