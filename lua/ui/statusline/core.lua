@@ -39,14 +39,46 @@ function M.get_win_cache(winid)
 end
 
 local components = {}
+local component_specs = {}
+
+function M.set_component_specs(specs)
+  component_specs = specs
+end
+
+function M.register_lazy_cmp(name)
+  components[name] = nil
+end
 
 M.register_cmp = function(name, render_fn, opts)
   opts = opts or {}
   components[name] = { render = render_fn, cache_keys = opts.cache_keys or {} }
 end
 
+local function load_component(name)
+  local spec_path = component_specs[name]
+  if not spec_path then
+    components[name] = { render = function() return "" end, cache_keys = {} }
+    return components[name]
+  end
+
+  local ok, spec = pcall(require, spec_path)
+  if ok and spec.render then
+    components[name] = { render = spec.render, cache_keys = spec.cache_keys or {} }
+  else
+    components[name] = { render = function() return "" end, cache_keys = {} }
+  end
+
+  return components[name]
+end
+
 function M.render_cmp(name, ctx, apply_hl)
-  local ok, result = pcall(components[name].render, ctx, apply_hl)
+  local cmp = components[name]
+
+  if not cmp then
+    cmp = load_component(name)
+  end
+
+  local ok, result = pcall(cmp.render, ctx, apply_hl)
   return ok and result or ""
 end
 

@@ -1,32 +1,26 @@
 local api = vim.api
 local core = require("ui.statusline.core")
 
-local loaded_cmp = false
+local loaded_cmp, component_specs = false, {}
+
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
-
   local cmp_directory = "ui.statusline.components"
   local config = require("ui.statusline.config")
-
   local cmp_set = {}
   for _, section in pairs(config.layout) do
-    for _, name in ipairs(section) do
-      cmp_set[name] = true
-    end
+    for _, name in ipairs(section) do cmp_set[name] = true end
   end
-
   cmp_set["simple_title"] = true
-
   for name, _ in pairs(cmp_set) do
-    local ok, spec = pcall(require, cmp_directory .. "." .. name)
-    if ok and spec.render then
-      core.register_cmp(name, spec.render, { cache_keys = spec.cache_keys })
-    end
+    component_specs[name] = cmp_directory .. "." .. name
+    core.register_lazy_cmp(name)
   end
-
-  require("ui.statusline.autocmds")
+  vim.schedule(function() require("ui.statusline.autocmds") end)
 end
+
+core.set_component_specs(component_specs)
 
 local function build_section(section_cmp, ctx, apply_hl, sep)
   local parts = {}
@@ -52,9 +46,7 @@ M.status = function(winid)
   local left = build_section(layout.left, ctx, apply_hl, sep)
   local right = build_section(layout.right, ctx, apply_hl, sep)
   local center = build_section(layout.center, ctx, apply_hl, " ")
-  local w_left = core.get_width(left)
-  local w_right = core.get_width(right)
-  local w_center = core.get_width(center)
+  local w_left, w_right, w_center = core.get_width(left), core.get_width(right), core.get_width(center)
   local w_win = api.nvim_win_get_width(winid)
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
