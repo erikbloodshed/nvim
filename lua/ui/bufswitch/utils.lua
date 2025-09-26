@@ -1,0 +1,51 @@
+local api, fn = vim.api, vim.fn
+local config = require("ui.bufswitch.config")
+
+local M = {}
+
+function M.remove_item(tbl, val)
+  for i, x in ipairs(tbl) do
+    if x == val then
+      table.remove(tbl, i)
+      return true
+    end
+  end
+  return false
+end
+
+function M.is_empty_unnamed(buf)
+  if not api.nvim_buf_is_valid(buf) or fn.bufname(buf) ~= "" or fn.getbufvar(buf, '&modified') ~= 0 then
+    return false
+  end
+  local lc = api.nvim_buf_line_count(buf)
+  return (lc > 1) or (lc == 1 and #(api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") > 0)
+end
+
+function M.skip_unnamed(buf)
+  return fn.bufname(buf) == "" and fn.getbufvar(buf, "&modified") == 0 and not M.is_empty_unnamed(buf)
+end
+
+function M.is_special(buf)
+  buf = buf or api.nvim_get_current_buf()
+  if vim.tbl_contains(config.special_buftypes, vim.bo[buf].buftype)
+    or vim.tbl_contains(config.special_filetypes, vim.bo[buf].filetype) then
+    return true
+  end
+  for _, pat in ipairs(config.special_bufname_patterns) do
+    if fn.bufname(buf):match(pat) then return true end
+  end
+  return fn.win_gettype() ~= ""
+end
+
+function M.should_apply_hl()
+  local current_win = api.nvim_get_current_win()
+  return not (config.disable_in_special and M.is_special()) and
+    api.nvim_win_is_valid(current_win)
+end
+
+function M.should_include_buffer(buf)
+  return api.nvim_buf_is_valid(buf) and fn.buflisted(buf) == 1
+    and not M.is_special(buf) and not M.skip_unnamed(buf)
+end
+
+return M

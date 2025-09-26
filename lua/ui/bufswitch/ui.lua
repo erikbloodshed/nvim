@@ -1,3 +1,4 @@
+-- ui.lua (refactored - no dependencies on core.lua)
 local api, fn = vim.api, vim.fn
 local insert, concat = table.insert, table.concat
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
@@ -6,6 +7,7 @@ local config = require("ui.bufswitch.config")
 
 local M = {}
 
+-- Cache and timer management
 local cache_ttl, debounce_delay, tabline_ttl = 5000, 16, 100
 local max_cache_size, max_name_length = 100, 16
 local cache = {
@@ -16,6 +18,7 @@ local cache = {
 
 local hide_timer, update_timer
 
+-- Utility functions for UI
 local format_expr = "%%#%s#%s%%*"
 local function hl_rule(content, hl, apply_hl)
   if not apply_hl or not hl or not content then return content or "" end
@@ -47,11 +50,14 @@ local function cleanup_cache()
   end
 end
 
-function M.invalidate(buf)
+-- Public interface
+function M.invalidate_buffer(buf)
   cache.bufinfo[buf] = nil
-  reset_cache(cache.tabline); reset_cache(cache.static_tabline)
+  reset_cache(cache.tabline)
+  reset_cache(cache.static_tabline)
 end
 
+-- Buffer info and formatting
 local function get_info(buf)
   local c = cache.bufinfo[buf]; if is_fresh(c) then return c.result end
   local name, bt = fn.bufname(buf) or "", vim.bo[buf].buftype
@@ -98,6 +104,7 @@ local function fmt(info, is_current, apply_hl)
   return concat(parts)
 end
 
+-- Rendering logic
 local function hash(list, idx, apply_hl)
   if not next(list) then return "" end
   return string.format("%d:%s:%d:%s", api.nvim_get_current_buf(), concat(list, "-"), idx or 0, tostring(apply_hl))
@@ -165,6 +172,7 @@ local function render(order, cyc_idx, ref, ttl, apply_hl)
   return out
 end
 
+-- Timer management
 local function stop_timer(t)
   if t and not t:is_closing() then
     t:stop(); t:close()
@@ -178,37 +186,48 @@ function M.start_timer(timeout, cb)
   if hide_timer then hide_timer:start(timeout, 0, vim.schedule_wrap(cb)) end
 end
 
-function M.stop_timer() hide_timer = stop_timer(hide_timer) end
+function M.stop_timer()
+  hide_timer = stop_timer(hide_timer)
+end
 
-local function show(cb)
+-- Display functions
+local function show_temporary(cb)
   M.stop_timer()
   vim.o.showtabline = 2
   cb()
   M.start_timer(config.hide_timeout, function() vim.o.showtabline = 0 end)
 end
 
-function M.update(order, cyc_idx, apply_hl)
+function M.update_tabline(order, cyc_idx, apply_hl)
   vim.o.tabline = render(order, cyc_idx, cache.tabline, tabline_ttl, apply_hl)
 end
 
-function M.update_debounced(order, apply_hl)
+function M.update_tabline_debounced(order, apply_hl)
   update_timer = update_timer or vim.uv.new_timer()
   if update_timer then
     update_timer:stop()
     update_timer:start(debounce_delay, 0, vim.schedule_wrap(function()
-      M.update(order, nil, apply_hl); update_timer:stop()
+      M.update_tabline(order, nil, apply_hl); update_timer:stop()
     end))
   end
 end
 
-function M.show_temp(order, apply_hl)
-  show(function() M.update_debounced(order, apply_hl) end)
+function M.show_temporary_tabline(order, apply_hl)
+  show_temporary(function() M.update_tabline_debounced(order, apply_hl) end)
 end
 
-function M.show_static(order, apply_hl)
-  show(function()
+function M.show_static_tabline(order, apply_hl)
+  show_temporary(function()
     vim.o.tabline = render(order, nil, cache.static_tabline, tabline_ttl, apply_hl)
   end)
+end
+
+function M.hide_tabline()
+  vim.o.showtabline = 0
+end
+
+function M.show_tabline()
+  vim.o.showtabline = 2
 end
 
 function M.init()
