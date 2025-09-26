@@ -4,7 +4,6 @@ local config = require("ui.statusline.config")
 local cmp = require("ui.statusline.cmp")
 local create_ctx = require("ui.statusline.context")
 
--- Lazy loader
 local loaded_components = false
 local function load_components()
   if loaded_components then return end
@@ -69,7 +68,6 @@ M.status = function(winid)
   return table.concat({ left, center, right }, "%=")
 end
 
--- 🚀 Attach statusline to all current windows once at startup
 vim.schedule(function()
   for _, winid in ipairs(api.nvim_list_wins()) do
     core.refresh_win(winid)
@@ -77,4 +75,3 @@ vim.schedule(function()
 end)
 
 return M
-
