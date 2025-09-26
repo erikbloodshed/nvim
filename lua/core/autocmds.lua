@@ -38,13 +38,13 @@ autocmd({ "VimEnter" }, {
     require("ui.select")
     require("ui.statusline")
 
-    keyset({ 'n', 'i' }, "<Right>", function() require("bufswitch").goto_next_buf() end,
+    keyset({ 'n', 'i' }, "<Right>", function() require("ui.bufswitch").next() end,
       { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Left>", function() require("bufswitch").goto_prev_buf() end,
+    keyset({ 'n', 'i' }, "<Left>", function() require("ui.bufswitch").prev() end,
       { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Up>", function() require("bufswitch").recent_buf() end,
+    keyset({ 'n', 'i' }, "<Up>", function() require("ui.bufswitch").recent() end,
       { noremap = true, silent = true })
-    keyset({ 'n', 'i' }, "<Down>", function() require("bufswitch").show_tabline() end,
+    keyset({ 'n', 'i' }, "<Down>", function() require("ui.bufswitch").show_buffers() end,
       { noremap = true, silent = true })
 
     require('term').setup({
