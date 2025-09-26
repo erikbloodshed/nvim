@@ -64,6 +64,7 @@ function M.create_ctx(winid)
     readonly = bo.readonly,
     modified = bo.modified,
     mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+    config = config
   }
 end
 

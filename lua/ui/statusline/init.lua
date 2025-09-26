@@ -1,8 +1,5 @@
 local api = vim.api
 local core = require("ui.statusline.core")
-local config = require("ui.statusline.config")
-local excluded = config.excluded
-local separator = config.separator
 
 local loaded_components = false
 local function load_components()
@@ -28,11 +25,12 @@ M.status = function(winid)
     load_components()
   end
   local ctx = core.create_ctx(winid)
+  local excluded = ctx.config.excluded
   if excluded.buftype[ctx.buftype] or excluded.filetype[ctx.filetype] then
     return "%=" .. core.render_cmp("simple_title", ctx, true) .. "%="
   end
   local apply_hl = winid == api.nvim_get_current_win()
-  local sep = core.hl_rule(separator, "StatusLineSeparator", apply_hl)
+  local sep = core.hl_rule(ctx.config.separator, "StatusLineSeparator", apply_hl)
   local left = core.build({
     core.render_cmp("mode", ctx, apply_hl),
     core.render_cmp("directory", ctx, apply_hl),
