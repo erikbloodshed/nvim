@@ -1,13 +1,12 @@
 local api = vim.api
 local insert = table.insert
 
-local config_mod = require("ui.bufswitch.config")
+local config = require("ui.bufswitch.config")
 local core = require("ui.bufswitch.core")
 local ui = require("ui.bufswitch.ui")
 
 local M = {}
 
-local config = config_mod.config
 local state = core.state
 
 local function scheduled(cb)
@@ -44,8 +43,8 @@ api.nvim_create_autocmd({ 'BufWritePost', 'BufModifiedSet' },
 for _, b in ipairs(api.nvim_list_bufs()) do
   if core.include(b) then insert(state.tabline_order, b) end
 end
-core.update_mru(api.nvim_get_current_buf())
 
+core.update_mru(api.nvim_get_current_buf())
 ui.init()
 
 function M.next()

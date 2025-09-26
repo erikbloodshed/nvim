@@ -1,6 +1,4 @@
-local M = {}
-
-M.config = {
+return {
   hide_timeout = 1000,
   show_tabline = true,
   hide_in_special = true,
@@ -13,5 +11,3 @@ M.config = {
   special_filetypes = { "qf", "help", "netrw", "neo-tree", "terminal" },
   special_bufname_patterns = { "^term://", "^neo%-tree " },
 }
-
-return M

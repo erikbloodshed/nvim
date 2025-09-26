@@ -1,6 +1,6 @@
 local api, fn = vim.api, vim.fn
 local insert, remove = table.insert, table.remove
-local config = require("ui.bufswitch.config").config
+local config = require("ui.bufswitch.config")
 local ui = require("ui.bufswitch.ui")
 
 local M = {}
@@ -20,7 +20,9 @@ local function remove_item(tbl, val)
 end
 
 local function is_empty_unnamed(buf)
-  if not api.nvim_buf_is_valid(buf) or fn.bufname(buf) ~= "" or fn.getbufvar(buf, '&modified') ~= 0 then return false end
+  if not api.nvim_buf_is_valid(buf) or fn.bufname(buf) ~= "" or fn.getbufvar(buf, '&modified') ~= 0 then
+    return false
+  end
   local lc = api.nvim_buf_line_count(buf)
   return (lc > 1) or (lc == 1 and #(api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") > 0)
 end
@@ -35,7 +37,9 @@ local function is_special(buf)
     or vim.tbl_contains(config.special_filetypes, vim.bo[buf].filetype) then
     return true
   end
-  for _, pat in ipairs(config.special_bufname_patterns) do if fn.bufname(buf):match(pat) then return true end end
+  for _, pat in ipairs(config.special_bufname_patterns) do
+    if fn.bufname(buf):match(pat) then return true end
+  end
   return fn.win_gettype() ~= ""
 end
 
@@ -99,7 +103,8 @@ function M.navigate(move)
   if move == "recent" then
     local n = #M.state.buf_order
     if n < 2 then return end
-    local target = (api.nvim_get_current_buf() == M.state.buf_order[1]) and M.state.buf_order[2] or M.state.buf_order[1]
+    local target = (api.nvim_get_current_buf() == M.state.buf_order[1])
+      and M.state.buf_order[2] or M.state.buf_order[1]
     for i, b in ipairs(M.state.tabline_order) do
       if b == target then
         M.state.cycle.index = i; break

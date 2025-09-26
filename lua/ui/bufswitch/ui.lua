@@ -2,7 +2,7 @@ local api, fn = vim.api, vim.fn
 local insert, concat = table.insert, table.concat
 local has_devicons, devicons = pcall(require, "nvim-web-devicons")
 
-local config = require("ui.bufswitch.config").config
+local config = require("ui.bufswitch.config")
 
 local M = {}
 
