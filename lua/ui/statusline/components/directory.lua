@@ -1,9 +1,8 @@
 local api, fn = vim.api, vim.fn
 local icons = require("ui.icons")
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("directory", function(ctx, apply_hl)
+core.register_cmp("directory", function(ctx, apply_hl)
   local path = ctx.cache:get("directory", function()
     local buf_name = api.nvim_buf_get_name(ctx.bufnr)
     return (buf_name == "") and fn.getcwd() or fn.fnamemodify(buf_name, ":p:h")

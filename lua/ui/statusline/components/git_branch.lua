@@ -1,9 +1,8 @@
 local api, fn = vim.api, vim.fn
 local icons = require("ui.icons")
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("git_branch", function(ctx, apply_hl)
+core.register_cmp("git_branch", function(ctx, apply_hl)
   local branch_name = ctx.cache:get("git_branch", function()
     local cwd = fn.fnamemodify(api.nvim_buf_get_name(ctx.bufnr), ":h") or fn.getcwd()
     if ctx.windat.git[cwd] == nil then

@@ -2,9 +2,8 @@ local vim_diagnostic = vim.diagnostic
 local icons = require("ui.icons")
 local config = require("ui.statusline.config")
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("diagnostics", function(ctx, apply_hl)
+core.register_cmp("diagnostics", function(ctx, apply_hl)
   local counts = ctx.cache:get("diagnostics", function()
     return vim_diagnostic.count(ctx.bufnr)
   end)

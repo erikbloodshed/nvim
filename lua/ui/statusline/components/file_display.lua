@@ -1,8 +1,7 @@
 local api, fn = vim.api, vim.fn
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("file_display", function(ctx, apply_hl)
+core.register_cmp("file_display", function(ctx, apply_hl)
   local file_data = ctx.cache:get("file_data", function()
     local name = api.nvim_buf_get_name(ctx.bufnr)
     local key = (name == "") and "[No Name]" or fn.fnamemodify(name, ":t")

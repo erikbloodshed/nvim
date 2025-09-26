@@ -1,8 +1,7 @@
 local icons = require("ui.icons")
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("file_status", function(ctx, apply_hl)
+core.register_cmp("file_status", function(ctx, apply_hl)
   local s = ctx.cache:get("file_status", function()
     return { readonly = ctx.readonly, modified = ctx.modified }
   end)

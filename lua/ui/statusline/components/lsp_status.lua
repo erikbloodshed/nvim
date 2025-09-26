@@ -1,8 +1,7 @@
 local icons = require("ui.icons")
 local core = require("ui.statusline.core")
-local cmp = require("ui.statusline.cmp")
 
-cmp.register_cmp("lsp_status", function(ctx, apply_hl)
+core.register_cmp("lsp_status", function(ctx, apply_hl)
   local clients = ctx.cache:get("lsp_clients", function()
     return vim.lsp.get_clients({ bufnr = ctx.bufnr })
   end)

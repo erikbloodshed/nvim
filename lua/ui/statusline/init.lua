@@ -1,8 +1,6 @@
 local api = vim.api
 local core = require("ui.statusline.core")
 local config = require("ui.statusline.config")
-local cmp = require("ui.statusline.cmp")
-local create_ctx = require("ui.statusline.context")
 
 local loaded_components = false
 local function load_components()
@@ -30,30 +28,30 @@ M.status = function(winid)
     load_components()
   end
 
-  local ctx = create_ctx(winid)
+  local ctx = core.create_ctx(winid)
   if config.excluded.buftype[ctx.buftype] or config.excluded.filetype[ctx.filetype] then
-    return "%=" .. cmp.render_cmp("simple_title", ctx, true) .. "%="
+    return "%=" .. core.render_cmp("simple_title", ctx, true) .. "%="
   end
 
   local apply_hl = winid == api.nvim_get_current_win()
   local sep = core.hl_rule(config.separator, "StatusLineSeparator", apply_hl)
 
   local left = core.build({
-    cmp.render_cmp("mode", ctx, apply_hl),
-    cmp.render_cmp("directory", ctx, apply_hl),
-    cmp.render_cmp("git_branch", ctx, apply_hl),
+    core.render_cmp("mode", ctx, apply_hl),
+    core.render_cmp("directory", ctx, apply_hl),
+    core.render_cmp("git_branch", ctx, apply_hl),
   }, sep)
 
   local right = core.build({
-    cmp.render_cmp("diagnostics", ctx, apply_hl),
-    cmp.render_cmp("lsp_status", ctx, apply_hl),
-    cmp.render_cmp("position", ctx, apply_hl),
-    cmp.render_cmp("percentage", ctx, apply_hl),
+    core.render_cmp("diagnostics", ctx, apply_hl),
+    core.render_cmp("lsp_status", ctx, apply_hl),
+    core.render_cmp("position", ctx, apply_hl),
+    core.render_cmp("percentage", ctx, apply_hl),
   }, sep)
 
   local center = core.build({
-    cmp.render_cmp("file_display", ctx, apply_hl),
-    cmp.render_cmp("file_status", ctx, apply_hl),
+    core.render_cmp("file_display", ctx, apply_hl),
+    core.render_cmp("file_status", ctx, apply_hl),
   }, " ")
 
   local w_left, w_right, w_center, w_win =

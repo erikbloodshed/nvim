@@ -2,7 +2,6 @@ local api, fn = vim.api, vim.fn
 
 local M = {}
 
--- Cache Manager
 local CacheMan = {}
 CacheMan.__index = CacheMan
 
@@ -27,7 +26,6 @@ end
 
 M.CacheMan = CacheMan
 
--- Window data (weak table)
 local win_data = setmetatable({}, { __mode = "k" })
 M.win_data = win_data
 
@@ -40,7 +38,35 @@ function M.get_win_cache(winid)
   return data.cache
 end
 
--- Per-window statusline expression
+local components = {}
+
+M.register_cmp = function(name, render_fn, opts)
+  opts = opts or {}
+  components[name] = { render = render_fn, cache_keys = opts.cache_keys or {} }
+end
+
+function M.render_cmp(name, ctx, apply_hl)
+  local ok, result = pcall(components[name].render, ctx, apply_hl)
+  return ok and result or ""
+end
+
+function M.create_ctx(winid)
+  local config = require("ui.statusline.config")
+  local buf = api.nvim_win_get_buf(winid)
+  local bo = vim.bo[buf]
+  return {
+    winid = winid,
+    bufnr = buf,
+    cache = M.get_win_cache(winid),
+    windat = win_data[winid],
+    filetype = bo.filetype,
+    buftype = bo.buftype,
+    readonly = bo.readonly,
+    modified = bo.modified,
+    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+  }
+end
+
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 
 function M.refresh_win(winid)
@@ -51,14 +77,12 @@ function M.refresh_win(winid)
   win_data[winid] = nil
 end
 
--- Highlight helper
 local format_expr = "%%#%s#%s%%*"
 function M.hl_rule(content, hl, apply_hl)
   if not apply_hl or not hl or not content then return content or "" end
   return string.format(format_expr, hl, content)
 end
 
--- Width helper (with cache)
 local w_cache = setmetatable({}, { __mode = "k" })
 function M.get_width(s)
   if not s or s == "" then return 0 end
@@ -68,7 +92,6 @@ function M.get_width(s)
   return w_cache[s]
 end
 
--- Join parts
 function M.build(parts, sep)
   local tbl = {}
   for _, part in ipairs(parts) do
