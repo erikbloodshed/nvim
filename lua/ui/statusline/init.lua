@@ -14,8 +14,9 @@ local function load_components()
     "lsp_status", "position", "percentage",
   }
 
-  for _, c in ipairs(components) do
-    require(component_dir .. "." .. c)
+  for _, name in ipairs(components) do
+    local spec = require(component_dir .. "." .. name)
+    core.register_cmp(name, spec.render, { cache_keys = spec.cache_keys })
   end
 
   require("ui.statusline.autocmds")

@@ -1,0 +1,26 @@
+local api, fn = vim.api, vim.fn
+local icons = require("ui.icons")
+local core = require("ui.statusline.core")
+
+core.register_cmp("git_branch", function(ctx, apply_hl)
+  local branch_name = ctx.cache:get("git_branch", function()
+    local cwd = fn.fnamemodify(api.nvim_buf_get_name(ctx.bufnr), ":h") or fn.getcwd()
+    if ctx.windat.git[cwd] == nil then
+      ctx.windat.git[cwd] = false
+      vim.system({ "git", "branch", "--show-current" }, { cwd = cwd, text = true, timeout = 1000 },
+        vim.schedule_wrap(function(result)
+          if not api.nvim_win_is_valid(ctx.winid) then return end
+          local branch = (result.code == 0 and result.stdout) and result.stdout:gsub("%s*$", "") or ""
+          ctx.windat.git[cwd] = branch
+          ctx.cache:reset("git_branch")
+          core.refresh_win(ctx.winid)
+        end))
+    end
+    return ctx.windat.git[cwd] or ""
+  end)
+  if branch_name and branch_name ~= "" then
+    return core.hl_rule(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
+  end
+  return ""
+end, { cache_keys = { "git_branch" } })
+
