@@ -20,7 +20,6 @@ vim.ui.input = function(opts, on_confirm)
     prompt = " New Name "
   end
 
-  -- Use word under cursor as default for rename operations
   local default = opts.default or ""
   if prompt == " New Name " and default == "" then
     local cWord = get_cword()

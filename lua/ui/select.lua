@@ -64,7 +64,6 @@ local function pick(opts)
     title_pos = "center"
   })
 
-  -- Enable cursorline for the window to highlight the selected line.
   api.nvim_set_option_value("cursorline", true, { win = win })
 
   local picker = {
