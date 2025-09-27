@@ -1,8 +1,23 @@
-local api, fn = vim.api, vim.fn
+local api = vim.api
 local core = require("ui.statusline.core")
 
+---@diagnostic disable:need-check-nil
+local function debounce(func, timeout)
+  local timer = vim.uv.new_timer()
+  local running = false
+  return function(...)
+    local argv = { ... }
+    if running then timer:stop() end
+    running = true
+    timer:start(timeout, 0, function()
+      running = false
+      vim.schedule(function() func(unpack(argv)) end)
+    end)
+  end
+end
+
 local function reload(buf, keys)
-  for _, winid in ipairs(fn.win_findbuf(buf)) do
+  for _, winid in ipairs(vim.fn.win_findbuf(buf)) do
     if core.win_data[winid] then
       core.get_win_cache(winid):reset(keys)
     end
@@ -30,12 +45,12 @@ api.nvim_create_autocmd("DirChanged", {
 
 api.nvim_create_autocmd("DiagnosticChanged", {
   group = group,
-  callback = function(ev) reload(ev.buf, "diagnostics") end,
+  callback = debounce(function(ev) reload(ev.buf, "diagnostics") end, 100)
 })
 
 api.nvim_create_autocmd({ "LspAttach", "LspDetach" }, {
   group = group,
-  callback = function(ev) reload(ev.buf, "lsp_clients") end,
+  callback = debounce(function(ev) reload(ev.buf, "lsp_clients") end, 100)
 })
 
 api.nvim_create_autocmd({ "VimResized", "WinResized" }, {

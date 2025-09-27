@@ -26,14 +26,13 @@ end
 
 M.CacheMan = CacheMan
 
-local win_data = setmetatable({}, { __mode = "k" })
-M.win_data = win_data
+M.win_data = {}
 
 function M.get_win_cache(winid)
-  local data = win_data[winid]
+  local data = M.win_data[winid]
   if not data then
     data = { cache = CacheMan.new(), git = {}, icons = {} }
-    win_data[winid] = data
+    M.win_data[winid] = data
   end
   return data.cache
 end
@@ -90,7 +89,7 @@ function M.create_ctx(winid)
     winid = winid,
     bufnr = buf,
     cache = M.get_win_cache(winid),
-    windat = win_data[winid],
+    windat = M.win_data[winid],
     filetype = bo.filetype,
     buftype = bo.buftype,
     readonly = bo.readonly,
@@ -107,7 +106,7 @@ function M.refresh_win(winid)
     vim.wo[winid].statusline = string.format(status_expr, winid)
     return
   end
-  win_data[winid] = nil
+  M.win_data[winid] = nil
 end
 
 local format_expr = "%%#%s#%s%%*"
