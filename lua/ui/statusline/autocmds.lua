@@ -1,5 +1,3 @@
--- ui/statusline/autocmds.lua
-
 local api = vim.api
 local core = require("ui.statusline.core")
 
@@ -31,45 +29,34 @@ end
 local M = {}
 local is_setup = false
 
--- The setup function to be called by init.lua
 function M.setup(events_map)
   if is_setup then return end
   is_setup = true
-
   local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
-
-  -- 1. Create component-based autocmds from the provided map
   for event, keys_set in pairs(events_map) do
     local keys_to_reload = {}
-    for k in pairs(keys_set) do
-      table.insert(keys_to_reload, k)
+    for keys in pairs(keys_set) do
+      keys_to_reload[#keys_to_reload + 1] = keys
     end
-
     local callback = function(ev) reload(ev.buf, keys_to_reload) end
-
     if event == "DiagnosticChanged" or event == "LspAttach" or event == "LspDetach" then
       callback = debounce(callback, 100)
     end
-
     api.nvim_create_autocmd(event, {
       group = group,
       callback = callback,
     })
   end
-
-  -- 2. Create general, non-component-specific autocmds
   api.nvim_create_autocmd({ "VimResized", "WinResized" }, {
     group = group,
     callback = function() api.nvim_cmd({ cmd = "redrawstatus" }, {}) end,
   })
-
   api.nvim_create_autocmd({ "WinEnter", "WinLeave" }, {
     group = group,
     callback = function()
       core.refresh_win(api.nvim_get_current_win())
     end,
   })
-
   api.nvim_create_autocmd("WinClosed", {
     group = group,
     callback = function(ev)
