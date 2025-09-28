@@ -6,7 +6,6 @@ local icons = require "ui.icons"
 local loaded_cmp, component_specs = false, {}
 
 local function create_ctx(winid, bufnr)
-  local bo = vim.bo[bufnr]
   local context = {
     hl_rule = core.hl_rule,
     refresh_win = core.refresh_win,
@@ -14,10 +13,10 @@ local function create_ctx(winid, bufnr)
     bufnr = bufnr,
     cache = core.get_win_cache(winid),
     win_data = core.win_data[winid],
-    filetype = bo.filetype,
-    buftype = bo.buftype,
-    readonly = bo.readonly,
-    modified = bo.modified,
+    filetype = vim.bo[bufnr].filetype,
+    buftype = vim.bo[bufnr].buftype,
+    readonly = vim.bo[bufnr].readonly,
+    modified = vim.bo[bufnr].modified,
     mode_info = config.modes_tbl[api.nvim_get_mode().mode],
     config = config,
     icons = icons,
@@ -42,7 +41,7 @@ local function load_cmp()
   vim.schedule(function() require("ui.statusline.autocmds") end)
 end
 
-core.set_component_specs(component_specs)
+core.set_cmp_specs(component_specs)
 
 local function build_section(section_cmp, ctx, apply_hl, sep)
   local parts = {}
@@ -68,7 +67,7 @@ M.status = function(winid)
   local left = build_section(layout.left, ctx, apply_hl, sep)
   local right = build_section(layout.right, ctx, apply_hl, sep)
   local center = build_section(layout.center, ctx, apply_hl, " ")
-  local w_left, w_right, w_center = core.get_width(left), core.get_width(right), core.get_width(center)
+  local w_left, w_right, w_center = core.width(left), core.width(right), core.width(center)
   local w_win = api.nvim_win_get_width(winid)
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)

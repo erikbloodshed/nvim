@@ -39,7 +39,7 @@ end
 
 local components, component_specs = {}, {}
 
-function M.set_component_specs(specs)
+function M.set_cmp_specs(specs)
   component_specs = specs
 end
 
@@ -93,7 +93,7 @@ function M.hl_rule(content, hl, apply_hl)
 end
 
 local w_cache = setmetatable({}, { __mode = "k" })
-function M.get_width(s)
+function M.width(s)
   if not s or s == "" then return 0 end
   if not w_cache[s] then
     w_cache[s] = fn.strdisplaywidth(s:gsub("%%#[^#]-#", ""):gsub("%%[*=<]", ""))
