@@ -32,12 +32,12 @@ local function load_cmp()
     for _, name in ipairs(section) do
       if not component_specs[name] then
         component_specs[name] = string.format("%s.%s", cmp_directory, name)
-        core.register_lazy_cmp(name)
+        core.register_cmp(name)
       end
     end
   end
   component_specs["simple_title"] = string.format("%s.simple_title", cmp_directory)
-  core.register_lazy_cmp("simple_title")
+  core.register_cmp("simple_title")
   vim.schedule(function() require("ui.statusline.autocmds") end)
 end
 

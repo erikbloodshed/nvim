@@ -9,8 +9,7 @@ end
 
 function CacheMan:get(key, fnc)
   if self.cache[key] ~= nil then return self.cache[key] end
-  local ok, res = pcall(fnc)
-  self.cache[key] = ok and res or nil
+  self.cache[key] = fnc() or nil
   return self.cache[key]
 end
 
@@ -43,37 +42,19 @@ function M.set_cmp_specs(specs)
   component_specs = specs
 end
 
-function M.register_lazy_cmp(name)
+function M.register_cmp(name)
   components[name] = nil
 end
 
-M.register_cmp = function(name, render_fn, opts)
-  opts = opts or {}
-  components[name] = { render = render_fn, cache_keys = opts.cache_keys or {} }
-end
-
 local function load_component(name)
-  local spec_path = component_specs[name]
-  if not spec_path then
-    components[name] = { render = function() return "" end, cache_keys = {} }
-    return components[name]
-  end
-  local ok, spec = pcall(require, spec_path)
-  if ok and spec.render then
-    components[name] = { render = spec.render, cache_keys = spec.cache_keys or {} }
-  else
-    components[name] = { render = function() return "" end, cache_keys = {} }
-  end
+  local spec = require(component_specs[name])
+  components[name] = { render = spec.render, cache_keys = spec.cache_keys or {} }
   return components[name]
 end
 
 function M.render_cmp(name, ctx, apply_hl)
-  local cmp = components[name]
-  if not cmp then
-    cmp = load_component(name)
-  end
-  local ok, result = pcall(cmp.render, ctx, apply_hl)
-  return ok and result or ""
+  local cmp = components[name] or load_component(name)
+  return cmp.render(ctx, apply_hl)
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
@@ -93,6 +74,7 @@ function M.hl_rule(content, hl, apply_hl)
 end
 
 local w_cache = setmetatable({}, { __mode = "k" })
+
 function M.width(s)
   if not s or s == "" then return 0 end
   if not w_cache[s] then
