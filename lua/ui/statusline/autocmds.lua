@@ -26,7 +26,8 @@ local function reload(buf, keys)
 end
 
 local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
-local keys = { "file_data", "file_status", "directory", "git_branch", "diagnostics", "lsp_clients" }
+local keys = { "file_icon", "file_name", "file_status",
+  "directory", "git_branch", "diagnostics", "lsp_clients" }
 
 api.nvim_create_autocmd({ "BufWinEnter", "BufWritePost" }, {
   group = group,

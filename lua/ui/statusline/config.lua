@@ -4,7 +4,7 @@ local M = {}
 
 M.layout = {
   left = { "mode", "directory", "git_branch" },
-  center = { "file_display", "file_status" },
+  center = { "file_icon", "file_name", "file_status" },
   right = { "diagnostics", "lsp_status", "position", "percentage" },
 }
 
