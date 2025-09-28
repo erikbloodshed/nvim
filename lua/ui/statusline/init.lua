@@ -1,22 +1,41 @@
 local api = vim.api
 local core = require("ui.statusline.core")
+local config = require("ui.statusline.config")
+local icons = require("ui.icons")
+
+local function create_ctx(winid, bufnr)
+  return {
+    winid = winid,
+    windat = core.win_data[winid],
+    cache = core.get_win_cache(winid),
+    hl_rul = core.hl_rule,
+    bufnr = bufnr,
+    filetype = vim.bo[bufnr].filetype,
+    buftype = vim.bo[bufnr].buftype,
+    readonly = vim.bo[bufnr].readonly,
+    modified = vim.bo[bufnr].modified,
+    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+    config = config,
+    icons = icons
+  }
+end
 
 local loaded_cmp, component_specs = false, {}
 
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
-  local cmp_directory = "ui.statusline.components"
-  local config = require("ui.statusline.config")
-  local cmp_set = {}
   for _, section in pairs(config.layout) do
-    for _, name in ipairs(section) do cmp_set[name] = true end
+    for _, name in ipairs(section) do
+      if not component_specs[name] then
+        component_specs[name] = table.concat({
+          "ui.statusline.components.", name })
+        core.register_lazy_cmp(name)
+      end
+    end
   end
-  cmp_set["simple_title"] = true
-  for name, _ in pairs(cmp_set) do
-    component_specs[name] = cmp_directory .. "." .. name
-    core.register_lazy_cmp(name)
-  end
+  component_specs["simple_title"] = "ui.statusline.components.simple_title"
+  core.register_lazy_cmp("simple_title")
   vim.schedule(function() require("ui.statusline.autocmds") end)
 end
 
@@ -34,7 +53,8 @@ local M = {}
 
 M.status = function(winid)
   if not loaded_cmp then load_cmp() end
-  local ctx = core.create_ctx(winid)
+  local bufnr = api.nvim_win_get_buf(winid)
+  local ctx = create_ctx(winid, bufnr)
   local excluded = ctx.config.excluded
   local layout = ctx.config.layout
   local separator = ctx.config.separator
@@ -56,6 +76,7 @@ M.status = function(winid)
 end
 
 vim.schedule(function()
+  require("ui.statusline.autocmds")
   for _, winid in ipairs(api.nvim_list_wins()) do
     core.refresh_win(winid)
   end

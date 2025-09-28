@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-
 local M = {}
 
 local CacheMan = {}
@@ -79,24 +78,6 @@ function M.render_cmp(name, ctx, apply_hl)
 
   local ok, result = pcall(cmp.render, ctx, apply_hl)
   return ok and result or ""
-end
-
-function M.create_ctx(winid)
-  local config = require("ui.statusline.config")
-  local buf = api.nvim_win_get_buf(winid)
-  local bo = vim.bo[buf]
-  return {
-    winid = winid,
-    bufnr = buf,
-    cache = M.get_win_cache(winid),
-    windat = M.win_data[winid],
-    filetype = bo.filetype,
-    buftype = bo.buftype,
-    readonly = bo.readonly,
-    modified = bo.modified,
-    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
-    config = config
-  }
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
