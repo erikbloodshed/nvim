@@ -58,7 +58,6 @@ function M.render_cmp(name, ctx, apply_hl)
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
-
 function M.refresh_win(winid)
   if api.nvim_win_is_valid(winid) then
     vim.wo[winid].statusline = string.format(status_expr, winid)

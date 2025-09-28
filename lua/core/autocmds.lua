@@ -10,9 +10,6 @@ autocmd({ "Filetype" }, {
       vim.opt_local.cinkeys:remove(":")
       vim.opt_local.cindent = true
     end
-    if ft == "python" then
-      vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-    end
     require("xrun").setup({
       filetype = {
         c = { response_file = ".compile_flags", },
