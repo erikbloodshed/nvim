@@ -46,7 +46,6 @@ vim.ui.input = function(opts, on_confirm)
   api.nvim_buf_set_text(bufnr, 0, 0, 0, 0, { default })
   vim.cmd.startinsert()
   api.nvim_win_set_cursor(0, { 1, #default + 1 })
-  on_confirm = on_confirm or function() end
   keymap({ "n", "i", "v" }, "<cr>", function()
     on_confirm(api.nvim_buf_get_lines(bufnr, 0, 1, false)[1])
     win_close()
