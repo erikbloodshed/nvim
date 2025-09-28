@@ -3,6 +3,7 @@ local ok, devicons = pcall(require, "nvim-web-devicons")
 
 return {
   cache_keys = { "file_icon" },
+  events = { "BufWinEnter", "BufWritePost" },
   render = function(ctx, apply_hl)
     local data = ctx.cache:get("file_icon", function()
       local name = api.nvim_buf_get_name(ctx.bufnr)

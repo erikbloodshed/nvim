@@ -1,5 +1,6 @@
 return {
   cache_keys = { "diagnostics" },
+  events = { "DiagnosticChanged", "BufWinEnter", "BufWritePost" },
   render = function(ctx, apply_hl)
     local counts = ctx.cache:get("diagnostics", function()
       return vim.diagnostic.count(ctx.bufnr)

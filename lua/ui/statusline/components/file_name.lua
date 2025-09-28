@@ -2,6 +2,7 @@ local api, fn = vim.api, vim.fn
 
 return {
   cache_keys = { "file_name" },
+  events = { "BufWinEnter", "BufWritePost" },
   render = function(ctx, apply_hl)
     local name = ctx.cache:get("file_name", function()
       local full = api.nvim_buf_get_name(ctx.bufnr)

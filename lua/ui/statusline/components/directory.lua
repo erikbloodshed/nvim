@@ -11,6 +11,7 @@ end
 
 return {
   cache_keys = { "directory" },
+  events = { "BufWinEnter", "BufWritePost", "DirChanged" },
   render = function(ctx, apply_hl)
     local path = ctx.cache:get("directory", function()
       local buf_name = api.nvim_buf_get_name(ctx.bufnr)

@@ -1,5 +1,6 @@
 return {
   cache_keys = { "lsp_clients" },
+  events = { "BufWinEnter", "BufWritePost", "LspAttach", "LspDetach" },
   render = function(ctx, apply_hl)
     local clients = ctx.cache:get("lsp_clients", function()
       return vim.lsp.get_clients({ bufnr = ctx.bufnr })

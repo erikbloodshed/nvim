@@ -1,5 +1,6 @@
 return {
   cache_keys = { "file_status" },
+  events = { "BufWinEnter", "BufWritePost", "BufModifiedSet" },
   render = function(ctx, apply_hl)
     local s = ctx.cache:get("file_status", function()
       return { readonly = ctx.readonly, modified = ctx.modified }

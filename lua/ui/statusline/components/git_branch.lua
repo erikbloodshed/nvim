@@ -2,6 +2,7 @@ local api, fn = vim.api, vim.fn
 
 return {
   cache_keys = { "git_branch" },
+  events = { "BufWinEnter", "BufWritePost", "DirChanged" },
   render = function(ctx, apply_hl)
     local branch_name = ctx.cache:get("git_branch", function()
       local cwd = fn.fnamemodify(api.nvim_buf_get_name(ctx.bufnr), ":h") or fn.getcwd()

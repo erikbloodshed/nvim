@@ -3,42 +3,45 @@ local core = require("ui.statusline.core")
 local config = require("ui.statusline.config")
 local icons = require "ui.icons"
 
-local function create_ctx(winid)
-  local bufnr = api.nvim_win_get_buf(winid)
-  return {
-    bufnr = bufnr,
-    winid = winid,
-    buftype = vim.bo[bufnr].buftype,
-    filetype = vim.bo[bufnr].filetype,
-    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
-    modified = vim.bo[bufnr].modified,
-    readonly = vim.bo[bufnr].readonly,
-    config = config,
-    icons = icons,
-    cache = core.get_win_cache(winid),
-    hl_rule = core.hl_rule,
-    refresh_win = core.refresh_win,
-    win_data = core.win_data[winid],
-  }
-end
-
 local loaded_cmp, component_specs = false, {}
 
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
+
   local cmp_directory = "ui.statusline.components"
-  for _, section in pairs(config.layout) do
-    for _, name in ipairs(section) do
-      if not component_specs[name] then
-        component_specs[name] = string.format("%s.%s", cmp_directory, name)
-        core.register_cmp(name)
+  local events_map = {}
+  local function process_spec(name)
+    if not component_specs[name] then
+      local path = string.format("%s.%s", cmp_directory, name)
+      component_specs[name] = path
+      core.register_cmp(name)
+      local ok, spec = pcall(require, path)
+      if ok and spec and spec.events and spec.cache_keys then
+        local events = type(spec.events) == "string" and { spec.events } or spec.events
+        local keys = type(spec.cache_keys) == "string" and { spec.cache_keys } or spec.cache_keys
+        for _, event in ipairs(events) do
+          if not events_map[event] then events_map[event] = {} end
+          for _, key in ipairs(keys) do
+            events_map[event][key] = true
+          end
+        end
       end
     end
   end
-  component_specs["simple_title"] = string.format("%s.simple_title", cmp_directory)
-  core.register_cmp("simple_title")
-  vim.schedule(function() require("ui.statusline.autocmds") end)
+
+  for _, section in pairs(config.layout) do
+    for _, name in ipairs(section) do
+      process_spec(name)
+    end
+  end
+  process_spec("simple_title")
+
+  core.set_cmp_specs(component_specs)
+
+  vim.schedule(function()
+    require("ui.statusline.autocmds").setup(events_map)
+  end)
 end
 
 core.set_cmp_specs(component_specs)
@@ -55,7 +58,22 @@ local M = {}
 
 function M.status(winid)
   if not loaded_cmp then load_cmp() end
-  local ctx = create_ctx(winid)
+  local bufnr = api.nvim_win_get_buf(winid)
+  local ctx = {
+    bufnr = bufnr,
+    winid = winid,
+    buftype = vim.bo[bufnr].buftype,
+    filetype = vim.bo[bufnr].filetype,
+    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+    modified = vim.bo[bufnr].modified,
+    readonly = vim.bo[bufnr].readonly,
+    config = config,
+    icons = icons,
+    cache = core.get_win_cache(winid),
+    hl_rule = core.hl_rule,
+    refresh_win = core.refresh_win,
+    win_data = core.win_data[winid],
+  }
   local excluded = config.excluded
   local layout = config.layout
   local separator = config.separator
