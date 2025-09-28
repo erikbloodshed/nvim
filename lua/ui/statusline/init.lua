@@ -13,7 +13,7 @@ local function create_ctx(winid, bufnr)
     winid = winid,
     bufnr = bufnr,
     cache = core.get_win_cache(winid),
-    windat = core.win_data[winid],
+    win_data = core.win_data[winid],
     filetype = bo.filetype,
     buftype = bo.buftype,
     readonly = bo.readonly,

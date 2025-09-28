@@ -1,10 +1,11 @@
 return {
-  cache_keys = { "diagnostics" }, render = function(ctx, apply_hl)
+  cache_keys = { "diagnostics" },
+  render = function(ctx, apply_hl)
     local counts = ctx.cache:get("diagnostics", function()
       return vim.diagnostic.count(ctx.bufnr)
     end)
     if not counts or vim.tbl_isempty(counts) then
-      return ctx.hl_rule(ctx.ok, "DiagnosticOk", apply_hl)
+      return ctx.hl_rule(ctx.icons.ok, "DiagnosticOk", apply_hl)
     end
     local parts = {}
     local diag_tbl = ctx.config.diags_tbl
