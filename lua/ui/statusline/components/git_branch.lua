@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-local icons = require("ui.icons")
 local core = require("ui.statusline.core")
 
 return {
@@ -22,7 +21,7 @@ return {
       return windat.git[cwd] or ""
     end)
     if branch_name and branch_name ~= "" then
-      return core.hl_rule(icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
+      return core.hl_rule(ctx.git .. " " .. branch_name, "StatusLineGit", apply_hl)
     end
     return ""
   end,

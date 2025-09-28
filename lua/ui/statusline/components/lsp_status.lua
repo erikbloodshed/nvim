@@ -1,4 +1,3 @@
-local icons = require("ui.icons")
 local core = require("ui.statusline.core")
 
 return {
@@ -12,7 +11,7 @@ return {
     for _, client in ipairs(clients) do
       names[#names + 1] = client.name
     end
-    local content = icons.lsp .. " " .. table.concat(names, ", ")
+    local content = ctx.lsp .. " " .. table.concat(names, ", ")
     return core.hl_rule(content, "StatusLineLsp", apply_hl)
   end,
 }

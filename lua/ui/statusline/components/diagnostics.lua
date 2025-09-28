@@ -1,4 +1,3 @@
-local icons = require("ui.icons")
 local core = require("ui.statusline.core")
 
 return {
@@ -8,7 +7,7 @@ return {
       return vim.diagnostic.count(ctx.bufnr)
     end)
     if not counts or vim.tbl_isempty(counts) then
-      return core.hl_rule(icons.ok, "DiagnosticOk", apply_hl)
+      return core.hl_rule(ctx.ok, "DiagnosticOk", apply_hl)
     end
     local parts = {}
     local diag_tbl = ctx.config.diags_tbl
