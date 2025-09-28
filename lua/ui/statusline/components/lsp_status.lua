@@ -11,7 +11,7 @@ return {
     for _, client in ipairs(clients) do
       names[#names + 1] = client.name
     end
-    local content = ctx.lsp .. " " .. table.concat(names, ", ")
+    local content = ctx.icons.lsp .. " " .. table.concat(names, ", ")
     return core.hl_rule(content, "StatusLineLsp", apply_hl)
   end,
 }

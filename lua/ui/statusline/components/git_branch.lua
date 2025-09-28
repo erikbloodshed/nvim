@@ -21,7 +21,7 @@ return {
       return windat.git[cwd] or ""
     end)
     if branch_name and branch_name ~= "" then
-      return core.hl_rule(ctx.git .. " " .. branch_name, "StatusLineGit", apply_hl)
+      return core.hl_rule(ctx.icons.git .. " " .. branch_name, "StatusLineGit", apply_hl)
     end
     return ""
   end,

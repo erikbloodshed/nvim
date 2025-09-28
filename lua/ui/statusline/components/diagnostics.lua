@@ -1,8 +1,7 @@
 local core = require("ui.statusline.core")
 
 return {
-  cache_keys = { "diagnostics" },
-  render = function(ctx, apply_hl)
+  cache_keys = { "diagnostics" }, render = function(ctx, apply_hl)
     local counts = ctx.cache:get("diagnostics", function()
       return vim.diagnostic.count(ctx.bufnr)
     end)

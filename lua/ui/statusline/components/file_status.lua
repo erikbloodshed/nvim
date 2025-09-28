@@ -1,3 +1,4 @@
+local icons = require("ui.icons")
 local core = require("ui.statusline.core")
 
 return {
@@ -6,8 +7,8 @@ return {
     local s = ctx.cache:get("file_status", function()
       return { readonly = ctx.readonly, modified = ctx.modified }
     end)
-    return s.readonly and core.hl_rule(ctx.readonly, "StatusLineReadonly", apply_hl)
-      or s.modified and core.hl_rule(ctx.modified, "StatusLineModified", apply_hl)
+    return s.readonly and core.hl_rule(icons.readonly, "StatusLineReadonly", apply_hl)
+      or s.modified and core.hl_rule(icons.modified, "StatusLineModified", apply_hl)
       or " "
   end,
 }

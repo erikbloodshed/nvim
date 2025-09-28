@@ -11,7 +11,7 @@ local function shorten_path(path)
 end
 
 return {
-  cache_keys = { "directory" },
+  cache_keys = { "diagnostics" },
   render = function(ctx, apply_hl)
     local path = ctx.cache:get("directory", function()
       local buf_name = api.nvim_buf_get_name(ctx.bufnr)
@@ -19,7 +19,7 @@ return {
     end)
     if not path or path == "" then return "" end
     local display_name = shorten_path(fn.fnamemodify(path, ":~"))
-    local content = ctx.folder .. " " .. display_name
+    local content = ctx.icons.folder .. " " .. display_name
     return core.hl_rule(content, "Directory", apply_hl)
   end,
 }
