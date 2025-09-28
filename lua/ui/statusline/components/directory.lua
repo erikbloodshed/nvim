@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-local core = require("ui.statusline.core")
 
 local function shorten_path(path)
   return path:gsub("([^/]+)/", function(dir)
@@ -20,6 +19,6 @@ return {
     if not path or path == "" then return "" end
     local display_name = shorten_path(fn.fnamemodify(path, ":~"))
     local content = ctx.icons.folder .. " " .. display_name
-    return core.hl_rule(content, "Directory", apply_hl)
+    return ctx.hl_rule(content, "Directory", apply_hl)
   end,
 }

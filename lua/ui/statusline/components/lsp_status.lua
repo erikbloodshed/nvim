@@ -1,5 +1,3 @@
-local core = require("ui.statusline.core")
-
 return {
   cache_keys = { "lsp_clients" },
   render = function(ctx, apply_hl)
@@ -12,6 +10,6 @@ return {
       names[#names + 1] = client.name
     end
     local content = ctx.icons.lsp .. " " .. table.concat(names, ", ")
-    return core.hl_rule(content, "StatusLineLsp", apply_hl)
+    return ctx.hl_rule(content, "StatusLineLsp", apply_hl)
   end,
 }

@@ -1,5 +1,4 @@
 local api, fn = vim.api, vim.fn
-local core = require("ui.statusline.core")
 local ok, devicons = pcall(require, "nvim-web-devicons")
 
 return {
@@ -21,7 +20,7 @@ return {
               hl = hl or "Normal",
             }
             ctx.cache:reset("file_data")
-            core.refresh_win(ctx.winid)
+            ctx.refresh_win(ctx.winid)
           end
         end)
       end
@@ -31,10 +30,10 @@ return {
 
     local parts = {}
     if file_data.icon and file_data.icon ~= "" then
-      parts[#parts + 1] = core.hl_rule(file_data.icon, file_data.hl, apply_hl)
+      parts[#parts + 1] = ctx.hl_rule(file_data.icon, file_data.hl, apply_hl)
       parts[#parts + 1] = " "
     end
-    parts[#parts + 1] = core.hl_rule(file_data.name, "StatusLine", apply_hl)
+    parts[#parts + 1] = ctx.hl_rule(file_data.name, "StatusLine", apply_hl)
     return table.concat(parts, "")
   end,
 }

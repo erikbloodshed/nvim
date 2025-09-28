@@ -87,6 +87,8 @@ function M.create_ctx(winid)
   local buf = api.nvim_win_get_buf(winid)
   local bo = vim.bo[buf]
   return {
+    hl_rule = M.hl_rule,
+    refresh_win = M.refresh_win,
     winid = winid,
     bufnr = buf,
     cache = M.get_win_cache(winid),
