@@ -3,26 +3,26 @@ local core = require("ui.statusline.core")
 local config = require("ui.statusline.config")
 local icons = require "ui.icons"
 
-local loaded_cmp, component_specs = false, {}
-
-local function create_ctx(winid, bufnr)
-  local context = {
-    hl_rule = core.hl_rule,
-    refresh_win = core.refresh_win,
-    winid = winid,
+local function create_ctx(winid)
+  local bufnr = api.nvim_win_get_buf(winid)
+  return {
     bufnr = bufnr,
-    cache = core.get_win_cache(winid),
-    win_data = core.win_data[winid],
-    filetype = vim.bo[bufnr].filetype,
+    winid = winid,
     buftype = vim.bo[bufnr].buftype,
-    readonly = vim.bo[bufnr].readonly,
-    modified = vim.bo[bufnr].modified,
+    filetype = vim.bo[bufnr].filetype,
     mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+    modified = vim.bo[bufnr].modified,
+    readonly = vim.bo[bufnr].readonly,
     config = config,
     icons = icons,
+    cache = core.get_win_cache(winid),
+    hl_rule = core.hl_rule,
+    refresh_win = core.refresh_win,
+    win_data = core.win_data[winid],
   }
-  return context
 end
+
+local loaded_cmp, component_specs = false, {}
 
 local function load_cmp()
   if loaded_cmp then return end
@@ -53,12 +53,12 @@ end
 
 local M = {}
 
-M.status = function(winid)
+function M.status(winid)
   if not loaded_cmp then load_cmp() end
-  local ctx = create_ctx(winid, api.nvim_win_get_buf(winid))
-  local excluded = ctx.config.excluded
-  local layout = ctx.config.layout
-  local separator = ctx.config.separator
+  local ctx = create_ctx(winid)
+  local excluded = config.excluded
+  local layout = config.layout
+  local separator = config.separator
   if excluded.buftype[ctx.buftype] or excluded.filetype[ctx.filetype] then
     return "%=" .. core.render_cmp("simple_title", ctx, true) .. "%="
   end
