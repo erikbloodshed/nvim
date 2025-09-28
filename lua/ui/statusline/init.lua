@@ -8,7 +8,6 @@ local loaded_cmp, component_specs = false, {}
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
-
   local cmp_directory = "ui.statusline.components"
   local events_map = {}
   local function process_spec(name)
@@ -29,16 +28,13 @@ local function load_cmp()
       end
     end
   end
-
   for _, section in pairs(config.layout) do
     for _, name in ipairs(section) do
       process_spec(name)
     end
   end
   process_spec("simple_title")
-
   core.set_cmp_specs(component_specs)
-
   vim.schedule(function()
     require("ui.statusline.autocmds").setup(events_map)
   end)
@@ -85,7 +81,7 @@ function M.status(winid)
   local left = build_section(layout.left, ctx, apply_hl, sep)
   local right = build_section(layout.right, ctx, apply_hl, sep)
   local center = build_section(layout.center, ctx, apply_hl, " ")
-  local w_left, w_right, w_center = core.width(left, ctx), core.width(right, ctx), core.width(center, ctx)
+  local w_left, w_right, w_center = core.width(left), core.width(right), core.width(center)
   local w_win = api.nvim_win_get_width(winid)
   if (w_win - (w_left + w_right)) >= w_center + 4 then
     local gap = math.max(1, math.floor((w_win - w_center) / 2) - w_left)
