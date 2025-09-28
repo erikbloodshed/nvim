@@ -46,7 +46,7 @@ core.set_cmp_specs(component_specs)
 local function build_section(section_cmp, ctx, apply_hl, sep)
   local parts = {}
   for _, name in ipairs(section_cmp) do
-    table.insert(parts, core.render_cmp(name, ctx, apply_hl))
+    parts[#parts + 1] = core.render_cmp(name, ctx, apply_hl)
   end
   return core.build(parts, sep)
 end
