@@ -1,8 +1,4 @@
 local api, fn = vim.api, vim.fn
-local config = require("ui.statusline.config")
-local icons = require("ui.icons")
-
-local M = {}
 
 local CacheMan = {}
 CacheMan.__index = CacheMan
@@ -26,6 +22,8 @@ function CacheMan:reset(keys)
   end
 end
 
+local M = {}
+
 M.CacheMan = CacheMan
 
 M.win_data = {}
@@ -39,8 +37,7 @@ function M.get_win_cache(winid)
   return data.cache
 end
 
-local components = {}
-local component_specs = {}
+local components, component_specs = {}, {}
 
 function M.set_component_specs(specs)
   component_specs = specs
@@ -61,46 +58,22 @@ local function load_component(name)
     components[name] = { render = function() return "" end, cache_keys = {} }
     return components[name]
   end
-
   local ok, spec = pcall(require, spec_path)
   if ok and spec.render then
     components[name] = { render = spec.render, cache_keys = spec.cache_keys or {} }
   else
     components[name] = { render = function() return "" end, cache_keys = {} }
   end
-
   return components[name]
 end
 
 function M.render_cmp(name, ctx, apply_hl)
   local cmp = components[name]
-
   if not cmp then
     cmp = load_component(name)
   end
-
   local ok, result = pcall(cmp.render, ctx, apply_hl)
   return ok and result or ""
-end
-
-function M.create_ctx(winid)
-  local buf = api.nvim_win_get_buf(winid)
-  local bo = vim.bo[buf]
-  return {
-    hl_rule = M.hl_rule,
-    refresh_win = M.refresh_win,
-    winid = winid,
-    bufnr = buf,
-    cache = M.get_win_cache(winid),
-    windat = M.win_data[winid],
-    filetype = bo.filetype,
-    buftype = bo.buftype,
-    readonly = bo.readonly,
-    modified = bo.modified,
-    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
-    config = config,
-    icons = icons,
-  }
 end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"

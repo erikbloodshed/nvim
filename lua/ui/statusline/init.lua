@@ -1,13 +1,34 @@
 local api = vim.api
 local core = require("ui.statusline.core")
+local config = require("ui.statusline.config")
+local icons = require "ui.icons"
 
 local loaded_cmp, component_specs = false, {}
+
+local function create_ctx(winid, bufnr)
+  local bo = vim.bo[bufnr]
+  local context = {
+    hl_rule = core.hl_rule,
+    refresh_win = core.refresh_win,
+    winid = winid,
+    bufnr = bufnr,
+    cache = core.get_win_cache(winid),
+    windat = core.win_data[winid],
+    filetype = bo.filetype,
+    buftype = bo.buftype,
+    readonly = bo.readonly,
+    modified = bo.modified,
+    mode_info = config.modes_tbl[api.nvim_get_mode().mode],
+    config = config,
+    icons = icons,
+  }
+  return context
+end
 
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
   local cmp_directory = "ui.statusline.components"
-  local config = require("ui.statusline.config")
   for _, section in pairs(config.layout) do
     for _, name in ipairs(section) do
       if not component_specs[name] then
@@ -35,7 +56,7 @@ local M = {}
 
 M.status = function(winid)
   if not loaded_cmp then load_cmp() end
-  local ctx = core.create_ctx(winid)
+  local ctx = create_ctx(winid, api.nvim_win_get_buf(winid))
   local excluded = ctx.config.excluded
   local layout = ctx.config.layout
   local separator = ctx.config.separator
