@@ -1,21 +1,6 @@
 local api = vim.api
 local core = require("ui.statusline.core")
 
----@diagnostic disable:need-check-nil
-local function debounce(func, timeout)
-  local timer = vim.uv.new_timer()
-  local running = false
-  return function(...)
-    local argv = { ... }
-    if running then timer:stop() end
-    running = true
-    timer:start(timeout, 0, function()
-      running = false
-      vim.schedule(function() func(unpack(argv)) end)
-    end)
-  end
-end
-
 local function reload(buf, keys)
   if not buf or buf == 0 or not api.nvim_buf_is_valid(buf) then return end
   for _, winid in ipairs(vim.fn.win_findbuf(buf)) do
@@ -34,14 +19,8 @@ function M.setup(events_map)
   is_setup = true
   local group = api.nvim_create_augroup("CustomStatusline", { clear = true })
   for event, keys_set in pairs(events_map) do
-    local keys_to_reload = {}
-    for keys in pairs(keys_set) do
-      keys_to_reload[#keys_to_reload + 1] = keys
-    end
+    local keys_to_reload = vim.tbl_keys(keys_set)
     local callback = function(ev) reload(ev.buf, keys_to_reload) end
-    if event == "DiagnosticChanged" or event == "LspAttach" or event == "LspDetach" then
-      callback = debounce(callback, 100)
-    end
     api.nvim_create_autocmd(event, {
       group = group,
       callback = callback,

@@ -8,39 +8,33 @@ local loaded_cmp, component_specs = false, {}
 local function load_cmp()
   if loaded_cmp then return end
   loaded_cmp = true
-  local cmp_directory = "ui.statusline.components"
   local events_map = {}
-  local function process_spec(name)
+  local components_to_load = {}
+  for _, section in pairs(config.layout) do
+    vim.list_extend(components_to_load, section)
+  end
+  table.insert(components_to_load, "simple_title")
+  for _, name in ipairs(components_to_load) do
     if not component_specs[name] then
-      local path = string.format("%s.%s", cmp_directory, name)
+      local path = string.format("ui.statusline.components.%s", name)
       component_specs[name] = path
       core.register_cmp(name)
       local ok, spec = pcall(require, path)
       if ok and spec and spec.events and spec.cache_keys then
-        local events = type(spec.events) == "string" and { spec.events } or spec.events
-        local keys = type(spec.cache_keys) == "string" and { spec.cache_keys } or spec.cache_keys
-        for _, event in ipairs(events) do
-          if not events_map[event] then events_map[event] = {} end
-          for _, key in ipairs(keys) do
+        for _, event in ipairs(spec.events) do
+          events_map[event] = events_map[event] or {}
+          for _, key in ipairs(spec.cache_keys) do
             events_map[event][key] = true
           end
         end
       end
     end
   end
-  for _, section in pairs(config.layout) do
-    for _, name in ipairs(section) do
-      process_spec(name)
-    end
-  end
-  process_spec("simple_title")
   core.set_cmp_specs(component_specs)
   vim.schedule(function()
     require("ui.statusline.autocmds").setup(events_map)
   end)
 end
-
-core.set_cmp_specs(component_specs)
 
 local function build_section(section_cmp, ctx, apply_hl, sep)
   local parts = {}
