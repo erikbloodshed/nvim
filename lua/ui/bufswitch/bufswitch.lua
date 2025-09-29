@@ -16,20 +16,22 @@ function BufferSwitcher:new()
     cycle = { active = false, index = 0 },
     cache = {
       bufinfo = {},
-      tabline = { content = "", hash = "", window_start = 1 },
-      static_tabline = { content = "", hash = "", window_start = 1 },
+      tabline = { content = "", version = -1, cycle_idx = 0, window_start = 1 },
+      static_tabline = { content = "", version = -1, cycle_idx = 0, window_start = 1 },
     },
     hide_timer = nil,
     update_timer = nil,
     max_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
+    state_version = 0, -- 🔑 generation counter
   }
 
   setmetatable(instance, self)
   return instance
 end
 
+-- Cycle management
 function BufferSwitcher:reset_cycle()
   self.cycle.active = false
   self.cycle.index = 0
@@ -50,6 +52,11 @@ function BufferSwitcher:should_apply_hl()
     and api.nvim_win_is_valid(current_win)
 end
 
+-- 🔑 bump version whenever buffers change
+local function bump_version(self)
+  self.state_version = self.state_version + 1
+end
+
 function BufferSwitcher:track_buffer(buf)
   if not utils.should_include_buffer(buf) then
     return false
@@ -62,6 +69,7 @@ function BufferSwitcher:track_buffer(buf)
     insert(self.tabline_order, buf)
   end
 
+  bump_version(self)
   return true
 end
 
@@ -69,6 +77,7 @@ function BufferSwitcher:remove_buffer(buf)
   utils.remove_item(self.buf_order, buf)
   utils.remove_item(self.tabline_order, buf)
   self:invalidate_buffer(buf)
+  bump_version(self)
 end
 
 function BufferSwitcher:get_goto_target()
@@ -122,7 +131,7 @@ function BufferSwitcher:cache_entry(result)
 end
 
 function BufferSwitcher:reset_cache(tbl)
-  tbl.content, tbl.hash, tbl.window_start = "", "", 1
+  tbl.content, tbl.version, tbl.cycle_idx, tbl.window_start = "", -1, 0, 1
 end
 
 function BufferSwitcher:clear_hl_cache()
@@ -134,6 +143,7 @@ function BufferSwitcher:invalidate_buffer(buf)
   self:reset_cache(self.cache.tabline)
   self:reset_cache(self.cache.static_tabline)
   self:clear_hl_cache()
+  bump_version(self)
 end
 
 function BufferSwitcher:hl_rule(content, hl, apply_hl)
@@ -169,7 +179,19 @@ function BufferSwitcher:get_buffer_info(buf)
     info.devicon, info.icon_color = devicons.get_icon_color(disp, fn.fnamemodify(name, ":e") or "")
   end
 
+  -- 🔑 insert into cache
   self.cache.bufinfo[buf] = self:cache_entry(info)
+
+  -- 🔑 trim cache if needed
+  local count = 0
+  for _ in pairs(self.cache.bufinfo) do count = count + 1 end
+  if count > self.max_cache_size then
+    for k in pairs(self.cache.bufinfo) do
+      self.cache.bufinfo[k] = nil
+      break
+    end
+  end
+
   return info
 end
 
@@ -202,13 +224,6 @@ function BufferSwitcher:format_buffer(info, is_current, apply_hl)
   return concat(parts)
 end
 
-
-function BufferSwitcher:hash_state(list, idx, apply_hl)
-  if not next(list) then return "" end
-  return string.format("%d:%s:%d:%s", api.nvim_get_current_buf(),
-    concat(list, "-"), idx or 0, tostring(apply_hl))
-end
-
 function BufferSwitcher:calculate_bounds(cur, total, win, ref)
   if total <= win then return 1, total end
   local s = ref.window_start or 1
@@ -226,8 +241,10 @@ end
 
 function BufferSwitcher:render_tabline(order, cyc_idx, ref, apply_hl)
   apply_hl = apply_hl == nil and true or apply_hl
-  local h = self:hash_state(order, cyc_idx, apply_hl)
-  if ref.hash == h then return ref.content end
+
+  if ref.version == self.state_version and ref.cycle_idx == (cyc_idx or 0) then
+    return ref.content
+  end
 
   local total = #order
   if total == 0 then
@@ -257,7 +274,8 @@ function BufferSwitcher:render_tabline(order, cyc_idx, ref, apply_hl)
 
         local buffer_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
         local formatted_name = self:format_buffer(info, is_current, apply_hl)
-        insert(parts, self:hl_rule("  ", buffer_hl, apply_hl) .. formatted_name ..
+        insert(parts, self:hl_rule("  ", buffer_hl, apply_hl) ..
+          formatted_name ..
           self:hl_rule("  ", buffer_hl, apply_hl))
       end
     end
@@ -270,7 +288,9 @@ function BufferSwitcher:render_tabline(order, cyc_idx, ref, apply_hl)
   insert(parts, self:hl_rule("%T", "BufSwitchFill", apply_hl))
 
   local out = concat(parts, "")
-  ref.content, ref.hash = out, h
+  ref.content = out
+  ref.version = self.state_version
+  ref.cycle_idx = cyc_idx or 0
   return out
 end
 
