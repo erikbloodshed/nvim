@@ -17,8 +17,8 @@ function M.is_empty_unnamed(buf)
   if not api.nvim_buf_is_valid(buf) or fn.bufname(buf) ~= "" or fn.getbufvar(buf, '&modified') ~= 0 then
     return false
   end
-  local lc = api.nvim_buf_line_count(buf)
-  return (lc > 1) or (lc == 1 and #(api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") > 0)
+  local line_count = api.nvim_buf_line_count(buf)
+  return (line_count > 1) or (line_count == 1 and #(api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") > 0)
 end
 
 function M.skip_unnamed(buf)

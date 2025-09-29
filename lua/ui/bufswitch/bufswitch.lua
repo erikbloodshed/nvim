@@ -11,18 +11,16 @@ function BufferSwitcher:new()
   local instance = {
     config = require("ui.bufswitch.config"),
     buf_order = {},
+    hl_cache = {},
     tabline_order = {},
     cycle = { active = false, index = 0 },
     cache = {
       bufinfo = {},
-      tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
-      static_tabline = { content = "", timestamp = 0, hash = "", window_start = 1 },
+      tabline = { content = "", hash = "", window_start = 1 },
+      static_tabline = { content = "", hash = "", window_start = 1 },
     },
     hide_timer = nil,
     update_timer = nil,
-    cache_ttl = 5000,
-    debounce_delay = 16,
-    tabline_ttl = 100,
     max_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
@@ -32,6 +30,7 @@ function BufferSwitcher:new()
   return instance
 end
 
+-- Cycle management
 function BufferSwitcher:reset_cycle()
   self.cycle.active = false
   self.cycle.index = 0
@@ -48,30 +47,30 @@ end
 
 function BufferSwitcher:should_apply_hl()
   local current_win = api.nvim_get_current_win()
-  return not (self.config.disable_in_special and utils.is_special(nil)) and
-    api.nvim_win_is_valid(current_win)
+  return not (self.config.disable_in_special and utils.is_special(nil))
+    and api.nvim_win_is_valid(current_win)
 end
 
-function BufferSwitcher:update_mru(buf)
-  if utils.should_include_buffer(buf) then
-    utils.remove_item(self.buf_order, buf)
-    insert(self.buf_order, 1, buf)
+function BufferSwitcher:track_buffer(buf)
+  if not utils.should_include_buffer(buf) then
+    return false
   end
+
+  utils.remove_item(self.buf_order, buf)
+  insert(self.buf_order, 1, buf)
+
+  -- Add to tabline order only if not cycling and not already there
+  if not self:is_cycling() and not vim.tbl_contains(self.tabline_order, buf) then
+    insert(self.tabline_order, buf)
+  end
+
+  return true
 end
 
 function BufferSwitcher:remove_buffer(buf)
   utils.remove_item(self.buf_order, buf)
   utils.remove_item(self.tabline_order, buf)
   self:invalidate_buffer(buf)
-end
-
-function BufferSwitcher:add_buffer(buf)
-  if not self:is_cycling() and utils.should_include_buffer(buf) then
-    insert(self.tabline_order, buf)
-    self:update_mru(buf)
-    return true
-  end
-  return false
 end
 
 function BufferSwitcher:get_navigation_target()
@@ -90,17 +89,14 @@ function BufferSwitcher:calculate_cycle_index(move)
   if move == "recent" then
     return self:get_navigation_target()
   end
-
   local step = (move == "prev") and -1 or 1
   local new_index = self.cycle.index + step
   local max_index = #self.tabline_order
-
   if new_index < 1 then
     return self.config.wrap_around and max_index or nil
   elseif new_index > max_index then
     return self.config.wrap_around and 1 or nil
   end
-
   return new_index
 end
 
@@ -123,36 +119,23 @@ function BufferSwitcher:initialize_cycle()
   return true
 end
 
-function BufferSwitcher:now()
-  return fn.reltimefloat(fn.reltime()) * 1000
-end
-
-function BufferSwitcher:is_fresh(entry, ttl)
-  return entry and (self:now() - (entry.timestamp or 0) < (ttl or self.cache_ttl))
-end
-
 function BufferSwitcher:cache_entry(result)
-  return { result = result, timestamp = self:now() }
+  return { result = result }
 end
 
 function BufferSwitcher:reset_cache(tbl)
-  tbl.content, tbl.timestamp, tbl.hash, tbl.window_start = "", 0, "", 1
+  tbl.content, tbl.hash, tbl.window_start = "", "", 1
 end
 
-function BufferSwitcher:cleanup_cache()
-  local count = 0
-  for _ in pairs(self.cache.bufinfo) do count = count + 1 end
-  if count > self.max_cache_size then
-    for k, e in pairs(self.cache.bufinfo) do
-      if not self:is_fresh(e) then self.cache.bufinfo[k] = nil end
-    end
-  end
+function BufferSwitcher:clear_hl_cache()
+  self.hl_cache = {}
 end
 
 function BufferSwitcher:invalidate_buffer(buf)
   self.cache.bufinfo[buf] = nil
   self:reset_cache(self.cache.tabline)
   self:reset_cache(self.cache.static_tabline)
+  self:clear_hl_cache()
 end
 
 function BufferSwitcher:hl_rule(content, hl, apply_hl)
@@ -162,7 +145,7 @@ end
 
 function BufferSwitcher:get_buffer_info(buf)
   local c = self.cache.bufinfo[buf]
-  if self:is_fresh(c) then return c.result end
+  if c then return c.result end
 
   local name, bt = fn.bufname(buf) or "", vim.bo[buf].buftype
   local disp = vim.fs.basename(name) or "[No Name]"
@@ -187,19 +170,23 @@ function BufferSwitcher:get_buffer_info(buf)
 end
 
 function BufferSwitcher:format_buffer(info, is_current, apply_hl)
-  if not info then return self:hl_rule("[Invalid]", "BufSwitchInactive", apply_hl) end
+  if not info then
+    return self:hl_rule("[Invalid]", "BufSwitchInactive", apply_hl)
+  end
 
   local parts = {}
   local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
 
   if info.devicon then
-    if apply_hl and info.icon_color then
-      local hl_name = string.format("BufSwitchDevicon_%s_%s",
-        info.icon_color:gsub("#", ""), is_current and "sel" or "inact")
-
-      local base_hl_attrs = api.nvim_get_hl(0, { name = base_hl, link = false })
-      api.nvim_set_hl(0, hl_name, { fg = info.icon_color, bg = base_hl_attrs.bg })
-
+    if is_current and apply_hl and info.icon_color then
+      local cache_key = base_hl .. "_" .. info.icon_color
+      local hl_name = self.hl_cache[cache_key]
+      if not hl_name then
+        hl_name = string.format("BufSwitchDevicon_%s_sel", info.icon_color:gsub("#", ""))
+        local base_hl_attrs = api.nvim_get_hl(0, { name = base_hl, link = false })
+        api.nvim_set_hl(0, hl_name, { fg = info.icon_color, bg = base_hl_attrs.bg })
+        self.hl_cache[cache_key] = hl_name
+      end
       insert(parts, self:hl_rule(info.devicon, hl_name, true))
     else
       insert(parts, self:hl_rule(info.devicon, base_hl, apply_hl))
@@ -211,12 +198,14 @@ function BufferSwitcher:format_buffer(info, is_current, apply_hl)
   return concat(parts)
 end
 
+
 function BufferSwitcher:hash_state(list, idx, apply_hl)
   if not next(list) then return "" end
   return string.format("%d:%s:%d:%s", api.nvim_get_current_buf(),
     concat(list, "-"), idx or 0, tostring(apply_hl))
 end
 
+-- Bounds + rendering
 function BufferSwitcher:calculate_bounds(cur, total, win, ref)
   if total <= win then return 1, total end
   local s = ref.window_start or 1
@@ -232,10 +221,10 @@ function BufferSwitcher:find_current_index(order, cur, cyc)
   return #order > 0 and 1 or 0
 end
 
-function BufferSwitcher:render_tabline(order, cyc_idx, ref, ttl, apply_hl)
+function BufferSwitcher:render_tabline(order, cyc_idx, ref, apply_hl)
   apply_hl = apply_hl == nil and true or apply_hl
   local h = self:hash_state(order, cyc_idx, apply_hl)
-  if ref.hash == h and self:is_fresh(ref, ttl) then return ref.content end
+  if ref.hash == h then return ref.content end
 
   local total = #order
   if total == 0 then
@@ -278,7 +267,7 @@ function BufferSwitcher:render_tabline(order, cyc_idx, ref, ttl, apply_hl)
   insert(parts, self:hl_rule("%T", "BufSwitchFill", apply_hl))
 
   local out = concat(parts, "")
-  ref.content, ref.timestamp, ref.hash = out, self:now(), h
+  ref.content, ref.hash = out, h
   return out
 end
 
@@ -304,14 +293,14 @@ end
 
 function BufferSwitcher:update_tabline(cyc_idx, apply_hl)
   vim.o.tabline = self:render_tabline(self.tabline_order, cyc_idx,
-    self.cache.tabline, self.tabline_ttl, apply_hl)
+    self.cache.tabline, apply_hl)
 end
 
 function BufferSwitcher:update_tabline_debounced(apply_hl)
   self.update_timer = self.update_timer or vim.uv.new_timer()
   if self.update_timer then
     self.update_timer:stop()
-    self.update_timer:start(self.debounce_delay, 0, vim.schedule_wrap(function()
+    self.update_timer:start(16, 0, vim.schedule_wrap(function()
       self:update_tabline(nil, apply_hl)
       self.update_timer:stop()
     end))
@@ -331,7 +320,7 @@ function BufferSwitcher:show_static_tabline(apply_hl)
   self:stop_hide_timer()
   vim.o.showtabline = 2
   vim.o.tabline = self:render_tabline(self.tabline_order, nil,
-    self.cache.static_tabline, self.tabline_ttl, apply_hl)
+    self.cache.static_tabline, apply_hl)
   self:start_hide_timer(self.config.hide_timeout, function()
     vim.o.showtabline = 0
   end)
@@ -339,17 +328,13 @@ end
 
 function BufferSwitcher:end_cycle()
   if not self:is_cycling() then return end
-
   self:stop_hide_timer()
   vim.o.showtabline = 0
-
   local target_buf = self.tabline_order[self.cycle.index]
   self:reset_cycle()
-
   if target_buf and api.nvim_buf_is_valid(target_buf) then
-    self:update_mru(target_buf)
+    self:track_buffer(target_buf)
   end
-
   if self.config.show_tabline then
     self:update_tabline(nil, self:should_apply_hl())
   end
@@ -359,7 +344,6 @@ function BufferSwitcher:navigate(move)
   if self.config.disable_in_special and utils.is_special(nil) then
     return
   end
-
   self:stop_hide_timer()
   local apply_hl = self:should_apply_hl()
 
@@ -369,21 +353,17 @@ function BufferSwitcher:navigate(move)
       return
     end
   end
-
   local new_index = self:calculate_cycle_index(move)
   if not new_index then
     self:show_temporary_tabline(apply_hl)
     return
   end
-
   self.cycle.index = new_index
   local target_buf = self.tabline_order[new_index]
-
   if not (target_buf and api.nvim_buf_is_valid(target_buf)) then
     self:end_cycle()
     return
   end
-
   vim.cmd('buffer ' .. target_buf)
   vim.o.showtabline = 2
   self:update_tabline(new_index, apply_hl)
@@ -394,7 +374,7 @@ end
 
 function BufferSwitcher:on_buffer_enter(buf)
   if not self:is_cycling() then
-    self:update_mru(buf)
+    self:track_buffer(buf)
     if self.config.show_tabline then
       local apply_hl = api.nvim_win_is_valid(api.nvim_get_current_win())
       self:update_tabline(nil, apply_hl)
@@ -402,22 +382,5 @@ function BufferSwitcher:on_buffer_enter(buf)
   end
 end
 
-function BufferSwitcher:on_buffer_add(buf)
-  self:add_buffer(buf)
-end
-
-function BufferSwitcher:on_buffer_remove(buf)
-  self:remove_buffer(buf)
-end
-
-function BufferSwitcher:on_buffer_modify(buf)
-  self:invalidate_buffer(buf)
-end
-
-function BufferSwitcher:init()
-  if self.config.periodic_cleanup then
-    fn.timer_start(30000, function() self:cleanup_cache() end, { ['repeat'] = -1 })
-  end
-end
-
 return BufferSwitcher
+

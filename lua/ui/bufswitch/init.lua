@@ -22,21 +22,21 @@ api.nvim_create_autocmd('BufEnter', {
 api.nvim_create_autocmd('BufAdd', {
   group = group_id,
   callback = scheduled(function(ev)
-    switcher:on_buffer_add(ev.buf)
+    switcher:add_buffer(ev.buf)
   end)
 })
 
 api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
   group = group_id,
   callback = function(ev)
-    switcher:on_buffer_remove(ev.buf)
+    switcher:remove_buffer(ev.buf)
   end
 })
 
 api.nvim_create_autocmd({ 'BufWritePost', 'BufModifiedSet' }, {
   group = group_id,
   callback = function(ev)
-    switcher:on_buffer_modify(ev.buf)
+    switcher:invalidate_buffer(ev.buf)
   end
 })
 
@@ -47,9 +47,7 @@ for _, b in ipairs(api.nvim_list_bufs()) do
 end
 
 switcher:on_buffer_enter(api.nvim_get_current_buf())
-switcher:init()
 
--- Public API
 function M.next()
   switcher:navigate("next")
 end
@@ -64,10 +62,6 @@ end
 
 function M.show_buffers()
   switcher:show_static_tabline()
-end
-
-function M._get_switcher()
-  return switcher
 end
 
 return M
