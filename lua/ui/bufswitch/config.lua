@@ -1,4 +1,3 @@
--- config.lua
 return {
   hide_timeout = 1000,
   show_tabline = true,
