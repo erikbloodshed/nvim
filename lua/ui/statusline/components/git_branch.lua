@@ -28,8 +28,10 @@ return {
         end))
       return ""
     end)
-
-    return branch_name and branch_name ~= ""
-      and ctx.hl_rule(ctx.icons.git .. " " .. branch_name, "StatusLineGit", apply_hl) or ""
+    if branch_name and branch_name ~= "" then
+      local content = ctx.icons.git .. " " .. branch_name
+      return ctx.hl_rule(content, "StatusLineGit", apply_hl)
+    end
+    return ""
   end,
 }

@@ -23,8 +23,6 @@ end
 
 local M = {}
 
-M.CacheMan = CacheMan
-
 M.win_data = {}
 
 function M.get_win_cache(winid)
