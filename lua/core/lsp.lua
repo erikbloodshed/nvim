@@ -19,8 +19,11 @@ lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
 autocmd("LspAttach", {
   callback = function(args)
     require("ui.qf")
-    vim.lsp.on_type_formatting.enable()
-
+    local client_id = args.data.client_id
+    local client = assert(vim.lsp.get_client_by_id(client_id))
+    if client.name == "ruff" then
+      vim.lsp.on_type_formatting.enable(true, { client_id = client_id })
+    end
     local icons = require("ui.icons")
     local x = diagnostic.severity
 
