@@ -30,7 +30,6 @@ function BufferSwitcher:new()
   return instance
 end
 
--- Cycle management
 function BufferSwitcher:reset_cycle()
   self.cycle.active = false
   self.cycle.index = 0
@@ -147,7 +146,13 @@ function BufferSwitcher:get_buffer_info(buf)
   if c then return c.result end
 
   local name, bt = fn.bufname(buf) or "", vim.bo[buf].buftype
-  local disp = vim.fs.basename(name) or "[No Name]"
+  local disp
+
+  if name == "" then
+    disp = "[No Name]"
+  else
+    disp = vim.fs.basename(name)
+  end
 
   if bt == "help" then
     disp = "[Help] " .. (disp ~= "[No Name]" and disp or "help")
@@ -204,7 +209,6 @@ function BufferSwitcher:hash_state(list, idx, apply_hl)
     concat(list, "-"), idx or 0, tostring(apply_hl))
 end
 
--- Bounds + rendering
 function BufferSwitcher:calculate_bounds(cur, total, win, ref)
   if total <= win then return 1, total end
   local s = ref.window_start or 1

@@ -13,18 +13,6 @@ function M.remove_item(tbl, val)
   return false
 end
 
-function M.is_empty_unnamed(buf)
-  if not api.nvim_buf_is_valid(buf) or fn.bufname(buf) ~= "" or fn.getbufvar(buf, '&modified') ~= 0 then
-    return false
-  end
-  local line_count = api.nvim_buf_line_count(buf)
-  return (line_count > 1) or (line_count == 1 and #(api.nvim_buf_get_lines(buf, 0, 1, false)[1] or "") > 0)
-end
-
-function M.skip_unnamed(buf)
-  return fn.bufname(buf) == "" and fn.getbufvar(buf, "&modified") == 0 and not M.is_empty_unnamed(buf)
-end
-
 function M.is_special(buf)
   buf = buf or api.nvim_get_current_buf()
   if vim.tbl_contains(config.special_buftypes, vim.bo[buf].buftype)
@@ -39,7 +27,7 @@ end
 
 function M.should_include_buffer(buf)
   return api.nvim_buf_is_valid(buf) and fn.buflisted(buf) == 1
-    and not M.is_special(buf) and not M.skip_unnamed(buf)
+    and not M.is_special(buf)
 end
 
 return M
