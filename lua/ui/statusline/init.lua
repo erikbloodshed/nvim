@@ -3,6 +3,8 @@ local core = require("ui.statusline.core")
 local config = require("ui.statusline.config")
 local icons = require "ui.icons"
 
+local M = {}
+
 local loaded_cmp, component_specs = false, {}
 
 local function load_cmp()
@@ -44,12 +46,8 @@ local function build_section(section_cmp, ctx, apply_hl, sep)
   return core.build(parts, sep)
 end
 
-local M = {}
-
-function M.status(winid)
-  if not loaded_cmp then load_cmp() end
-  local bufnr = api.nvim_win_get_buf(winid)
-  local ctx = {
+local function create_ctx(winid, bufnr)
+  return {
     bufnr = bufnr,
     winid = winid,
     buftype = vim.bo[bufnr].buftype,
@@ -64,6 +62,11 @@ function M.status(winid)
     refresh_win = core.refresh_win,
     win_data = core.win_data[winid],
   }
+end
+
+function M.status(winid)
+  if not loaded_cmp then load_cmp() end
+  local ctx = create_ctx(winid, api.nvim_win_get_buf(winid))
   local excluded = config.excluded
   local layout = config.layout
   local separator = config.separator
