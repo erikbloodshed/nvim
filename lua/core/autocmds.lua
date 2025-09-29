@@ -34,14 +34,18 @@ autocmd({ "VimEnter" }, {
     require("ui.input")
     require("ui.select")
 
-    keyset({ 'n', 'i' }, "<Right>", function() require("ui.bufswitch").next() end,
-      { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Left>", function() require("ui.bufswitch").prev() end,
-      { noremap = true, nowait = true, silent = true })
-    keyset({ 'n', 'i' }, "<Up>", function() require("ui.bufswitch").recent() end,
-      { noremap = true, silent = true })
-    keyset({ 'n', 'i' }, "<Down>", function() require("ui.bufswitch").show_buffers() end,
-      { noremap = true, silent = true })
+    keyset({ 'n', 'i' }, "<Right>", function()
+      require("ui.bufswitch").switcher:goto("next")
+    end, { noremap = true, nowait = true, silent = true })
+    keyset({ 'n', 'i' }, "<Left>", function()
+      require("ui.bufswitch").switcher:goto("prev")
+    end, { noremap = true, nowait = true, silent = true })
+    keyset({ 'n', 'i' }, "<Up>", function()
+      require("ui.bufswitch").switcher:goto("recent")
+    end, { noremap = true, silent = true })
+    keyset({ 'n', 'i' }, "<Down>", function()
+      require("ui.bufswitch").switcher:show_static_tabline()
+    end, { noremap = true, silent = true })
 
     require('term').setup({
       defaults = {

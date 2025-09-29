@@ -59,7 +59,6 @@ function BufferSwitcher:track_buffer(buf)
   utils.remove_item(self.buf_order, buf)
   insert(self.buf_order, 1, buf)
 
-  -- Add to tabline order only if not cycling and not already there
   if not self:is_cycling() and not vim.tbl_contains(self.tabline_order, buf) then
     insert(self.tabline_order, buf)
   end
@@ -73,7 +72,7 @@ function BufferSwitcher:remove_buffer(buf)
   self:invalidate_buffer(buf)
 end
 
-function BufferSwitcher:get_navigation_target()
+function BufferSwitcher:get_goto_target()
   local n = #self.buf_order
   if n < 2 then return nil end
   local current = api.nvim_get_current_buf()
@@ -87,7 +86,7 @@ end
 
 function BufferSwitcher:calculate_cycle_index(move)
   if move == "recent" then
-    return self:get_navigation_target()
+    return self:get_goto_target()
   end
   local step = (move == "prev") and -1 or 1
   local new_index = self.cycle.index + step
@@ -340,7 +339,7 @@ function BufferSwitcher:end_cycle()
   end
 end
 
-function BufferSwitcher:navigate(move)
+function BufferSwitcher:goto(move)
   if self.config.disable_in_special and utils.is_special(nil) then
     return
   end
