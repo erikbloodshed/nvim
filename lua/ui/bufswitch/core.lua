@@ -11,6 +11,8 @@ function BufferSwitcher:new()
     buf_order = {},
     hl_cache = {},
     tabline_order = {},
+    buf_order_index = {},
+    tabline_order_index = {},
     cycle = { active = false, index = 0 },
     cache = {
       bufinfo = {},
@@ -27,9 +29,12 @@ function BufferSwitcher:new()
   return instance
 end
 
-function BufferSwitcher:is_cycling() return
-  self.cycle.active
+function BufferSwitcher:rebuild_index(order_table, index_table)
+  for k in pairs(index_table) do index_table[k] = nil end
+  for i, buf in ipairs(order_table) do index_table[buf] = i end
 end
+
+function BufferSwitcher:is_cycling() return self.cycle.active end
 
 function BufferSwitcher:should_apply_hl()
   local current_win = api.nvim_get_current_win()
@@ -43,18 +48,42 @@ end
 
 function BufferSwitcher:track_buffer(buf)
   if not utils.should_include_buffer(buf) then return false end
-  utils.remove_item(self.buf_order, buf)
+  local old_pos = self.buf_order_index[buf]
+  if old_pos then
+    table.remove(self.buf_order, old_pos)
+    for i = old_pos, #self.buf_order do
+      self.buf_order_index[self.buf_order[i]] = i
+    end
+  end
   table.insert(self.buf_order, 1, buf)
-  if not self:is_cycling() and not vim.tbl_contains(self.tabline_order, buf) then
+  for i = 1, math.min(old_pos or #self.buf_order + 1, #self.buf_order) do
+    self.buf_order_index[self.buf_order[i]] = i
+  end
+  if not self:is_cycling() and not self.tabline_order_index[buf] then
     table.insert(self.tabline_order, buf)
+    self.tabline_order_index[buf] = #self.tabline_order
   end
   bump_version(self)
   return true
 end
 
 function BufferSwitcher:remove_buffer(buf)
-  utils.remove_item(self.buf_order, buf)
-  utils.remove_item(self.tabline_order, buf)
+  local pos = self.buf_order_index[buf]
+  if pos then
+    table.remove(self.buf_order, pos)
+    self.buf_order_index[buf] = nil
+    for i = pos, #self.buf_order do
+      self.buf_order_index[self.buf_order[i]] = i
+    end
+  end
+  local tpos = self.tabline_order_index[buf]
+  if tpos then
+    table.remove(self.tabline_order, tpos)
+    self.tabline_order_index[buf] = nil
+    for i = tpos, #self.tabline_order do
+      self.tabline_order_index[self.tabline_order[i]] = i
+    end
+  end
   self:invalidate_buffer(buf)
   bump_version(self)
 end
@@ -63,10 +92,7 @@ function BufferSwitcher:get_goto_target()
   if #self.buf_order < 2 then return nil end
   local current = api.nvim_get_current_buf()
   local target = (current == self.buf_order[1]) and self.buf_order[2] or self.buf_order[1]
-  for i, b in ipairs(self.tabline_order) do
-    if b == target then return i end
-  end
-  return nil
+  return self.tabline_order_index[target]
 end
 
 function BufferSwitcher:calculate_cycle_index(move)
@@ -84,11 +110,8 @@ end
 
 function BufferSwitcher:initialize_cycle()
   if self:is_cycling() or #self.tabline_order < 2 then return false end
-  local current_buf, index = api.nvim_get_current_buf(), 0
-  for i, b in ipairs(self.tabline_order) do
-    if b == current_buf then index = i break end
-  end
-  if index == 0 then index = 1 end
+  local current_buf = api.nvim_get_current_buf()
+  local index = self.tabline_order_index[current_buf] or 1
   self.cycle.active = true
   self.cycle.index = index
   return true
@@ -170,7 +193,8 @@ end
 
 function BufferSwitcher:find_current_index(order, cur, cyc)
   if cyc and cyc > 0 then return cyc end
-  for i, b in ipairs(order) do if b == cur then return i end end
+  local idx = self.tabline_order_index[cur]
+  if idx then return idx end
   return #order > 0 and 1 or 0
 end
 
@@ -304,6 +328,7 @@ function BufferSwitcher:initialize_buffers()
       table.insert(self.tabline_order, b)
     end
   end
+  self:rebuild_index(self.tabline_order, self.tabline_order_index)
 end
 
 function BufferSwitcher:on_buffer_enter(buf)
