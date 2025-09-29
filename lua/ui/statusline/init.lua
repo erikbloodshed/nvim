@@ -1,7 +1,7 @@
 local api = vim.api
 local core = require("ui.statusline.core")
 local config = require("ui.statusline.config")
-local icons = require "ui.icons"
+local icons = require("ui.icons")
 
 local M = {}
 
