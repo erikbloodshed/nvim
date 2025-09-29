@@ -244,8 +244,8 @@ function BufSwitcher:find_current_index(order, cur, cyc)
   return #order > 0 and 1 or 0
 end
 
-function BufSwitcher:render(order, cyc_idx, ref, apply_hl)
-  apply_hl = apply_hl == nil and true or apply_hl
+function BufSwitcher:render(order, cyc_idx, ref)
+  local apply_hl = self:should_apply_hl()
   if ref.version == self.state_version and ref.cycle_idx == (cyc_idx or 0) then
     return ref.content
   end
@@ -314,11 +314,11 @@ function BufSwitcher:restart_timer(name, timeout, cb, one_shot)
   end
 end
 
-function BufSwitcher:update(cyc_idx, apply_hl)
-  vim.o.tabline = self:render(self.tabline_order, cyc_idx, self.cache.tabline, apply_hl)
+function BufSwitcher:update(cyc_idx)
+  vim.o.tabline = self:render(self.tabline_order, cyc_idx, self.cache.tabline)
 end
 
-function BufSwitcher:update_debounced(apply_hl)
+function BufSwitcher:update_debounced()
   self.update_timer = self.update_timer or vim.uv.new_timer()
   if self.update_timer then
     self.update_timer:stop()
@@ -326,20 +326,20 @@ function BufSwitcher:update_debounced(apply_hl)
       16,
       0,
       vim.schedule_wrap(function()
-        self:update(nil, apply_hl)
+        self:update(nil)
         self.update_timer:stop()
       end)
     )
   end
 end
 
-function BufSwitcher:show_tabline(mode, apply_hl)
+function BufSwitcher:show_tabline(mode)
   self.hide_timer = self:stop_timer(self.hide_timer)
   vim.o.showtabline = 2
   if mode == "static" then
-    vim.o.tabline = self:render(self.tabline_order, nil, self.cache.static_tabline, apply_hl)
+    vim.o.tabline = self:render(self.tabline_order, nil, self.cache.static_tabline)
   else
-    self:update_debounced(apply_hl)
+    self:update_debounced()
   end
   self:restart_timer("hide_timer", self.config.hide_timeout, function()
     vim.o.showtabline = 0
@@ -359,7 +359,7 @@ function BufSwitcher:end_cycle()
     self:track_buffer(target_buf)
   end
   if self.config.show_tabline then
-    self:update(nil, self:should_apply_hl())
+    self:update(nil)
   end
 end
 
@@ -368,16 +368,15 @@ function BufSwitcher:goto(move)
     return
   end
   self.hide_timer = self:stop_timer(self.hide_timer)
-  local apply_hl = self:should_apply_hl()
   if not self:is_cycling() then
     if not self:initialize_cycle() then
-      self:show_tabline("temp", apply_hl)
+      self:show_tabline("temp")
       return
     end
   end
   local new_index = self:calc_cycle_index(move)
   if not new_index then
-    self:show_tabline("temp", apply_hl)
+    self:show_tabline("temp")
     return
   end
   self.cycle.index = new_index
@@ -388,7 +387,7 @@ function BufSwitcher:goto(move)
   end
   api.nvim_cmd({ cmd = "buffer", args = { target_buf } }, {})
   vim.o.showtabline = 2
-  self:update(new_index, apply_hl)
+  self:update(new_index)
   self:restart_timer("hide_timer", self.config.hide_timeout, function()
     self:end_cycle()
   end)
@@ -407,8 +406,7 @@ function BufSwitcher:on_buffer_enter(buf)
   if not self:is_cycling() then
     self:track_buffer(buf)
     if self.config.show_tabline then
-      local apply_hl = api.nvim_win_is_valid(api.nvim_get_current_win())
-      self:update(nil, apply_hl)
+      self:update(nil)
     end
   end
 end
