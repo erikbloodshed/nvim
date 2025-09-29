@@ -24,14 +24,13 @@ function BufferSwitcher:new()
     max_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
-    state_version = 0, -- 🔑 generation counter
+    state_version = 0,
   }
 
   setmetatable(instance, self)
   return instance
 end
 
--- Cycle management
 function BufferSwitcher:reset_cycle()
   self.cycle.active = false
   self.cycle.index = 0
@@ -393,6 +392,14 @@ function BufferSwitcher:goto(move)
   self:start_hide_timer(self.config.hide_timeout, function()
     self:end_cycle()
   end)
+end
+
+function BufferSwitcher:initialize_buffers()
+  for _, b in ipairs(api.nvim_list_bufs()) do
+    if utils.should_include_buffer(b) then
+      insert(self.tabline_order, b)
+    end
+  end
 end
 
 function BufferSwitcher:on_buffer_enter(buf)
