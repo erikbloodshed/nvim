@@ -22,10 +22,10 @@ function BufferSwitcher:new()
     hide_timer = nil,
     update_timer = nil,
     max_cache_size = 100,
-    max_hl_cache_size = 100, -- bound for hl_cache
+    max_hl_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
-    state_version = 0, -- generation counter
+    state_version = 0,
   }
 
   setmetatable(instance, self)
@@ -425,7 +425,9 @@ end
 
 function BufferSwitcher:on_buffer_enter(buf)
   if not self:is_cycling() then
-    self:track_buffer(buf)
+    if self.buf_order[1] ~= buf then
+      self:track_buffer(buf)
+    end
     if self.config.show_tabline then
       local apply_hl = api.nvim_win_is_valid(api.nvim_get_current_win())
       self:update_tabline(nil, apply_hl)
