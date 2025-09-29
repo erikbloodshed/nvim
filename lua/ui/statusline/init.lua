@@ -20,7 +20,6 @@ local function load_cmp()
     if not component_specs[name] then
       local path = string.format("ui.statusline.components.%s", name)
       component_specs[name] = path
-      core.register_cmp(name)
       local ok, spec = pcall(require, path)
       if ok and spec and spec.events and spec.cache_keys then
         for _, event in ipairs(spec.events) do

@@ -40,10 +40,6 @@ function M.set_cmp_specs(specs)
   component_specs = specs
 end
 
-function M.register_cmp(name)
-  components[name] = nil
-end
-
 local function load_component(name)
   local spec = require(component_specs[name])
   components[name] = { render = spec.render, cache_keys = spec.cache_keys or {} }
