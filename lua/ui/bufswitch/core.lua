@@ -22,7 +22,6 @@ function BufferSwitcher:new()
     hide_timer = nil,
     update_timer = nil,
     max_cache_size = 100,
-    max_hl_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
     state_version = 0,
@@ -32,15 +31,6 @@ function BufferSwitcher:new()
   return instance
 end
 
-function BufferSwitcher:initialize_buffers()
-  for _, b in ipairs(api.nvim_list_bufs()) do
-    if utils.should_include_buffer(b) then
-      insert(self.tabline_order, b)
-    end
-  end
-end
-
--- Cycle management
 function BufferSwitcher:reset_cycle()
   self.cycle.active = false
   self.cycle.index = 0
@@ -61,7 +51,7 @@ function BufferSwitcher:should_apply_hl()
     and api.nvim_win_is_valid(current_win)
 end
 
--- bump version whenever buffers change
+-- ðŸ”‘ bump version whenever buffers change
 local function bump_version(self)
   self.state_version = self.state_version + 1
 end
@@ -86,15 +76,6 @@ function BufferSwitcher:remove_buffer(buf)
   utils.remove_item(self.buf_order, buf)
   utils.remove_item(self.tabline_order, buf)
   self:invalidate_buffer(buf)
-
-  -- clamp cycle index
-  if self.cycle.index > #self.tabline_order then
-    self.cycle.index = #self.tabline_order
-  end
-  if self.cycle.index < 1 then
-    self:reset_cycle()
-  end
-
   bump_version(self)
 end
 
@@ -197,10 +178,10 @@ function BufferSwitcher:get_buffer_info(buf)
     info.devicon, info.icon_color = devicons.get_icon_color(disp, fn.fnamemodify(name, ":e") or "")
   end
 
-  -- insert into cache
+  -- ðŸ”‘ insert into cache
   self.cache.bufinfo[buf] = self:cache_entry(info)
 
-  -- trim cache if needed
+  -- ðŸ”‘ trim cache if needed
   local count = 0
   for _ in pairs(self.cache.bufinfo) do count = count + 1 end
   if count > self.max_cache_size then
@@ -230,16 +211,6 @@ function BufferSwitcher:format_buffer(info, is_current, apply_hl)
         local base_hl_attrs = api.nvim_get_hl(0, { name = base_hl, link = false })
         api.nvim_set_hl(0, hl_name, { fg = info.icon_color, bg = base_hl_attrs.bg })
         self.hl_cache[cache_key] = hl_name
-
-        -- trim hl_cache if needed
-        local count = 0
-        for _ in pairs(self.hl_cache) do count = count + 1 end
-        if count > self.max_hl_cache_size then
-          for k in pairs(self.hl_cache) do
-            self.hl_cache[k] = nil
-            break
-          end
-        end
       end
       insert(parts, self:hl_rule(info.devicon, hl_name, true))
     else
@@ -415,7 +386,7 @@ function BufferSwitcher:goto(move)
     self:end_cycle()
     return
   end
-  vim.cmd("buffer " .. target_buf)
+  vim.cmd('buffer ' .. target_buf)
   vim.o.showtabline = 2
   self:update_tabline(new_index, apply_hl)
   self:start_hide_timer(self.config.hide_timeout, function()
@@ -423,11 +394,17 @@ function BufferSwitcher:goto(move)
   end)
 end
 
+function BufferSwitcher:initialize_buffers()
+  for _, b in ipairs(api.nvim_list_bufs()) do
+    if utils.should_include_buffer(b) then
+      insert(self.tabline_order, b)
+    end
+  end
+end
+
 function BufferSwitcher:on_buffer_enter(buf)
   if not self:is_cycling() then
-    if self.buf_order[1] ~= buf then
-      self:track_buffer(buf)
-    end
+    self:track_buffer(buf)
     if self.config.show_tabline then
       local apply_hl = api.nvim_win_is_valid(api.nvim_get_current_win())
       self:update_tabline(nil, apply_hl)
@@ -436,4 +413,3 @@ function BufferSwitcher:on_buffer_enter(buf)
 end
 
 return BufferSwitcher
-
