@@ -1,6 +1,8 @@
 local api = vim.api
+local M = {}
 
-local switcher = require("ui.bufswitch.core"):new()
+local BufSwitcher = require("ui.bufswitch.core")
+local switcher = BufSwitcher:new()
 
 local function scheduled(func)
   return function(ev)
@@ -10,29 +12,43 @@ local function scheduled(func)
   end
 end
 
-local group = api.nvim_create_augroup("BufferSwitcher", { clear = true })
+local group = api.nvim_create_augroup("BufSwitcher", { clear = true })
 
 api.nvim_create_autocmd("BufEnter", {
   group = group,
-  callback = scheduled(function(ev) switcher:on_buffer_enter(ev.buf) end),
+  callback = scheduled(function(ev)
+    switcher:on_buffer_enter(ev.buf)
+  end),
 })
 
 api.nvim_create_autocmd("BufAdd", {
   group = group,
-  callback = scheduled(function(ev) switcher:track_buffer(ev.buf) end),
+  callback = scheduled(function(ev)
+    switcher:track_buffer(ev.buf)
+  end),
 })
 
 api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
   group = group,
-  callback = function(ev) switcher:remove_buffer(ev.buf) end,
+  callback = function(ev)
+    switcher:remove_buffer(ev.buf)
+  end,
 })
 
-switcher:initialize_buffers()
+function M.goto_next()
+  switcher:goto("next")
+end
+function M.goto_prev()
+  switcher:goto("prev")
+end
+function M.goto_recent()
+  switcher:goto("recent")
+end
+function M.show_tabline()
+  switcher:show_tabline("temp")
+end
+
+switcher:init_buffers()
 switcher:on_buffer_enter(api.nvim_get_current_buf())
 
-return {
-  goto_next = function() switcher:goto("next") end,
-  goto_prev = function() switcher:goto("prev") end,
-  goto_recent = function() switcher:goto("recent") end,
-  show_tabline = function() switcher:show_tabline("temp") end,
-}
+return M
