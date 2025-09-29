@@ -21,12 +21,10 @@ function BufferSwitcher:new()
     },
     hide_timer = nil,
     update_timer = nil,
-    max_cache_size = 100,
     max_name_length = 16,
     format_expr = "%%#%s#%s%%*",
     state_version = 0,
   }
-
   setmetatable(instance, self)
   return instance
 end
@@ -51,23 +49,17 @@ function BufferSwitcher:should_apply_hl()
     and api.nvim_win_is_valid(current_win)
 end
 
--- ðŸ”‘ bump version whenever buffers change
 local function bump_version(self)
   self.state_version = self.state_version + 1
 end
 
 function BufferSwitcher:track_buffer(buf)
-  if not utils.should_include_buffer(buf) then
-    return false
-  end
-
+  if not utils.should_include_buffer(buf) then return false end
   utils.remove_item(self.buf_order, buf)
   insert(self.buf_order, 1, buf)
-
   if not self:is_cycling() and not vim.tbl_contains(self.tabline_order, buf) then
     insert(self.tabline_order, buf)
   end
-
   bump_version(self)
   return true
 end
@@ -80,11 +72,9 @@ function BufferSwitcher:remove_buffer(buf)
 end
 
 function BufferSwitcher:get_goto_target()
-  local n = #self.buf_order
-  if n < 2 then return nil end
+  if #self.buf_order < 2 then return nil end
   local current = api.nvim_get_current_buf()
   local target = (current == self.buf_order[1]) and self.buf_order[2] or self.buf_order[1]
-
   for i, b in ipairs(self.tabline_order) do
     if b == target then return i end
   end
@@ -92,9 +82,7 @@ function BufferSwitcher:get_goto_target()
 end
 
 function BufferSwitcher:calculate_cycle_index(move)
-  if move == "recent" then
-    return self:get_goto_target()
-  end
+  if move == "recent" then return self:get_goto_target() end
   local step = (move == "prev") and -1 or 1
   local new_index = self.cycle.index + step
   local max_index = #self.tabline_order
@@ -107,30 +95,14 @@ function BufferSwitcher:calculate_cycle_index(move)
 end
 
 function BufferSwitcher:initialize_cycle()
-  if self:is_cycling() then return false end
-  if #self.tabline_order < 2 then return false end
-
-  local current_buf = api.nvim_get_current_buf()
-  local index = 0
-
+  if self:is_cycling() or #self.tabline_order < 2 then return false end
+  local current_buf, index = api.nvim_get_current_buf(), 0
   for i, b in ipairs(self.tabline_order) do
-    if b == current_buf then
-      index = i
-      break
-    end
+    if b == current_buf then index = i break end
   end
-
   if index == 0 then index = 1 end
   self:set_cycle(index)
   return true
-end
-
-function BufferSwitcher:cache_entry(result)
-  return { result = result }
-end
-
-function BufferSwitcher:reset_cache(tbl)
-  tbl.content, tbl.version, tbl.cycle_idx, tbl.window_start = "", -1, 0, 1
 end
 
 function BufferSwitcher:clear_hl_cache()
@@ -139,8 +111,9 @@ end
 
 function BufferSwitcher:invalidate_buffer(buf)
   self.cache.bufinfo[buf] = nil
-  self:reset_cache(self.cache.tabline)
-  self:reset_cache(self.cache.static_tabline)
+  for _, c in pairs({ self.cache.tabline, self.cache.static_tabline }) do
+    c.content, c.version, c.cycle_idx, c.window_start = "", -1, 0, 1
+  end
   self:clear_hl_cache()
   bump_version(self)
 end
@@ -150,25 +123,29 @@ function BufferSwitcher:hl_rule(content, hl, apply_hl)
   return string.format(self.format_expr, hl, content)
 end
 
+function BufferSwitcher:get_icon_hl(base_hl, color)
+  if not color then return base_hl end
+  local cache_key = base_hl .. "_" .. color
+  if self.hl_cache[cache_key] then return self.hl_cache[cache_key] end
+  local hl_name = string.format("BufSwitchDevicon_%s_sel", color:gsub("#", ""))
+  local ok, base_hl_attrs = pcall(api.nvim_get_hl, 0, { name = base_hl, link = false })
+  local bg = ok and base_hl_attrs and base_hl_attrs.bg or nil
+  api.nvim_set_hl(0, hl_name, { fg = color, bg = bg })
+  self.hl_cache[cache_key] = hl_name
+  return hl_name
+end
+
 function BufferSwitcher:get_buffer_info(buf)
   local c = self.cache.bufinfo[buf]
   if c then return c.result end
 
   local name, bt = fn.bufname(buf) or "", vim.bo[buf].buftype
-  local disp
-
-  if name == "" then
-    disp = "[No Name]"
-  else
-    disp = vim.fs.basename(name)
-  end
-
+  local disp = (name == "") and "[No Name]" or vim.fs.basename(name)
   if bt == "help" then
     disp = "[Help] " .. (disp ~= "[No Name]" and disp or "help")
   elseif bt == "terminal" then
     disp = "[Term] " .. (disp ~= "[No Name]" and disp:gsub("^term://.*//", "") or "terminal")
   end
-
   if #disp > self.max_name_length then
     disp = disp:sub(1, self.max_name_length - 3) .. "..."
   end
@@ -177,20 +154,7 @@ function BufferSwitcher:get_buffer_info(buf)
   if has_devicons then
     info.devicon, info.icon_color = devicons.get_icon_color(disp, fn.fnamemodify(name, ":e") or "")
   end
-
-  -- ðŸ”‘ insert into cache
-  self.cache.bufinfo[buf] = self:cache_entry(info)
-
-  -- ðŸ”‘ trim cache if needed
-  local count = 0
-  for _ in pairs(self.cache.bufinfo) do count = count + 1 end
-  if count > self.max_cache_size then
-    for k in pairs(self.cache.bufinfo) do
-      self.cache.bufinfo[k] = nil
-      break
-    end
-  end
-
+  self.cache.bufinfo[buf] = { result = info }
   return info
 end
 
@@ -198,27 +162,16 @@ function BufferSwitcher:format_buffer(info, is_current, apply_hl)
   if not info then
     return self:hl_rule("[Invalid]", "BufSwitchInactive", apply_hl)
   end
-
-  local parts = {}
-  local base_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
-
+  local parts, base_hl = {}, (is_current and "BufSwitchSelected" or "BufSwitchInactive")
   if info.devicon then
     if is_current and apply_hl and info.icon_color then
-      local cache_key = base_hl .. "_" .. info.icon_color
-      local hl_name = self.hl_cache[cache_key]
-      if not hl_name then
-        hl_name = string.format("BufSwitchDevicon_%s_sel", info.icon_color:gsub("#", ""))
-        local base_hl_attrs = api.nvim_get_hl(0, { name = base_hl, link = false })
-        api.nvim_set_hl(0, hl_name, { fg = info.icon_color, bg = base_hl_attrs.bg })
-        self.hl_cache[cache_key] = hl_name
-      end
+      local hl_name = self:get_icon_hl(base_hl, info.icon_color)
       insert(parts, self:hl_rule(info.devicon, hl_name, true))
     else
       insert(parts, self:hl_rule(info.devicon, base_hl, apply_hl))
     end
     insert(parts, self:hl_rule(" ", base_hl, apply_hl))
   end
-
   insert(parts, self:hl_rule(info.display_name, base_hl, apply_hl))
   return concat(parts)
 end
@@ -240,56 +193,39 @@ end
 
 function BufferSwitcher:render_tabline(order, cyc_idx, ref, apply_hl)
   apply_hl = apply_hl == nil and true or apply_hl
-
   if ref.version == self.state_version and ref.cycle_idx == (cyc_idx or 0) then
     return ref.content
   end
 
   local total = #order
-  if total == 0 then
-    return self:hl_rule("%T", "BufSwitchFill", apply_hl)
-  end
+  if total == 0 then return self:hl_rule("%T", "BufSwitchFill", apply_hl) end
 
   local cur_buf = api.nvim_get_current_buf()
   local cur_idx = self:find_current_index(order, cur_buf, cyc_idx)
   local s, e = self:calculate_bounds(cur_idx, total, self.config.tabline_display_window, ref)
 
   local parts = { self:hl_rule("", "BufSwitchFill", apply_hl) }
-
-  if s > 1 then
-    insert(parts, self:hl_rule("<.. ", "BufSwitchSeparator", apply_hl))
-  end
+  if s > 1 then insert(parts, self:hl_rule("<.. ", "BufSwitchSeparator", apply_hl)) end
 
   for i = s, e do
     local b = order[i]
     if api.nvim_buf_is_valid(b) then
       local info = self:get_buffer_info(b)
       local is_current = (cyc_idx and i == cyc_idx) or b == cur_buf
-
       if info then
-        if i > s then
-          insert(parts, self:hl_rule("|", "BufSwitchSeparator", apply_hl))
-        end
-
+        if i > s then insert(parts, self:hl_rule("|", "BufSwitchSeparator", apply_hl)) end
         local buffer_hl = is_current and "BufSwitchSelected" or "BufSwitchInactive"
         local formatted_name = self:format_buffer(info, is_current, apply_hl)
-        insert(parts, self:hl_rule("  ", buffer_hl, apply_hl) ..
-          formatted_name ..
-          self:hl_rule("  ", buffer_hl, apply_hl))
+        insert(parts, self:hl_rule("  ", buffer_hl, apply_hl) .. formatted_name .. self:hl_rule("  ", buffer_hl, apply_hl))
       end
     end
   end
 
-  if e < total then
-    insert(parts, self:hl_rule("| ..>", "BufSwitchSeparator", apply_hl))
-  end
-
+  if e < total then insert(parts, self:hl_rule("| ..>", "BufSwitchSeparator", apply_hl)) end
   insert(parts, self:hl_rule("%T", "BufSwitchFill", apply_hl))
 
   local out = concat(parts, "")
-  ref.content = out
-  ref.version = self.state_version
-  ref.cycle_idx = cyc_idx or 0
+  ref.content, ref.version, ref.cycle_idx = out, self.state_version, cyc_idx or 0
   return out
 end
 
@@ -301,21 +237,20 @@ function BufferSwitcher:stop_timer(timer)
   return nil
 end
 
-function BufferSwitcher:start_hide_timer(timeout, cb)
-  self.hide_timer = self:stop_timer(self.hide_timer)
-  self.hide_timer = vim.uv.new_timer()
-  if self.hide_timer then
-    self.hide_timer:start(timeout, 0, vim.schedule_wrap(cb))
+function BufferSwitcher:restart_timer(name, timeout, cb, one_shot)
+  self[name] = self:stop_timer(self[name])
+  self[name] = vim.uv.new_timer()
+  if self[name] then
+    if one_shot == false then
+      self[name]:start(timeout, timeout, vim.schedule_wrap(cb))
+    else
+      self[name]:start(timeout, 0, vim.schedule_wrap(cb))
+    end
   end
 end
 
-function BufferSwitcher:stop_hide_timer()
-  self.hide_timer = self:stop_timer(self.hide_timer)
-end
-
 function BufferSwitcher:update_tabline(cyc_idx, apply_hl)
-  vim.o.tabline = self:render_tabline(self.tabline_order, cyc_idx,
-    self.cache.tabline, apply_hl)
+  vim.o.tabline = self:render_tabline(self.tabline_order, cyc_idx, self.cache.tabline, apply_hl)
 end
 
 function BufferSwitcher:update_tabline_debounced(apply_hl)
@@ -329,28 +264,22 @@ function BufferSwitcher:update_tabline_debounced(apply_hl)
   end
 end
 
-function BufferSwitcher:show_temporary_tabline(apply_hl)
-  self:stop_hide_timer()
+function BufferSwitcher:show_tabline(mode, apply_hl)
+  self.hide_timer = self:stop_timer(self.hide_timer)
   vim.o.showtabline = 2
-  self:update_tabline_debounced(apply_hl)
-  self:start_hide_timer(self.config.hide_timeout, function()
-    vim.o.showtabline = 0
-  end)
-end
-
-function BufferSwitcher:show_static_tabline(apply_hl)
-  self:stop_hide_timer()
-  vim.o.showtabline = 2
-  vim.o.tabline = self:render_tabline(self.tabline_order, nil,
-    self.cache.static_tabline, apply_hl)
-  self:start_hide_timer(self.config.hide_timeout, function()
+  if mode == "static" then
+    vim.o.tabline = self:render_tabline(self.tabline_order, nil, self.cache.static_tabline, apply_hl)
+  else
+    self:update_tabline_debounced(apply_hl)
+  end
+  self:restart_timer("hide_timer", self.config.hide_timeout, function()
     vim.o.showtabline = 0
   end)
 end
 
 function BufferSwitcher:end_cycle()
   if not self:is_cycling() then return end
-  self:stop_hide_timer()
+  self.hide_timer = self:stop_timer(self.hide_timer)
   vim.o.showtabline = 0
   local target_buf = self.tabline_order[self.cycle.index]
   self:reset_cycle()
@@ -363,21 +292,19 @@ function BufferSwitcher:end_cycle()
 end
 
 function BufferSwitcher:goto(move)
-  if self.config.disable_in_special and utils.is_special(nil) then
-    return
-  end
-  self:stop_hide_timer()
+  if self.config.disable_in_special and utils.is_special(nil) then return end
+  self.hide_timer = self:stop_timer(self.hide_timer)
   local apply_hl = self:should_apply_hl()
 
   if not self:is_cycling() then
     if not self:initialize_cycle() then
-      self:show_temporary_tabline(apply_hl)
+      self:show_tabline("temp", apply_hl)
       return
     end
   end
   local new_index = self:calculate_cycle_index(move)
   if not new_index then
-    self:show_temporary_tabline(apply_hl)
+    self:show_tabline("temp", apply_hl)
     return
   end
   self.cycle.index = new_index
@@ -389,7 +316,7 @@ function BufferSwitcher:goto(move)
   vim.cmd('buffer ' .. target_buf)
   vim.o.showtabline = 2
   self:update_tabline(new_index, apply_hl)
-  self:start_hide_timer(self.config.hide_timeout, function()
+  self:restart_timer("hide_timer", self.config.hide_timeout, function()
     self:end_cycle()
   end)
 end
@@ -413,3 +340,4 @@ function BufferSwitcher:on_buffer_enter(buf)
 end
 
 return BufferSwitcher
+

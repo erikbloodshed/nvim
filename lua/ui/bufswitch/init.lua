@@ -34,5 +34,5 @@ return {
   goto_next = function() switcher:goto("next") end,
   goto_prev = function() switcher:goto("prev") end,
   goto_recent = function() switcher:goto("recent") end,
-  show_tabline = function() switcher:show_static_tabline() end,
+  show_tabline = function() switcher:show_tabline("temp") end,
 }
