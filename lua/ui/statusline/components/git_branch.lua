@@ -25,12 +25,11 @@ return {
           ctx.cache:reset("git_branch")
           ctx.refresh_win(ctx.winid)
         end))
-      return ""
     end)
     if branch_name and branch_name ~= "" then
       local content = ctx.icons.git .. " " .. branch_name
       return ctx.hl_rule(content, "StatusLineGit", apply_hl)
     end
     return ""
-  end,
+  end
 }
