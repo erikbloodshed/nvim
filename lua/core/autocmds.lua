@@ -14,7 +14,7 @@ autocmd({ "Filetype" }, {
       filetype = {
         c = { response_file = ".compile_flags", },
         cpp = { response_file = ".compile_flags", },
-        python = { compiler = "python3.14" }
+        python = { compiler = "python3" }
       }
     })
   end,
@@ -59,7 +59,7 @@ autocmd({ "VimEnter" }, {
       terminals = {
         shell = {},
         python = {
-          shell = 'python3.14',
+          shell = 'python3',
           filetype = 'terminal',
           auto_delete_on_close = true,
         },
