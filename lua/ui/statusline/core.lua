@@ -53,6 +53,10 @@ end
 
 local status_expr = "%%!v:lua.require'ui.statusline'.status(%d)"
 function M.refresh_win(winid)
+  local cfg = api.nvim_win_get_config(winid)
+  if cfg.relative ~= "" then
+    return
+  end
   if api.nvim_win_is_valid(winid) then
     vim.wo[winid].statusline = string.format(status_expr, winid)
     return
