@@ -3,9 +3,6 @@ return {
     "clangd",
     "--background-index",
     "--clang-tidy",
-    "--completion-style=bundled",
-    "--function-arg-placeholders=0",
-    "--header-insertion=never",
   },
 
   root_markers = { ".clangd" },
