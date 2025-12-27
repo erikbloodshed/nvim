@@ -12,7 +12,7 @@ local profiles = {
       name = "show_assembly",
       tool = "compiler",
       flags = "compiler_flags",
-      args = { "-c", "-S", "-o", "asm_file", "src_file" }
+      args = { "-c", "-S", "-masm=intel", "-o", "asm_file", "src_file" }
     },
     {
       name = "run",

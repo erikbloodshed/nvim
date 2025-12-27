@@ -226,7 +226,7 @@ function M.get(c, o)
 
     -- Types
     ["@type"] = { link = "StorageClass" },
-    ["@type.builtin"] = { link = "Operator" },
+    ["@type.builtin"] = { link = "Statement" },
     ["@type.definition"] = { link = "StorageClass" },
 
     ["@attribute"] = { link = "Special" },
@@ -315,11 +315,6 @@ function M.get(c, o)
     -- lua
     ["@constructor.lua"] = { fg = c.flamingo },
 
-    -- C/CPP
-    ["@property.cpp"] = { link = "@variable" },
-    ["@type.builtin.c"] = { link = "StorageClass" },
-    ["@type.builtin.cpp"] = { link = "StorageClass" },
-
     -- Python
     ["@module.python"] = { link = "StorageClass" },
     ["@constructor.python"] = { link = "StorageClass" },
@@ -351,22 +346,23 @@ function M.get(c, o)
     ["@lsp.type.selfKeyword"] = { link = "@variable.builtin" },
     ["@lsp.type.selfParameter"] = { link = "@variable.builtin" },
     ["@lsp.type.typeAlias"] = { link = "@type.definition" },
+    ["@lsp.type.typeParameter"] = {},
     ["@lsp.type.unresolvedReference"] = { link = "Error" },
     ["@lsp.type.variable"] = {},
-    -- ["@lsp.typemod.class.defaultLibrary"] = { link = "Statement" },
+    ["@lsp.typemod.class.defaultLibrary"] = {},
     ["@lsp.typemod.enum.defaultLibrary"] = { link = "StorageClass" },
     ["@lsp.typemod.enumMember.defaultLibrary"] = { link = "Constant" },
-    ["@lsp.typemod.function.defaultLibrary"] = {},
+    ["@lsp.typemod.function.defaultLibrary"] = { link = "Function"},
+    ["@lsp.typemod.function.builtin"] = { link = "Function" },
     ["@lsp.typemod.keyword.async"] = { link = "@keyword.coroutine" },
     ["@lsp.typemod.macro.defaultLibrary"] = { link = "Constant" },
-    ["@lsp.typemod.method.defaultLibrary"] = { link = "Constant" },
+    ["@lsp.typemod.method.defaultLibrary"] = { link = "Function" },
     ["@lsp.typemod.operator.injected"] = { link = "Operator" },
     ["@lsp.typemod.string.injected"] = { link = "String" },
     ["@lsp.typemod.type.defaultLibrary"] = { link = "Statement" },
-    ["@lsp.typemod.variable.defaultLibrary"] = {},
+    ["@lsp.typemod.variable.defaultLibrary"] = { link = "Label" },
     ["@lsp.typemod.variable.injected"] = { link = "@variable" },
-
-    ["@lsp.typemod.variable.readonly.cpp"] = { link = "Constant" },
+    ["@lsp.typemod.variable.readonly.cpp"] = {},
     ["@lsp.type.namespace.python"] = { link = "StorageClass" }, -- }}}
     -- {{{ Neotree
     NeoTreeDirectoryName = { link = "Directory" },
