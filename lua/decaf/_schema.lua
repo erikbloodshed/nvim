@@ -352,7 +352,7 @@ function M.get(c, o)
     ["@lsp.typemod.class.defaultLibrary"] = {},
     ["@lsp.typemod.enum.defaultLibrary"] = { link = "StorageClass" },
     ["@lsp.typemod.enumMember.defaultLibrary"] = { link = "Constant" },
-    ["@lsp.typemod.function.defaultLibrary"] = { link = "Function"},
+    ["@lsp.typemod.function.defaultLibrary"] = { link = "Function" },
     ["@lsp.typemod.function.builtin"] = { link = "Function" },
     ["@lsp.typemod.keyword.async"] = { link = "@keyword.coroutine" },
     ["@lsp.typemod.macro.defaultLibrary"] = { link = "Constant" },
@@ -360,10 +360,14 @@ function M.get(c, o)
     ["@lsp.typemod.operator.injected"] = { link = "Operator" },
     ["@lsp.typemod.string.injected"] = { link = "String" },
     ["@lsp.typemod.type.defaultLibrary"] = { link = "Statement" },
-    ["@lsp.typemod.variable.defaultLibrary"] = { link = "Label" },
+    ["@lsp.typemod.variable.defaultLibrary"] = {},
     ["@lsp.typemod.variable.injected"] = { link = "@variable" },
     ["@lsp.typemod.variable.readonly.cpp"] = {},
-    ["@lsp.type.namespace.python"] = { link = "StorageClass" }, -- }}}
+    ["@lsp.type.namespace.python"] = { link = "StorageClass" },
+    -- C++ Programming Language
+    ["@lsp.type.class.cpp"] = { link = "StorageClass" },
+    ["@lsp.typemod.variable.defaultLibrary.cpp"] = { link = "Function" },
+    -- }}}
     -- {{{ Neotree
     NeoTreeDirectoryName = { link = "Directory" },
     NeoTreeDirectoryIcon = { link = "Directory" },
@@ -400,7 +404,7 @@ function M.get(c, o)
     NeoTreeStatusLineNC = { fg = c.mantle, bg = c.mantle }, -- }}}
     -- {{{ Blink
     BlinkCmpMenuBorder = { fg = c.surface2, bg = c.mantle },
-    linkCmpDocBorder = { link = "FloatBorder" },
+    BlinkCmpDocBorder = { link = "FloatBorder" },
     BlinkCmpLabel = { fg = c.overlay2 },
     BlinkCmpLabelDeprecated = { fg = c.overlay0, strikethrough = true },
     BlinkCmpKind = { fg = c.blue },
@@ -412,7 +416,6 @@ function M.get(c, o)
     BlinkCmpScrollBarThumb = { bg = c.overlay0 },
     BlinkCmpLabelDescription = { fg = c.overlay0 },
     BlinkCmpLabelDetail = { fg = c.overlay0 },
-
     BlinkCmpKindText = { fg = c.green },
     BlinkCmpKindMethod = { fg = c.blue },
     BlinkCmpKindFunction = { fg = c.blue },
@@ -443,7 +446,7 @@ function M.get(c, o)
     BufSwitchSelected = { link = "PmenuSel" },
     BufSwitchInactive = { bg = c.mantle, fg = c.overlay0, },
     BufSwitchSeparator = { fg = c.surface1 },
-    BufSwitchFill = { bg = c.mantle },
+    BufSwitchFill = { bg = c.mantle }, -- }}}
   }
 end
 
