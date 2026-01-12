@@ -54,7 +54,6 @@ vim.ui.input = function(opts, on_confirm)
     on_confirm(nil)
     win_close()
   end, { buffer = bufnr })
-
   keymap("n", "q", function()
     on_confirm(nil)
     win_close()
