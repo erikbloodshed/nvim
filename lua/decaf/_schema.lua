@@ -151,6 +151,7 @@ function M.get(c, o)
     LspInlayHint = { fg = c.overlay0, bg = t_co or c.bg_line },
     LspInfoBorder = { link = "FloatBorder" },
     LspReferenceText = { bg = c.surface1 },
+    LspReferenceTarget = { link = "LspReferenceText" },
     LspReferenceRead = { link = "LspReferenceText" },
     LspReferenceWrite = { link = "LspReferenceText" }, -- }}}
     -- {{{ Syntax

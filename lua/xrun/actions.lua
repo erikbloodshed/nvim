@@ -53,7 +53,7 @@ M.create = function(state, cmd)
       if job_id then
         fn.chansend(job_id, cmd.run() .. "\n")
       end
-    end, 100)
+    end, 75)
   end
 
   local actions = {}
