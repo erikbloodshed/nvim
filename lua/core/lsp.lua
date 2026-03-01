@@ -14,7 +14,7 @@ vim.lsp.config("*", {
   },
 })
 
-lsp.enable({ "basedpyright", "ruff", "clangd", "luals" })
+lsp.enable({ "pyrefly", "ruff", "clangd", "luals" })
 
 autocmd("LspAttach", {
   callback = function(args)
