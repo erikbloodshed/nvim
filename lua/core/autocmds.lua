@@ -78,6 +78,12 @@ autocmd({ "VimEnter" }, {
   end,
 })
 
+api.nvim_create_autocmd("TermOpen", {
+  callback = function()
+    vim.cmd.startinsert();
+  end,
+})
+
 local cl_group = api.nvim_create_augroup("CursorLineControl", { clear = true })
 
 api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
@@ -93,3 +99,4 @@ api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
     wo.cursorline = true
   end,
 })
+

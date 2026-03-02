@@ -1,6 +1,6 @@
 local g = vim.g
-local set = vim.o
-local setw = vim.wo
+local o = vim.o
+local wo = vim.wo
 local opt = vim.opt
 
 g.loaded_node_provider = 0
@@ -22,37 +22,37 @@ if vim.fn.has("wsl") == 1 then
     cache_enabled = false,
   }
 else
-  set.clipboard = "unnamedplus"
+  o.clipboard = "unnamedplus"
 end
 
-set.updatetime = 250
-set.timeoutlen = 300
-set.ttimeoutlen = 10
-set.hidden = true
-set.history = 100
+o.updatetime = 250
+o.timeoutlen = 300
+o.ttimeoutlen = 10
+o.hidden = true
+o.history = 100
 
-set.number = true
-set.showtabline = 0
-set.splitright = true
-set.swapfile = false
-set.synmaxcol = 128
-setw.signcolumn = "yes:1"
+o.number = true
+o.showtabline = 0
+o.splitright = true
+o.swapfile = false
+o.synmaxcol = 128
+wo.signcolumn = "yes:1"
 -- setw.cursorline = true
 
-set.autowrite = false
-set.expandtab = true
-set.shiftwidth = 4
-set.smartindent = false
-set.smarttab = false
-set.softtabstop = 4
-set.tabstop = 4
-set.wrap = false
-set.laststatus = 2
-set.showmode = false
-set.foldmethod = "marker"
-set.foldcolumn = "0"
+o.autowrite = false
+o.expandtab = true
+o.shiftwidth = 4
+o.smartindent = false
+o.smarttab = false
+o.softtabstop = 4
+o.tabstop = 4
+o.wrap = false
+o.laststatus = 2
+o.showmode = false
+o.foldmethod = "marker"
+o.foldcolumn = "0"
 
 opt.viewoptions:append({ options = true })
 opt.shortmess:append("cC")
 opt.formatoptions:remove({ "c", "r", "o" })
-opt.fillchars:remove("eob:~")
+opt.fillchars:append({ eob = " " })
