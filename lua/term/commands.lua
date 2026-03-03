@@ -28,10 +28,10 @@ function M.setup(terminal_manager, user_commands)
   api.nvim_create_user_command('Run', function(opts)
     local path = vim.fn.expand(opts.args)
 
-    if vim.fn.executable(path) ~= 1 then
-      vim.notify(string.format("'%s' is not an executable file.", path), vim.log.levels.ERROR)
-      return
-    end
+    -- if vim.fn.executable(path) ~= 1 then
+    --   vim.notify(string.format("'%s' is not an executable file.", path), vim.log.levels.ERROR)
+    --   return
+    -- end
 
     -- Use a dedicated "runner" terminal instance
     local term = terminal_manager.get_terminal("runner")
