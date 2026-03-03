@@ -54,7 +54,7 @@ M.create = function(state, cmd)
     --     fn.chansend(job_id, cmd.run() .. "\n")
     --   end
     -- end, 75)
-    api.nvim_cmd({ cmd = "terminal", args = { cmd.run() } }, {})
+    api.nvim_cmd({ cmd = "Run", args = { cmd.run() } }, {})
   end
 
   local actions = {}

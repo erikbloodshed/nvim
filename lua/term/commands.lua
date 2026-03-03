@@ -3,6 +3,7 @@ local api = vim.api
 local M = {}
 
 function M.setup(terminal_manager, user_commands)
+  -- Existing ToggleTerminal command
   api.nvim_create_user_command('ToggleTerminal', function(opts)
     local name = opts.args
     if name == '' then
@@ -21,6 +22,32 @@ function M.setup(terminal_manager, user_commands)
     nargs = 1,
     complete = terminal_manager.list_terminals,
     desc = 'Toggle any terminal by name',
+  })
+
+  -- New: Run command for direct execution
+  api.nvim_create_user_command('Run', function(opts)
+    local path = vim.fn.expand(opts.args)
+
+    if vim.fn.executable(path) ~= 1 then
+      vim.notify(string.format("'%s' is not an executable file.", path), vim.log.levels.ERROR)
+      return
+    end
+
+    -- Use a dedicated "runner" terminal instance
+    local term = terminal_manager.get_terminal("runner")
+    if not term then
+      term = terminal_manager.create_terminal("runner", {
+        title = "Runner",
+      })
+    end
+
+    -- Update UI title dynamically to reflect the running file
+    term.config.title = "Run: " .. vim.fn.fnamemodify(path, ":t")
+    term:open(path)
+  end, {
+    nargs = 1,
+    complete = 'file',
+    desc = 'Run an executable in a floating terminal',
   })
 
   if not user_commands or type(user_commands) ~= 'table' then

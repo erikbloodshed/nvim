@@ -149,7 +149,8 @@ function Terminal:_clear_resize_handler()
   end
 end
 
-function Terminal:_start_terminal(target_cwd)
+-- Modified to accept an optional execution command
+function Terminal:_start_terminal(target_cwd, exec_cmd)
   local prev_buf = api.nvim_get_current_buf()
 
   -- Handle directory change
@@ -161,9 +162,11 @@ function Terminal:_start_terminal(target_cwd)
     end
   end
 
-  -- Start terminal
+  -- Start terminal with optional command
   local term_cmd = { cmd = 'terminal' }
-  if self.config.shell and self.config.shell ~= '' then
+  if exec_cmd and exec_cmd ~= '' then
+    term_cmd.args = { exec_cmd }
+  elseif self.config.shell and self.config.shell ~= '' then
     term_cmd.args = { self.config.shell }
   end
   api.nvim_cmd(term_cmd, {})
@@ -221,20 +224,26 @@ function Terminal:destroy_backdrop()
   end
 end
 
-function Terminal:open()
-  self:_create_buffer()
-
+-- Modified to support running specific commands
+function Terminal:open(exec_cmd)
   local target_cwd = nil
   if self.config.open_in_file_dir then
     target_cwd = vim.fs.dirname(api.nvim_buf_get_name(0))
   end
 
+  -- If a specific command is provided and a terminal is already active, 
+  -- clean it up to ensure a fresh execution environment.
+  if exec_cmd and self.buf and api.nvim_buf_is_valid(self.buf) then
+    self:cleanup()
+  end
+
+  self:_create_buffer()
   self:_setup_window()
 
-  -- Start terminal if buffer is not already a terminal
+  -- Start terminal if buffer is not already a terminal or if command is forced
   local buftype = api.nvim_get_option_value('buftype', { buf = self.buf })
-  if buftype ~= 'terminal' then
-    self:_start_terminal(target_cwd)
+  if buftype ~= 'terminal' or exec_cmd then
+    self:_start_terminal(target_cwd, exec_cmd)
   end
 
   api.nvim_cmd({ cmd = 'startinsert' }, {})
