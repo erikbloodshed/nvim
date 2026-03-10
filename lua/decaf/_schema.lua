@@ -368,6 +368,7 @@ function M.get(c, o)
     -- C++ Programming Language
     ["@lsp.type.class.cpp"] = { link = "StorageClass" },
     ["@lsp.typemod.variable.defaultLibrary.cpp"] = { link = "Function" },
+    ["@lsp.type.variable.cpp"] = { link = "@variable"},
     -- }}}
     -- {{{ Neotree
     NeoTreeDirectoryName = { link = "Directory" },

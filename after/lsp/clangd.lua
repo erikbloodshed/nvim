@@ -3,6 +3,7 @@ return {
     "clangd",
     "--background-index",
     "--clang-tidy",
+    "--enable-config",
   },
 
   root_markers = { ".clangd" },
