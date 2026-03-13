@@ -42,8 +42,11 @@ function M.list_terminals()
   return names
 end
 
+-- Collect names first, then remove, to avoid mutating the table
+-- while iterating over it with pairs().
 function M.cleanup()
-  for name in pairs(terminals) do
+  local names = vim.tbl_keys(terminals)
+  for _, name in ipairs(names) do
     M.remove_terminal(name)
   end
 end

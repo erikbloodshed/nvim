@@ -26,6 +26,9 @@ function Terminal:new(name, user_config)
   return setmetatable({
     name = name,
     config = config,
+    -- Stored separately so open() can update display title without
+    -- mutating config.title (which is used as the persistent label).
+    _display_title = config.title,
     buf = nil,
     win = nil,
     backdrop_instance = nil,
@@ -49,7 +52,7 @@ function Terminal:get_float_config()
     row = math.floor((ui_h - height) / 2) - 1,
     style = 'minimal',
     border = self.config.border,
-    title = self.config.title,
+    title = self._display_title,
     title_pos = 'center',
     zindex = 50,
   }
@@ -93,6 +96,9 @@ function Terminal:_setup_window()
   vim.wo[self.win].signcolumn = 'no'
   vim.wo[self.win].wrap = false
 
+  -- Always clear any stale resize handler before registering a new one,
+  -- since _setup_window can be called again after a hide/reopen cycle.
+  self:_clear_resize_handler()
   self:_setup_window_handlers()
 end
 
@@ -102,7 +108,8 @@ function Terminal:_setup_window_handlers()
   local group = self:_ensure_autocmd_group()
   local winid = self.win
 
-  -- Window close handler
+  -- Window close handler (fires when the user closes the float externally,
+  -- e.g. via :q, rather than through Terminal:hide()).
   api.nvim_create_autocmd('WinClosed', {
     group = group,
     pattern = tostring(winid),
@@ -144,25 +151,26 @@ end
 
 function Terminal:_clear_resize_handler()
   if self._resize_autocmd then
-    api.nvim_del_autocmd(self._resize_autocmd)
+    pcall(api.nvim_del_autocmd, self._resize_autocmd)
     self._resize_autocmd = nil
   end
 end
 
--- Modified to accept an optional execution command
 function Terminal:_start_terminal(target_cwd, exec_cmd)
   local prev_buf = api.nvim_get_current_buf()
 
-  -- Handle directory change
-  local original_cwd = nil
+  -- Use `lcd` (local cd) instead of global `cd` to avoid briefly changing the
+  -- working directory for every other window while the terminal is starting.
+  local changed_dir = false
   if target_cwd and fn.isdirectory(target_cwd) == 1 then
-    original_cwd = fn.getcwd(0)
-    if original_cwd ~= target_cwd then
-      api.nvim_cmd({ cmd = 'cd', args = { target_cwd } }, {})
+    local current_lcd = fn.getcwd(fn.winnr())
+    if current_lcd ~= target_cwd then
+      api.nvim_cmd({ cmd = 'lcd', args = { target_cwd } }, {})
+      changed_dir = true
     end
   end
 
-  -- Start terminal with optional command
+  -- Build the :terminal command, preferring exec_cmd, then config.shell.
   local term_cmd = { cmd = 'terminal' }
   if exec_cmd and exec_cmd ~= '' then
     term_cmd.args = { exec_cmd }
@@ -171,19 +179,18 @@ function Terminal:_start_terminal(target_cwd, exec_cmd)
   end
   api.nvim_cmd(term_cmd, {})
 
-  -- Update buffer reference and cache job ID
+  -- Update buffer reference and eagerly cache the job ID.
   self.buf = api.nvim_get_current_buf()
   self._job_id = fn.getbufvar(self.buf, 'terminal_job_id', nil)
 
-  -- Restore directory
-  if original_cwd and original_cwd ~= target_cwd then
-    api.nvim_cmd({ cmd = 'cd', args = { original_cwd } }, {})
+  -- Restore local directory now that the terminal job has been spawned.
+  if changed_dir then
+    api.nvim_cmd({ cmd = 'lcd', args = { '-' } }, {})
   end
 
   vim.bo[self.buf].buflisted = false
   vim.bo[self.buf].filetype = self.config.filetype
 
-  -- Setup auto-delete if enabled
   if self.config.auto_delete_on_close then
     local group = self:_ensure_autocmd_group()
     api.nvim_create_autocmd('TermClose', {
@@ -191,8 +198,8 @@ function Terminal:_start_terminal(target_cwd, exec_cmd)
       buffer = self.buf,
       callback = function()
         vim.schedule(function()
-          if api.nvim_buf_is_valid(self.buf) then
-            api.nvim_cmd({ cmd = 'bdelete', args = { tostring(self.buf) }, bang = true }, {})
+          if self.buf and api.nvim_buf_is_valid(self.buf) then
+            pcall(api.nvim_cmd, { cmd = 'bdelete', args = { tostring(self.buf) }, bang = true }, {})
           end
           self:_invalidate_cache()
         end)
@@ -201,7 +208,8 @@ function Terminal:_start_terminal(target_cwd, exec_cmd)
     })
   end
 
-  -- Restore previous buffer focus
+  -- Return focus to the caller's buffer (the terminal starts in insert mode
+  -- anyway, so we switch back and let open() call startinsert).
   if prev_buf and api.nvim_buf_is_valid(prev_buf) and prev_buf ~= self.buf then
     api.nvim_set_current_buf(prev_buf)
   end
@@ -224,15 +232,18 @@ function Terminal:destroy_backdrop()
   end
 end
 
--- Modified to support running specific commands
+-- open([exec_cmd])
+-- Opens the terminal window. If exec_cmd is provided the terminal is
+-- (re)started with that command; otherwise the existing shell session is
+-- reused if still alive.
 function Terminal:open(exec_cmd)
   local target_cwd = nil
   if self.config.open_in_file_dir then
     target_cwd = vim.fs.dirname(api.nvim_buf_get_name(0))
   end
 
-  -- If a specific command is provided and a terminal is already active, 
-  -- clean it up to ensure a fresh execution environment.
+  -- When an explicit command is requested, discard any existing session so
+  -- the new command always gets a clean environment.
   if exec_cmd and self.buf and api.nvim_buf_is_valid(self.buf) then
     self:cleanup()
   end
@@ -240,19 +251,26 @@ function Terminal:open(exec_cmd)
   self:_create_buffer()
   self:_setup_window()
 
-  -- Start terminal if buffer is not already a terminal or if command is forced
   local buftype = api.nvim_get_option_value('buftype', { buf = self.buf })
   if buftype ~= 'terminal' or exec_cmd then
     self:_start_terminal(target_cwd, exec_cmd)
   end
 
+  -- Update the floating window's visible title to match _display_title
+  -- (may have been changed by the Run command) without touching config.title.
+  if self:_is_window_valid() then
+    pcall(api.nvim_win_set_config, self.win, { title = self._display_title })
+  end
+
   api.nvim_cmd({ cmd = 'startinsert' }, {})
 end
 
+-- hide() closes the window with force=true so it never silently fails
+-- when the buffer has pending state (e.g. a running job).
 function Terminal:hide()
   if not self:_is_window_valid() then return end
 
-  api.nvim_win_close(self.win, false)
+  pcall(api.nvim_win_close, self.win, true)
   self.win = nil
   self:_clear_resize_handler()
   self:destroy_backdrop()
@@ -266,38 +284,37 @@ function Terminal:toggle()
   end
 end
 
+-- is_running() is a pure query — it no longer mutates _job_id as a side
+-- effect. Job ID recovery is handled eagerly in _start_terminal instead.
 function Terminal:is_running()
   local job_id = self._job_id
   if not job_id or job_id <= 0 then
-    -- Try to get fresh job ID
-    if self.buf and api.nvim_buf_is_valid(self.buf) then
-      job_id = fn.getbufvar(self.buf, 'terminal_job_id', nil)
-      if type(job_id) == 'number' and job_id > 0 then
-        self._job_id = job_id
-      else
-        return false
-      end
-    else
-      return false
-    end
+    return false
   end
-
   local res = fn.jobwait({ job_id }, 0)
-  return res and res[1] == -1
+  return res ~= nil and res[1] == -1
+end
+
+-- is_open() exposes window visibility for external consumers such as
+-- statusline integrations.
+function Terminal:is_open()
+  return self:_is_window_valid()
 end
 
 function Terminal:cleanup()
-  self:hide()
+  -- Use pcall around hide() so that even if closing the window errors (e.g.
+  -- last window in a tab), buffer deletion still runs.
+  pcall(function() self:hide() end)
 
   if self._autocmd_group then
-    api.nvim_clear_autocmds({ group = self._autocmd_group })
+    pcall(api.nvim_clear_autocmds, { group = self._autocmd_group })
     self._autocmd_group = nil
   end
 
   self:_invalidate_cache()
 
   if self.buf and api.nvim_buf_is_valid(self.buf) then
-    api.nvim_cmd({ cmd = 'bdelete', args = { tostring(self.buf) }, bang = true }, {})
+    pcall(api.nvim_cmd, { cmd = 'bdelete', args = { tostring(self.buf) }, bang = true }, {})
     self.buf = nil
   end
 end

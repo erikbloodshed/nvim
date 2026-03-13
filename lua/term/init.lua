@@ -1,19 +1,9 @@
 local M = {}
-local _term_manager
-local _commands
-local _keymaps
-
-local function get_terminal_manager()
-  if not _term_manager then
-    _term_manager = require('term.manager')
-  end
-  return _term_manager
-end
 
 function M.setup(config)
   config = config or {}
 
-  local term_manager = get_terminal_manager()
+  local term_manager = require('term.manager')
   term_manager.cache_defaults(config.defaults)
 
   if config.terminals and type(config.terminals) == 'table' then
@@ -22,18 +12,16 @@ function M.setup(config)
     end
   end
 
-  if config.commands and #config.commands > 0 then
-    if not _commands then
-      _commands = require('term.commands')
-    end
-    _commands.setup(term_manager, config.commands)
-  end
+  -- Always set up built-in commands (ToggleTerminal, Run) regardless of
+  -- whether the user supplied a commands table. Previously this block was
+  -- gated on `#config.commands > 0`, which silently skipped those commands
+  -- for users who had no custom commands configured.
+  local commands = require('term.commands')
+  commands.setup(term_manager, config.commands)
 
   if config.keymaps and #config.keymaps > 0 then
-    if not _keymaps then
-      _keymaps = require('term.keymaps')
-    end
-    _keymaps.setup(term_manager, config.keymaps)
+    local keymaps = require('term.keymaps')
+    keymaps.setup(term_manager, config.keymaps)
   end
 end
 
