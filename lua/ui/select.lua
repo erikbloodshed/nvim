@@ -1,13 +1,19 @@
 local api, opt = vim.api, vim.opt
 
-local hl = api.nvim_get_hl(0, { name = "Cursor", link = false })
+-- Fetch cursor highlight lazily so we always get the *current* values,
+-- not a snapshot taken at module-load time.
+local function get_cursor_hl()
+  return api.nvim_get_hl(0, { name = "Cursor", link = false })
+end
 
 local function hide_cursor()
+  local hl = get_cursor_hl()
   api.nvim_set_hl(0, "Cursor", { blend = 100, fg = hl.fg, bg = hl.bg })
   opt.guicursor:append("a:Cursor/lCursor")
 end
 
 local function show_cursor()
+  local hl = get_cursor_hl()
   api.nvim_set_hl(0, "Cursor", { blend = 0, fg = hl.fg, bg = hl.bg })
   opt.guicursor:remove("a:Cursor/lCursor")
 end
@@ -17,6 +23,7 @@ local function close_picker(picker)
 
   if picker.augroup then
     api.nvim_del_augroup_by_id(picker.augroup)
+    picker.augroup = nil
   end
 
   if api.nvim_win_is_valid(picker.win) then
@@ -29,14 +36,16 @@ end
 
 local function move_picker(picker, delta)
   local count = #picker.items
-  local new_idx = (picker.selected - 1 + delta) % count + 1
-  picker.selected = new_idx
-  api.nvim_win_set_cursor(picker.win, { new_idx, 0 })
+  if count == 0 then return end
+  picker.selected = (picker.selected - 1 + delta) % count + 1
+  api.nvim_win_set_cursor(picker.win, { picker.selected, 0 })
 end
 
 local function pick(opts)
   local lines = {}
-  local max_width = #(opts.title or "Select")
+  -- Use strdisplaywidth consistently (handles multi-byte / wide chars correctly).
+  local max_width = vim.fn.strdisplaywidth(opts.title or "Select")
+
   for _, item in ipairs(opts.items) do
     local line = item.text or tostring(item)
     table.insert(lines, line)
@@ -61,7 +70,7 @@ local function pick(opts)
     border = "rounded",
     style = "minimal",
     title = opts.title or "Select",
-    title_pos = "center"
+    title_pos = "center",
   })
 
   api.nvim_set_option_value("cursorline", true, { win = win })
@@ -75,27 +84,40 @@ local function pick(opts)
     on_close = opts.on_close or function() end,
   }
 
-  local augroup = api.nvim_create_augroup("PickerCursorEvents", { clear = false })
+  -- Use a unique augroup per picker instance to prevent autocmd leakage.
+  local augroup_name = "PickerCursorEvents_" .. buf
+  local augroup = api.nvim_create_augroup(augroup_name, { clear = true })
   picker.augroup = augroup
 
+  -- WinEnter / WinLeave are window events; match on the specific window id
+  -- via a pattern rather than buffer scoping (which has no effect on these events).
   api.nvim_create_autocmd("WinEnter", {
-    buffer = buf,
     group = augroup,
-    callback = hide_cursor,
+    pattern = "*",
+    callback = function()
+      if api.nvim_get_current_win() == win then
+        hide_cursor()
+      end
+    end,
   })
 
   api.nvim_create_autocmd("WinLeave", {
-    buffer = buf,
     group = augroup,
-    callback = show_cursor,
+    pattern = "*",
+    callback = function()
+      if api.nvim_get_current_win() == win then
+        show_cursor()
+      end
+    end,
   })
 
   hide_cursor()
-
   api.nvim_win_set_cursor(win, { 1, 0 })
 
-  vim.keymap.set("n", "j", function() move_picker(picker, 1) end, { buffer = buf, nowait = true })
-  vim.keymap.set("n", "k", function() move_picker(picker, -1) end, { buffer = buf, nowait = true })
+  local map_opts = { buffer = buf, nowait = true, noremap = true, silent = true }
+
+  vim.keymap.set("n", "j", function() move_picker(picker, 1) end, map_opts)
+  vim.keymap.set("n", "k", function() move_picker(picker, -1) end, map_opts)
 
   vim.keymap.set("n", "<CR>", function()
     if picker.actions.confirm then
@@ -103,55 +125,55 @@ local function pick(opts)
     else
       close_picker(picker)
     end
-  end, { buffer = buf })
+  end, map_opts)
 
   local function cancel()
     close_picker(picker)
     picker.on_close()
   end
 
-  vim.keymap.set("n", "q", cancel, { buffer = buf })
-  vim.keymap.set("n", "<Esc>", cancel, { buffer = buf })
+  vim.keymap.set("n", "q", cancel, map_opts)
+  vim.keymap.set("n", "<Esc>", cancel, map_opts)
 
   return picker
 end
 
----@diagnostic disable: duplicate-set-field
+---Override vim.ui.select with a floating picker.
+---@diagnostic disable: duplicate-set-field 
+---@param items      any[]
+---@param opts       { prompt?: string, format_item?: fun(item: any): string }
+---@param on_choice  fun(item: any|nil, idx: integer|nil)
 vim.ui.select = function(items, opts, on_choice)
   opts = opts or {}
 
   local formatted_items = {}
-
   for idx, item in ipairs(items) do
-    local text = (opts.format_item and opts.format_item(item)) or tostring(item)
-    table.insert(formatted_items, {
-      text = text,
-      item = item,
-      idx = idx,
-    })
+    local text = opts.format_item and opts.format_item(item) or tostring(item)
+    table.insert(formatted_items, { text = text, item = item, idx = idx })
   end
 
   local completed = false
+
+  -- Wrap on_choice so it fires exactly once regardless of confirm vs cancel path.
+  local function finish(item, idx)
+    if completed then return end
+    completed = true
+    vim.schedule(function()
+      on_choice(item, idx)
+    end)
+  end
 
   pick({
     title = opts.prompt or "Select",
     items = formatted_items,
     actions = {
       confirm = function(picker, picked)
-        if completed then return end
-        completed = true
         close_picker(picker)
-        vim.schedule(function()
-          on_choice(picked.item, picked.idx)
-        end)
+        finish(picked.item, picked.idx)
       end,
     },
     on_close = function()
-      if completed then return end
-      completed = true
-      vim.schedule(function()
-        on_choice(nil, nil)
-      end)
+      finish(nil, nil)
     end,
   })
 end

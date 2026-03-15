@@ -24,10 +24,12 @@ function M.setup(terminal_manager, user_commands)
   })
 
   api.nvim_create_user_command('Run', function(opts)
-    local path = vim.fn.expand(opts.args)
+    local cmd = opts.args
 
-    if vim.fn.executable(path) ~= 1 then
-      vim.notify(string.format("'%s' is not executable.", path), vim.log.levels.ERROR)
+    -- Validate that the executable (first token) is actually on PATH.
+    local exe = cmd:match("^%S+")
+    if vim.fn.executable(exe) ~= 1 then
+      vim.notify(string.format("'%s' is not executable.", exe), vim.log.levels.ERROR)
       return
     end
 
@@ -36,14 +38,14 @@ function M.setup(terminal_manager, user_commands)
       term = terminal_manager.create_terminal("runner", { title = "Runner" })
     end
 
-    -- Update the visible window title to reflect the currently running file
+    -- Update the visible window title to reflect the executable being run
     -- without mutating config.title, which is the terminal's persistent label.
-    term._display_title = "Run: " .. vim.fn.fnamemodify(path, ":t")
-    term:open(path)
+    term._display_title = "Run: " .. exe
+    term:open(cmd)
   end, {
-    nargs    = 1,
-    complete = 'file',
-    desc     = 'Run an executable in a floating terminal',
+    nargs    = '+',
+    complete = 'shellcmd',
+    desc     = 'Run a command in a floating terminal',
   })
 
   if not user_commands or type(user_commands) ~= 'table' then
