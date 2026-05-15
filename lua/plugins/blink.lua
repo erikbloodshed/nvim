@@ -1,7 +1,12 @@
 return {
   "saghen/blink.cmp",
   event = "InsertEnter",
-  build = "cargo build --release",
+
+  build = function()
+    require('blink.cmp').build():wait(60000)
+  end,
+
+  dependencies = { 'saghen/blink.lib' },
 
   opts = {
     completion = {
@@ -36,6 +41,7 @@ return {
     },
 
     appearance = { use_nvim_cmp_as_default = false },
+    signature = { enabled = false },
     sources = {
       default = { "lsp", "snippets", "path" },
       providers = {
@@ -48,5 +54,6 @@ return {
         },
       },
     },
+    fuzzy = { implementation = "rust" }
   },
 }
